@@ -39,6 +39,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.send_log_message("天知强卡器启动成功！目前版本号为{self.version}".format(self=self))
         self.send_log_message("使用前请关闭二级密码，目前版本号较低，请使用小号做实验后再使用")
         self.send_log_message("统计及替换等功能尚未完工，请等待后续版本")
+        self.send_log_message("[github] https://github.com/a1929238/tenchi-cards-enhancer")
         # 召唤动态芙芙！
         self.furina_movie = QtGui.QMovie("items/icon/芙芙摇（小尺寸）.gif")
         self.furina.setMovie(self.furina_movie)
