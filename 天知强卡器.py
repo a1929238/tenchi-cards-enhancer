@@ -1,5 +1,6 @@
 # 天知强卡器，打算用pyqt5做GUI
 # setting字典的结构为:setting[type][name][count]
+# 统计数据字典的结构为:statistics[type][name][count]
 # -*- coding: utf-8 -*-
 from PyQt5 import QtWidgets, QtCore, QtGui, uic
 import sys
@@ -21,6 +22,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         uic.loadUi('天知强卡器.ui', self)
         # 设置窗口图标
         self.setWindowIcon(QtGui.QIcon("items/icon/furina.ico"))
+        
 
         # 变量初始化
         self.version = "0.0.1"
@@ -35,11 +37,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.max_level = int(self.settings["个人设置"]["最大星级"])
 
         # 将GUI控件与脚本连接
-        # 给日志输出第一条信息！
-        self.send_log_message("天知强卡器启动成功！目前版本号为{self.version}".format(self=self))
-        self.send_log_message("使用前请关闭二级密码，目前版本号较低，请使用小号做实验后再使用")
-        self.send_log_message("统计及替换等功能尚未完工，请等待后续版本")
-        self.send_log_message("[github] https://github.com/a1929238/tenchi-cards-enhancer")
+        # 初始化日志信息
+        self.output_log.setOpenExternalLinks(True)
+        self.init_log_message()
+        
         # 召唤动态芙芙！
         self.furina_movie = QtGui.QMovie("items/icon/芙芙摇（小尺寸）.gif")
         self.furina.setMovie(self.furina_movie)
@@ -149,6 +150,13 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     def save_current_settings(self):
         # 调用保存设置函数
         self.save_settings(self.settings)
+
+    # 初始化日志信息
+    def init_log_message(self):
+        self.send_log_message("天知强卡器启动成功！目前版本号为{self.version}".format(self=self))
+        self.send_log_message("使用前请关闭二级密码，目前版本号较低，请使用小号做实验后再使用")
+        self.send_log_message("统计及替换等功能尚未完工，请等待后续版本")
+        self.send_log_message("[github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>https://github.com/a1929238/tenchi-cards-enhancer</a>")
     
     # 初始化选卡菜单
     def init_recipe(self):
@@ -713,10 +721,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 # 强化之后截图强化区域，判定成功/失败，输出日志
                 if self.check_enhance_result(j):
                     # 向日志输出强化信息
-                    self.send_log_message(f"{j-1}星上{j}星强化成功")
+                    self.send_log_message(f'{self.settings["所选卡片"]["卡片名称"]}，{self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"]}四叶草，{j-1}星上{j}星强化成功')
                 else:
                     # 向日志输出强化信息
-                    self.send_log_message(f"{j-1}星上{j}星强化失败")
+                    self.send_log_message(f'{self.settings["所选卡片"]["卡片名称"]}，{self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"]}四叶草，{j-1}星上{j}星强化失败')
                 # 点掉强化区域的卡片，返回，再截图一次
                 self.click(287, 343)
                 QtCore.QThread.msleep(200)
@@ -901,6 +909,12 @@ class DraggableLabel(QtWidgets.QLabel):
 # 主函数    
 def main():
     app = QtWidgets.QApplication(sys.argv)
+    # 设置默认字体
+    font_id = QtGui.QFontDatabase.addApplicationFont("items/font/font.ttf")
+    if font_id != -1:
+            font_family = QtGui.QFontDatabase.applicationFontFamilies(font_id)[0]
+            font = QtGui.QFont(font_family, 10)
+            app.setFont(font)
     enhancer = tenchi_cards_enhancer()
     enhancer.show()
     sys.exit(app.exec_())
