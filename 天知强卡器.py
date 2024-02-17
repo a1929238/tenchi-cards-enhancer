@@ -16,6 +16,25 @@ import cv2
 
 class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # GUI界面
+    """
+    Initializes the GUI by loading the UI file, setting the window icon, initializing variables, connecting signals/slots, starting background threads, etc.
+    
+    Key initialization steps:
+    
+    - Load UI file
+    - Set window icon 
+    - Initialize variables like version, handle, card dict, etc.
+    - Load settings
+    - Connect GUI widgets to script 
+    - Initialize log output
+    - Start furina animation
+    - Make furina label draggable
+    - Connect start/stop buttons
+    - Start enhancer threads
+    - Initialize recipe, clover, subcard, spice menus
+    - Initialize settings page
+    - Connect test button
+    """
     def __init__(self):
         super(tenchi_cards_enhancer, self).__init__()
         # 加载UI文件
@@ -33,6 +52,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.cards_enough = False
         self.enhance_times = 0
         self.settings = self.load_settings()  # 读取设置作为全局变量
+        self.statistics = self.load_statistics()  # 读取统计数据作为全局变量
         self.min_level = int(self.settings["个人设置"]["最小星级"])
         self.max_level = int(self.settings["个人设置"]["最大星级"])
 
@@ -466,7 +486,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                         self.offset = y # 保存偏移值
                         # 裁剪图像，保留标记位置以下的七格像素
                         image = image[y+1:400+y]
-                        cv2.imwrite("temp.png", image)
                         break
             # 按照分割规则，先把图片分割成49 * 57像素的块，然后再分割出3个区域：卡片本体，绑定标志，星级标志
             rows = 7
@@ -523,6 +542,47 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 return json.load(f)
         except FileNotFoundError:
             return {}  # 返回空字典，如果设置文件不存在
+    
+    # 保存统计数据到JSON文件
+    def save_statistics(self, statistics, filename='statistics.json'):
+        with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(statistics, f, ensure_ascii=False, indent=4)
+    
+    # 从JSON文件读取统计数据
+    def load_statistics(self, filename='statistics.json'):
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return {} # 返回空字典，如果设置文件不存在 之后可以考虑一下返回内置的默认字典？
+    
+    # 编辑并保存统计数据字典 type——0: 四叶草 1:香料 2:使用卡片 3:强化出卡片
+    def edit_statistics(self, type, name, value=1):
+        if type == 0: # 四叶草
+            self.statistics["使用四叶草总和"] = self.update_dict(self.statistics["使用四叶草总和"], f"{name}四叶草", value)
+        elif type == 1: # 香料
+            self.statistics["使用香料总和"] = self.update_dict(self.statistics["使用香料总和"], name, value * 5)
+        elif type == 2: # 使用卡片
+            # 卡片总和不同，name是一个数组，所以要遍历数组后分次添加
+            for i in range(len(name)):
+                level = name[i]
+                self.statistics["使用卡片总和"] = self.update_dict(self.statistics["使用卡片总和"], level, value)
+        elif type == 3: # 强化出卡片，强化次数，成功次数
+            # 强化出卡片也是一个数组，有两个值，分别是强化卡片的星级和强化前的星级，以此统计对应星级的强化次数，还能搞出成功次数
+            level = name[0]
+            after_level = name[1]
+            self.statistics["强化次数总和"] = self.update_dict(self.statistics["强化次数总和"], after_level, value)
+            self.statistics["强化出卡片总和"] = self.update_dict(self.statistics["强化出卡片总和"], after_level, value)
+            if after_level > level:
+                self.statistics["成功次数总和"] = self.update_dict(self.statistics["成功次数总和"], after_level, value)
+        # 最后保存统计次数
+        self.save_statistics(self.statistics)
+
+    # 字典编辑方法，传入字典，键，值，返回修改后的字典
+    def update_dict(self, dict, key, value):
+        # 修改或初始化字典对应键和值
+        dict[key] = dict.get(key, 0) + value
+        return dict
     
     # 点击配方
     def get_recipe(self, target_img):
@@ -597,6 +657,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             x = self.match_image(img, clover_img, 1)
             if x is not None:
                 self.click(55 + 49 * x, 550)
+                self.edit_statistics(0, level)
                 return 
         # 如果还是没有找到，就弹出dialog，提示没有找到目标香料/四叶草
         self.show_dialog("什么！", "没有找到目标香料/四叶草")
@@ -665,7 +726,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     # 制作多少次~
                     self.click(285, 425)
                     QtCore.QThread.msleep(500)
-                # 占位，输出日志或统计信息
+                # 输出日志或统计信息
+                self.edit_statistics(1, spice_name, count)
     
 
     # 强化卡片，强化当前页所有符合条件的卡片
@@ -706,18 +768,20 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                             x, y = int(position.split("-")[0]), int(position.split("-")[1])
                             # 点击目标卡片，千万记得要加上偏移值
                             self.click(580 + x * 49, 115 + y * 57 + self.offset)
-                            # 去除当前卡片的计数，去除字典内存储的对应卡片
-                            card_level_dict[subcard] -= 1
-                            card_dict.pop(position)
                             QtCore.QThread.msleep(200)
                             break
                 # 根据设置，点击四叶草
                 if self.settings["强化方案"][f"{j-1}-{j}"].get("四叶草", "无") != "无":
                     self.get_spice_and_clover(1, self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"])
                     QtCore.QThread.msleep(200)
+                # 如果没找到四叶草，就return
+                if not self.is_running:
+                    return
                 # 点击强化！强化有延迟，没啥解决方案
                 self.click(285, 436)
                 QtCore.QThread.msleep(500)
+                # 统计强化所使用卡片
+                self.edit_statistics(2, subcards)
                 # 强化之后截图强化区域，判定成功/失败，输出日志
                 if self.check_enhance_result(j):
                     # 向日志输出强化信息
@@ -743,10 +807,19 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         result_img = self.get_image(267, 323, 40, 50)
         level_img = result_img[5:12, 5:12]
         success_img = self.imread(f"items/level/{level}.png")
+        level_list = [] # 初始化数组。 数组内数分别为卡片星级，卡片强化后星级
         # 判定强化结果
         if np.array_equal(level_img, success_img):
+            level_list = [level - 1, level]
+            self.edit_statistics(3, level_list)
             return True
         else:
+            if level <= 6:
+                level_list = [level - 1, level - 1]
+                self.edit_statistics(3, level_list)
+            else:
+                level_list = [level - 1, level - 2]
+                self.edit_statistics(3, level_list)
             return False 
     
     # 当前位置判定 position——0:可以看到合成屋图标的位置 1:可以看到制作说明图标的位置 2:可以看到强化说明图标的位置
