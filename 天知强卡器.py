@@ -2,7 +2,7 @@
 # setting字典的结构为:setting[type][name][count]
 # 统计数据字典的结构为:statistics[type][name][count]
 # -*- coding: utf-8 -*-
-from PyQt5 import QtWidgets, QtCore, QtGui, uic
+from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import sys
 import win32gui
 import win32api
@@ -14,10 +14,11 @@ import numpy as np
 import os
 import cv2
 
+
 class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 定义信号
     show_dialog_signal = QtCore.pyqtSignal(str, str)
-    # GUI界面
+    
     """
     Initializes the GUI by loading the UI file, setting the window icon, initializing variables, connecting signals/slots, starting background threads, etc.
     
@@ -37,8 +38,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     - Initialize settings page
     - Connect test button
     """
+
+    # GUI界面初始化
     def __init__(self):
         super(tenchi_cards_enhancer, self).__init__()
+        # ... 其余的初始化代码 ...
         # 加载UI文件
         uic.loadUi('天知强卡器.ui', self)
         # 设置窗口图标
@@ -46,7 +50,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         
 
         # 变量初始化
-        self.version = "0.0.1"
+        self.version = "0.0.5"
         self.handle = None
         self.card_dict = {}
         self.is_running = False
@@ -64,10 +68,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.init_log_message()
         
         # 召唤动态芙芙！
-        self.furina_movie = QtGui.QMovie("items/icon/芙芙摇（小尺寸）.gif")
+        self.furina_movie = QtGui.QMovie("items/icon/furina_shake.gif")
         self.furina.setMovie(self.furina_movie)
         self.furina_movie.start()
-        self.furina.__class__ = DraggableLabel
         self.furina.handleChanged.connect(self.update_handle_display)
 
         # 配置开始和停止按钮，将开始与停止连接上槽
@@ -98,20 +101,58 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.init_spice()
         # 初始化个人设置页
         self.init_setting()
+        # 初始化统计数据页
+        self.init_statistics()
+        # 初始化状态栏
+        self.init_statusbar()
 
         # 连接测试按钮
-        self.test_btn.clicked.connect(self.test)
+        # self.test_btn.clicked.connect(self.test)
+    
+    # 统计数据页GUI
+    def init_statistics(self):
+        # 创建一个新实例
+        stats_tab_widget = QtWidgets.QTabWidget(self.tab_3)
+        # 为每个统计数据类别创建一个标签页和表格视图
+        for category, data in self.statistics.items():
+            # 创建一个新的QWidget作为标签页
+            tab_statistics = QtWidgets.QWidget()
+            stats_tab_widget.addTab(tab_statistics, category)
+
+            # 创建表格视图
+            table = QtWidgets.QTableWidget()
+            table.setColumnCount(2)
+            table.setHorizontalHeaderLabels(['项目', '数量'])
+
+            # 填充数据
+            table.setRowCount(len(data))
+            for i, (key, value) in enumerate(data.items()):
+                table.setItem(i, 0, QtWidgets.QTableWidgetItem(key))
+                table.setItem(i, 1, QtWidgets.QTableWidgetItem(str(value)))
+
+            # 创建布局并添加表格到新标签页
+            layout = QtWidgets.QVBoxLayout(self.tab_3)
+            layout.addWidget(table)
+            tab_statistics.setLayout(layout)
+        # 创建布局并添加新的 QTabWidget 到 tab_3
+        layout = QtWidgets.QVBoxLayout(self.tab_3)
+        layout.addWidget(stats_tab_widget)
+        
 
     # 开始按钮
     def onStart(self):
+        # 确保不会重复点击开始
+        self.enhanceronlybtn.setEnabled(False)
         self.startbtn.setEnabled(False)
         self.stopbtn.setEnabled(True)
         self.EnhancerThread.start_loop()
 
     # 停止按钮
     def onStop(self):
+        # 点击停止后可以重新点击开始
         self.is_running = False
         self.startbtn.setEnabled(True)
+        self.enhanceronlybtn.setEnabled(True)
         self.stopbtn.setEnabled(False)
     
     # 仅强卡按钮
@@ -119,31 +160,12 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 初始化按钮
         self.is_running = True
         self.stopbtn.setEnabled(True)
+        self.startbtn.setEnabled(False)
         self.enhanceonlyThread.start_enhance()
         
     
     # 测试功能
     def test(self):
-
-        # 测试卡片截图与拖曳
-        """
-        img = self.get_image(559, 91, 343, 456)
-        cv2.imwrite("test1.png", img)
-        # 合成屋卡片拖曳17个像素正好是一格,但是拖曳8次后会有2像素偏移，使用切片操作偏移
-        for i in range(8):
-            self.drag(908, 120 + i * 17, 0, 17)
-            QtCore.QThread.msleep(200)
-        img = self.get_image(559, 91, 343, 456)
-        img = self.edit_img(img, 2)
-        cv2.imwrite("test2.png", img)
-        for j in range(8):
-            self.drag(908, 256 + j * 17, 0, 17)
-            QtCore.QThread.msleep(200)
-        img = self.get_image(559, 91, 343, 456)
-        img = self.edit_img(img, 4)
-        cv2.imwrite("test3.png", img)
-        """
-
         # 测试强化结果截图
         # self.check_enhance_result(0)
 
@@ -170,7 +192,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
     # 初始化日志信息
     def init_log_message(self):
-        self.send_log_message("天知强卡器启动成功！目前版本号为{self.version}".format(self=self))
+        self.send_log_message(f"当当！天知强卡器启动成功！目前版本号为{self.version}")
         self.send_log_message("使用前请关闭二级密码，目前版本号较低，请使用小号做实验后再使用")
         self.send_log_message("统计及替换等功能尚未完工，请等待后续版本")
         self.send_log_message("目前无法应对美食大赛任务，请注意自己的美食大赛完成进度")
@@ -279,7 +301,44 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.bind_btn.clicked.connect(self.on_setting_changed)
         self.bind_btn1.clicked.connect(self.on_setting_changed)
 
-            
+    # 初始化状态栏
+    def init_statusbar(self):
+        # 获取打开程序的时间
+        self.start_time = QtCore.QElapsedTimer()
+        self.start_time.start()  # 开始计时
+
+        # 创建并添加当前时间标签
+        self.current_time_label = QtWidgets.QLabel()
+        self.statusBar.addWidget(self.current_time_label)
+
+        # 创建并添加程序运行时间标签
+        self.run_time_label = QtWidgets.QLabel()
+        self.statusBar.addWidget(self.run_time_label)
+
+        # 创建并添加版本号标签
+        self.version_label = QtWidgets.QLabel(f'版本号:{self.version}')
+        self.statusBar.addPermanentWidget(self.version_label)
+        # 让样式表偏移一些
+        self.version_label.setStyleSheet("QLabel { margin-right: 5px; }")
+        
+        # 设置定时器更新当前时间和程序运行时间
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.update_status_bar)
+        self.timer.start(1000)  # 每秒更新一次
+
+        self.update_status_bar()  # 初始化状态栏显示
+    
+    def update_status_bar(self):
+        # 更新当前时间
+        current_time = QtCore.QTime.currentTime().toString()
+        self.current_time_label.setText(f'当前时间: {current_time}')
+
+        # 更新程序运行时间
+        elapsed_time = self.start_time.elapsed()
+        hours, remainder = divmod(elapsed_time, 3600000)
+        minutes, seconds = divmod(remainder, 60000)
+        run_time = f'{hours:02d}:{minutes:02d}:{seconds//1000:02d}'
+        self.run_time_label.setText(f'运行时间: {run_time}')
 
 
 
@@ -438,7 +497,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
 
     # 识图函数，分割图片并识别，分成3种分割规则——0:配方分割，1:香料/四叶草分割, 2:卡片分割
-    def match_image(self, image, target_image, type):
+    def match_image(self, image, target_image, type, bind=None):
+        # 初始化bind参数
+        if bind is None:
+            bind = self.settings["个人设置"]["只用绑定卡"]
         if type == 0: # 配方分割
             # 按照分割规则，把图片分割成38 * 29像素的块，间隔的x与y都是49
             rows = 4
@@ -462,7 +524,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 if np.array_equal(kind, target_image):
                     # 识别到种类，开始识别是否绑定,根据设置判断是否需要绑定
                     bind_flag = block[38:45, 3:9]
-                    if self.settings["个人设置"]["只用绑定卡"] == True:
+                    if bind == True:
                         if np.array_equal(bind_flag, bind_image):
                         # 返回香料/四叶草位置
                             return j
@@ -616,7 +678,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         return
         
     # 点击香料/四叶草 type——0:香料,1:四叶草 level——字符串，对不同的type匹配不同的图片
-    def get_spice_and_clover(self, type, level):
+    def get_spice_and_clover(self, type, level, bind=None):
+        if bind is None:
+            bind = self.settings["个人设置"]["只用绑定卡"]
         # 直接第一次截图，查找是否有目标香料/四叶草
         img = self.get_image(33, 526, 490, 49)
         if type == 0:
@@ -639,29 +703,30 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             if x is not None:
                 self.click(55 + 49 * x, 550)
                 return
+            # 如果还是没有找到，就弹出dialog，提示没有找到目标香料
+            self.show_dialog_signal.emit("什么！", "没有找到目标香料!")
         elif type == 1:
             # 查找对应四叶草,level是字符串
             clover_img = self.imread(f"items/clover/{level}四叶草.png")
             # 点击对应四叶草
-            x = self.match_image(img, clover_img, 1)
+            x = self.match_image(img, clover_img, 1, bind)
             if x is not None:
                 self.click(55 + 49 * x, 550)
                 self.edit_statistics(0, level)
                 return        
-            # 没找到，就点击三下右滑键，再截一次图
-            for j in range(3):
+            # 没找到，就点击六下右滑键，再截一次图
+            for j in range(6):
                 self.click(532, 562)
                 QtCore.QThread.msleep(300)
             img = self.get_image(33, 526, 490, 49)
             # 重复前面的读图操作
-            x = self.match_image(img, clover_img, 1)
+            x = self.match_image(img, clover_img, 1, bind)
             if x is not None:
                 self.click(55 + 49 * x, 550)
                 self.edit_statistics(0, level)
                 return
-        print("没有找到目标香料/四叶草")
-        # 如果还是没有找到，就弹出dialog，提示没有找到目标香料/四叶草
-        self.show_dialog_signal.emit("什么！", "没有找到目标香料/四叶草")
+            # 还是没找到，就停止运行
+            self.is_running = False
         return
     
     # 强化卡片主函数
@@ -784,10 +849,19 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 if self.settings["强化方案"][f"{j-1}-{j}"].get("四叶草", "无") != "无":
                     self.get_spice_and_clover(1, self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"])
                     QtCore.QThread.msleep(50)
-                # 如果没找到四叶草，就return
+                # 如果没找到四叶草，就会关闭运行标识
                 if not self.is_running:
-                    self.cards_enough = False
-                    return
+                    # 如果在强化绑定卡时，开启了不绑1,2草替代，就在找不到绑定1,2草时，点击不绑1,2草替代
+                    if self.settings["个人设置"]["不绑草替代"] == True and self.settings["个人设置"]["只用绑定卡"] == True and self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"] in ["1级", "2级"]:
+                        self.get_spice_and_clover(1, self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"], False)
+                        # 重新打开运行标识
+                        self.is_running = True
+                        QtCore.QThread.msleep(50)
+                    else:
+                        # 没有就停止，同时发出弹窗
+                        self.cards_enough = False
+                        self.show_dialog_signal.emit("什么！", "没有找到目标四叶草!")
+                        return
                 # 点击强化！强化有延迟，最终解决方案是重复识图主卡栏位，直到主卡栏位没卡片为止，然后再点击强化
                 self.click(285, 436)
                 # 统计强化所使用卡片
@@ -864,7 +938,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 停止运行
         self.is_running = False
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setIcon(QtWidgets.QMessageBox.warning)
         msg.setWindowTitle(title)
         msg.setText(message)
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
@@ -980,25 +1054,6 @@ class enhanceonlyThread(QtCore.QThread):
         else:
             self.showDialogSignal.emit("喂！", "你还没获取句柄呢！")
 
-# 拖曳图片
-class DraggableLabel(QtWidgets.QLabel):
-    handleChanged = QtCore.pyqtSignal(int)
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setMouseTracking(True)  # 开启鼠标跟踪
-
-    def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
-            self.drag_start_position = event.globalPos()
-
-    def mouseReleaseEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
-            # 获取鼠标释放时的全局位置
-            cursor_pos = event.globalPos()
-            # 获取当前位置的窗口句柄
-            handle = win32gui.WindowFromPoint((cursor_pos.x(), cursor_pos.y()))
-            self.handleChanged.emit(handle)
-
 # 主函数    
 def main():
     app = QtWidgets.QApplication(sys.argv)
@@ -1010,7 +1065,7 @@ def main():
             app.setFont(font)
     enhancer = tenchi_cards_enhancer()
     enhancer.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
     
 if __name__ == '__main__':
     main()
