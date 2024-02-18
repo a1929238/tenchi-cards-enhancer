@@ -29,7 +29,11 @@
    <string notr="true">天知强卡器</string>
   </property>
   <property name="styleSheet">
-   <string notr="true"/>
+   <string notr="true">QToolTip {
+    background-color: rgb(170, 255, 255);
+    color: black;
+    border: 3px dotted rgb(170, 255, 255);
+}</string>
   </property>
   <property name="tabShape">
    <enum>QTabWidget::Rounded</enum>
@@ -72,14 +76,20 @@
     }</string>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>5</number>
     </property>
     <widget class="QWidget" name="tab_1">
+     <property name="toolTip">
+      <string/>
+     </property>
      <property name="accessibleName">
       <string/>
      </property>
      <attribute name="title">
       <string>强卡日志</string>
+     </attribute>
+     <attribute name="toolTip">
+      <string>日志，就是看你强了多少卡啦</string>
      </attribute>
      <widget class="QTextBrowser" name="output_log">
       <property name="geometry">
@@ -106,8 +116,14 @@ li.checked::marker { content: &quot;\2612&quot;; }
      </widget>
     </widget>
     <widget class="QWidget" name="tab_2">
+     <property name="toolTip">
+      <string/>
+     </property>
      <attribute name="title">
       <string>强卡方案</string>
+     </attribute>
+     <attribute name="toolTip">
+      <string>记得用心填写哦</string>
      </attribute>
      <widget class="QComboBox" name="comboBox_65">
       <property name="geometry">
@@ -117,6 +133,9 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <width>69</width>
         <height>22</height>
        </rect>
+      </property>
+      <property name="toolTip">
+       <string>伙伴可是很重要的！</string>
       </property>
      </widget>
      <widget class="QLabel" name="label_27">
@@ -608,8 +627,14 @@ li.checked::marker { content: &quot;\2612&quot;; }
      </widget>
     </widget>
     <widget class="QWidget" name="tab_5">
+     <property name="toolTip">
+      <string/>
+     </property>
      <attribute name="title">
       <string>制卡方案</string>
+     </attribute>
+     <attribute name="toolTip">
+      <string>量力而行！不要一下子把自己弄空啦。</string>
      </attribute>
      <widget class="QLabel" name="label_28">
       <property name="geometry">
@@ -861,8 +886,14 @@ li.checked::marker { content: &quot;\2612&quot;; }
      </widget>
     </widget>
     <widget class="QWidget" name="tab">
+     <property name="toolTip">
+      <string/>
+     </property>
      <attribute name="title">
       <string>AI强卡最优方案</string>
+     </attribute>
+     <attribute name="toolTip">
+      <string>我知道你很想要这个方案，但是真的没做好</string>
      </attribute>
      <widget class="QLabel" name="label_2">
       <property name="geometry">
@@ -879,13 +910,25 @@ li.checked::marker { content: &quot;\2612&quot;; }
      </widget>
     </widget>
     <widget class="QWidget" name="tab_3">
+     <property name="toolTip">
+      <string/>
+     </property>
      <attribute name="title">
       <string>统计数据</string>
      </attribute>
+     <attribute name="toolTip">
+      <string>就是……看你有多非的地方……</string>
+     </attribute>
     </widget>
     <widget class="QWidget" name="tab_4">
+     <property name="toolTip">
+      <string/>
+     </property>
      <attribute name="title">
       <string>个人设置</string>
+     </attribute>
+     <attribute name="toolTip">
+      <string>设置是很重要的哦，一定不能忘了</string>
      </attribute>
      <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
@@ -985,6 +1028,9 @@ li.checked::marker { content: &quot;\2612&quot;; }
       <height>56</height>
      </rect>
     </property>
+    <property name="toolTip">
+     <string>拖那个芙芙，不要拖我——</string>
+    </property>
     <property name="text">
      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:14pt; color:#2747d4;&quot;&gt;拖动这个芙芙获取句柄&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:14pt; color:#2747d4;&quot;&gt;→&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
@@ -997,6 +1043,9 @@ li.checked::marker { content: &quot;\2612&quot;; }
       <width>101</width>
       <height>51</height>
      </rect>
+    </property>
+    <property name="toolTip">
+     <string>将自动寻找合成屋位置，进行制卡——强卡的循环</string>
     </property>
     <property name="styleSheet">
      <string notr="true">background-color: rgb(170, 255, 255);
@@ -1014,6 +1063,12 @@ border-radius: 20px;</string>
       <width>101</width>
       <height>51</height>
      </rect>
+    </property>
+    <property name="toolTip">
+     <string>点击后，仅开始强化已有的卡片</string>
+    </property>
+    <property name="whatsThis">
+     <string/>
     </property>
     <property name="styleSheet">
      <string notr="true">background-color: rgb(170, 255, 255);
@@ -1034,6 +1089,9 @@ border-radius: 20px;</string>
       <width>100</width>
       <height>100</height>
      </rect>
+    </property>
+    <property name="toolTip">
+     <string>&quot;喂，看什么看，还不快把我拖到游戏窗口上去！&quot;</string>
     </property>
     <property name="text">
      <string/>
@@ -1058,6 +1116,9 @@ border-radius: 20px;</string>
      </item>
      <item>
       <widget class="QLabel" name="window_label">
+       <property name="toolTip">
+        <string>在360游戏大厅，句柄正确的话，窗口名确实是空的</string>
+       </property>
        <property name="text">
         <string>窗口名:</string>
        </property>
@@ -1089,7 +1150,11 @@ border-radius: 20px;</string>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QComboBox" name="recipe_box"/>
+      <widget class="QComboBox" name="recipe_box">
+       <property name="toolTip">
+        <string>不要选自己没有的配方哦</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -1101,6 +1166,9 @@ border-radius: 20px;</string>
       <width>101</width>
       <height>51</height>
      </rect>
+    </property>
+    <property name="toolTip">
+     <string>立即停下来！</string>
     </property>
     <property name="styleSheet">
      <string notr="true">background-color: rgb(170, 255, 255);

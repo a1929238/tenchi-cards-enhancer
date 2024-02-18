@@ -13,6 +13,7 @@ from ctypes import windll
 import numpy as np
 import os
 import cv2
+from plyer import notification
 
 
 class tenchi_cards_enhancer(QtWidgets.QMainWindow):
@@ -481,8 +482,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 将x和y转化成矩阵
         lParam = win32api.MAKELONG(x, y)
         #发送一次鼠标左键单击
-        win32gui.SendMessage(self.handle, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam)
-        win32gui.SendMessage(self.handle, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, lParam)
+        win32gui.PostMessage(self.handle, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam)
+        win32gui.PostMessage(self.handle, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, lParam)
     
     # 拖曳,x1y1为需要拖曳的距离
     def drag(self, x, y, x1, y1):
@@ -491,9 +492,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 将x+x1和y+y1转化成矩阵，此矩阵表示鼠标要移动到的目标位置
         lParam1 = win32api.MAKELONG(x+x1, y+y1)
         #按下，移动，抬起
-        win32gui.SendMessage(self.handle, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam)
-        win32gui.SendMessage(self.handle, win32con.WM_MOUSEMOVE, win32con.MK_LBUTTON, lParam1)
-        win32gui.SendMessage(self.handle, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, lParam1)
+        win32gui.PostMessage(self.handle, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam)
+        win32gui.PostMessage(self.handle, win32con.WM_MOUSEMOVE, win32con.MK_LBUTTON, lParam1)
+        win32gui.PostMessage(self.handle, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, lParam1)
 
 
     # 识图函数，分割图片并识别，分成3种分割规则——0:配方分割，1:香料/四叶草分割, 2:卡片分割
@@ -942,6 +943,13 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         msg.setWindowTitle(title)
         msg.setText(message)
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        # 同时显示系统通知
+        notification.notify(
+           title=title,
+           message=message,
+           app_name='天知强卡器',
+           timeout=5  # 通知显示的时间
+        )
         msg.exec_()  
         
 
