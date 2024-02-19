@@ -52,7 +52,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         
 
         # 变量初始化
-        self.version = "0.0.7"
+        self.version = "0.0.8"
         self.handle = None
         self.card_dict = {}
         self.is_running = False
