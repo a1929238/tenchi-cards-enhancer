@@ -52,7 +52,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         
 
         # 变量初始化
-        self.version = "0.0.6"
+        self.version = "0.0.7"
         self.handle = None
         self.card_dict = {}
         self.is_running = False
@@ -200,6 +200,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
         # 测试主卡是否还在
         # self.check_main_card()
+        # 获取副卡图片
+        img = self.get_image(267, 253, 40, 50)
+        cv2.imwrite(f'test.png', img)
         return
 
     # 保存当前设置
@@ -444,7 +447,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 允许点击开始与仅强化
             self.startbtn.setEnabled(True)
             self.enhanceronlybtn.setEnabled(True)
-            
 
     # 截图函数
     def get_image(self, x, y, width, height):
@@ -710,10 +712,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             if x is not None:
                 self.click(55 + 49 * x, 550)
                 return
-            # 没找到，就点击三下右滑键，再截一次图
-            for j in range(3):
+            # 没找到，就点击五下右滑键，再截一次图
+            for j in range(5):
                 self.click(532, 562)
-                QtCore.QThread.msleep(300)
+                QtCore.QThread.msleep(200)
             img = self.get_image(33, 526, 490, 49)
             # 重复前面的读图操作
             x = self.match_image(img, spice_img, 1)
@@ -826,6 +828,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         card_level_dict = {}
         # 读取主卡空卡槽图片
         main_card_target_img = self.imread("items/position/main_card.png")
+        # 读取副卡空卡槽图片
+        sub_card_target_img = self.imread("items/position/sub_card.png")
         # 遍历card字典，获得一共有多少星级的卡片
         for position, card_info in card_dict.items():
             # 获得当前卡片字典的星级
@@ -860,7 +864,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                             self.click(580 + x * 49, 115 + y * 57 + self.offset)
                             # 把card_dict里对应位置的卡片删掉，免得重复点击
                             del card_dict[position]
-                            QtCore.QThread.msleep(50)
                             break
                 # 根据设置，点击四叶草
                 if self.settings["强化方案"][f"{j-1}-{j}"].get("四叶草", "无") != "无":
@@ -879,12 +882,22 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                         self.cards_enough = False
                         self.show_dialog_signal.emit("什么！", "没有找到目标四叶草!")
                         return
-                # 点击强化！强化有延迟，最终解决方案是重复识图主卡栏位，直到主卡栏位没卡片为止，然后再点击强化
+                # 点击强化！强化有延迟，最终解决方案是重复识图副卡栏位，如果副卡还在，就一直点强化，直到副卡不在，再点击主卡
                 self.click(285, 436)
+                # 初始等待300毫秒，这个等待没法规避
+                QtCore.QThread.msleep(300)
+                for i in range(10):
+                    # 获得副卡槽图片
+                    sub_card_image = self.get_image(267, 253, 40, 50)
+                    # 判定副卡槽图片是否和副卡空卡槽图片一样
+                    if np.array_equal(sub_card_image, sub_card_target_img):
+                        break # 卡槽空了就点掉主卡，进行下一次强化
+                    # 等待200毫秒
+                    QtCore.QThread.msleep(200)
+                    # 没空，就重复点击强化
+                    self.click(285, 436)
                 # 统计强化所使用卡片
                 self.edit_statistics(2, subcards)
-                # 先等待700毫秒 ### 预计更新方法，如果副卡还在，就点强化，副卡不在了，在点击主卡
-                QtCore.QThread.msleep(700)
                 # 强化之后截图强化区域，判定成功/失败，输出日志
                 if self.check_enhance_result(j):
                     # 向日志输出强化信息
@@ -892,9 +905,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 else:
                     # 向日志输出强化信息
                     self.send_log_message(f'{self.settings["所选卡片"]["卡片名称"]}，{self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"]}四叶草，{j-1}星上{j}星强化失败')
-                # 点掉强化区域的卡片后，才能再次进行强化                
+                # 点掉强化区域的卡片后，才能再次进行强化
+                self.click(287, 343)
                 # 保险装置，检查主卡位是不是空的，只检查10次，每次间隔200毫秒
                 for i in range(10):
+                    # 获得主卡槽图片
                     main_card_img = self.get_image(267, 323, 40, 50)
                     if np.array_equal(main_card_img, main_card_target_img):
                         break # 上面没卡了就强化下一次
@@ -972,6 +987,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 输出日志
     def send_log_message(self, message):
         self.output_log.append(f"{message}")
+        # 输出完成后，自动滚动到最新消息
+        self.output_log.verticalScrollBar().setValue(
+            self.output_log.verticalScrollBar().maximum()
+        )
 
         
 class EnhancerThread(QtCore.QThread):
