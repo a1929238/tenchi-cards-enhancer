@@ -1233,7 +1233,7 @@ border-radius: 20px;</string>
   <customwidget>
    <class>DraggableLabel</class>
    <extends>QLabel</extends>
-   <header location="global">draggablelabel</header>
+   <header location="global">GUI/draggablelabel</header>
   </customwidget>
  </customwidgets>
  <resources/>

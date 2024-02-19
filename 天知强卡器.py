@@ -45,7 +45,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         super(tenchi_cards_enhancer, self).__init__()
         # ... 其余的初始化代码 ...
         # 加载UI文件
-        uic.loadUi('天知强卡器.ui', self)
+        ui_path = self.resource_path('GUI/天知强卡器.ui')
+        uic.loadUi(ui_path, self)
         # 设置窗口图标
         self.setWindowIcon(QtGui.QIcon("items/icon/furina.ico"))
         
@@ -112,6 +113,18 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
         # 连接测试按钮
         # self.test_btn.clicked.connect(self.test)
+
+    # 打包后绝对路径函数
+    def resource_path(self, relative_path):
+        # 获取资源的绝对路径。它用于访问在 --onefile 模式下的资源。
+        try:
+            # PyInstaller 创建的临时文件夹
+            base_path = sys._MEIPASS
+        except AttributeError:
+            # 如果应用程序没有被打包，则使用普通的绝对路径
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
     
     # 统计数据页GUI
     def init_statistics(self):
@@ -721,7 +734,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 没找到，就点击六下右滑键，再截一次图
             for j in range(6):
                 self.click(532, 562)
-                QtCore.QThread.msleep(300)
+                QtCore.QThread.msleep(80)
             img = self.get_image(33, 526, 490, 49)
             # 重复前面的读图操作
             x = self.match_image(img, clover_img, 1, bind)
@@ -870,6 +883,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 self.click(285, 436)
                 # 统计强化所使用卡片
                 self.edit_statistics(2, subcards)
+                # 先等待700毫秒 ### 预计更新方法，如果副卡还在，就点强化，副卡不在了，在点击主卡
+                QtCore.QThread.msleep(700)
                 # 强化之后截图强化区域，判定成功/失败，输出日志
                 if self.check_enhance_result(j):
                     # 向日志输出强化信息
@@ -877,17 +892,15 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 else:
                     # 向日志输出强化信息
                     self.send_log_message(f'{self.settings["所选卡片"]["卡片名称"]}，{self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"]}四叶草，{j-1}星上{j}星强化失败')
-                # 点掉强化区域的卡片后，才能再次进行强化
-                # 先等待700毫秒
-                QtCore.QThread.msleep(700)
-                # 只检查10次，每次间隔200毫秒
+                # 点掉强化区域的卡片后，才能再次进行强化                
+                # 保险装置，检查主卡位是不是空的，只检查10次，每次间隔200毫秒
                 for i in range(10):
-                    self.click(287, 343)
                     main_card_img = self.get_image(267, 323, 40, 50)
                     if np.array_equal(main_card_img, main_card_target_img):
                         break # 上面没卡了就强化下一次
                     # 还有卡就停顿一会，继续点
                     QtCore.QThread.msleep(200)
+                    self.click(287, 343)
                 # 强化次数+1
                 self.enhance_times += 1
                 # 是否循环标识符
@@ -942,10 +955,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 停止运行
         self.is_running = False
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.warning)
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         msg.setWindowTitle(title)
         msg.setText(message)
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
         # 同时显示系统通知
         notification.notify(
            title=title,
@@ -953,7 +966,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
            app_name='天知强卡器',
            timeout=5  # 通知显示的时间
         )
-        msg.exec_()  
+        msg.exec()  
         
 
     # 输出日志
@@ -1051,7 +1064,12 @@ class enhanceonlyThread(QtCore.QThread):
         self.enhancer = tenchi_cards_enhancer
     
     def run(self):
-        # 不作判断，截图一次后强化
+        # 判断当前位置，如果不在强化页面，就直接弹窗
+        position = self.enhancer.check_position()
+        if position!= 2:
+            self.showDialogSignal.emit("等等", "先把页面调到卡片强化后再点我啊！")
+            return
+        # 截图后强化
         self.enhancer.main_enhancer()
         # 强化完成后弹窗
         self.showDialogSignal.emit("哇哦", "强化完成！没有可强化的卡片了")
