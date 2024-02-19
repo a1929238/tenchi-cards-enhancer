@@ -51,7 +51,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         
 
         # 变量初始化
-        self.version = "0.0.5"
+        self.version = "0.0.6"
         self.handle = None
         self.card_dict = {}
         self.is_running = False
@@ -62,6 +62,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.statistics = self.load_statistics()  # 读取统计数据作为全局变量
         self.min_level = int(self.settings["个人设置"]["最小星级"])
         self.max_level = int(self.settings["个人设置"]["最大星级"])
+
+        # 背景遮盖层初始化
+        self.frosted_layer.lower()  # 将半透明层放到底层
 
         # 将GUI控件与脚本连接
         # 初始化日志信息

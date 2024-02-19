@@ -33,7 +33,10 @@
     background-color: rgb(170, 255, 255);
     color: black;
     border: 3px dotted rgb(170, 255, 255);
-}</string>
+}
+QMainWindow {
+                border-image: url(items/icon/furina_background.jpg) 0 0 0 0 stretch stretch;
+            }</string>
   </property>
   <property name="tabShape">
    <enum>QTabWidget::Rounded</enum>
@@ -71,12 +74,14 @@
     }
 
     QTabWidget::pane {
+		background-color: rgba(255, 255, 255, 155); /* 白色背景，55透明度 */
         border: 0px solid rgba(170, 255, 255, 120);
         top: -1px; /* this shifts the pane up to close the gap with the tab bar */
+		border-radius: 20px;
     }</string>
     </property>
     <property name="currentIndex">
-     <number>5</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab_1">
      <property name="toolTip">
@@ -97,11 +102,22 @@
         <x>0</x>
         <y>0</y>
         <width>501</width>
-        <height>481</height>
+        <height>465</height>
        </rect>
       </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="styleSheet">
-       <string notr="true">background-color: rgba(170, 255, 255, 55);</string>
+       <string notr="true">QWidget {
+                background-color: rgba(255, 255, 255, 50); /* 白色背景，透明度大约为 20% */
+				
+				border-color: rgba(255, 255, 255, 0); /* 描边完全透明 */
+				border-radius: 20px;
+            }</string>
       </property>
       <property name="html">
        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -170,7 +186,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
        <string>选择你的强化伙伴！</string>
       </property>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -1178,6 +1194,34 @@ border-radius: 20px;</string>
      <string>停止</string>
     </property>
    </widget>
+   <widget class="QWidget" name="frosted_layer" native="true">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>800</width>
+      <height>600</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgba(255, 255, 255, 150);</string>
+    </property>
+   </widget>
+   <zorder>frosted_layer</zorder>
+   <zorder>tabWidget</zorder>
+   <zorder>handle_tips</zorder>
+   <zorder>startbtn</zorder>
+   <zorder>enhanceronlybtn</zorder>
+   <zorder>furina</zorder>
+   <zorder>layoutWidget</zorder>
+   <zorder>layoutWidget</zorder>
+   <zorder>stopbtn</zorder>
   </widget>
   <widget class="QStatusBar" name="statusBar">
    <property name="sizeGripEnabled">
