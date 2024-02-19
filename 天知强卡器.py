@@ -13,7 +13,7 @@ from ctypes import windll
 import numpy as np
 import os
 import cv2
-from plyer import notification
+import plyer
 
 
 class tenchi_cards_enhancer(QtWidgets.QMainWindow):
@@ -690,7 +690,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         x, y = self.match_image(img, target_img, 0)
         if x is not None:
             # 获取目标配方位置后，点击配方
-            self.click(580+(x*49), 110+(y+49))
+            self.click(580+(x*49), 110+(y*49))
             return
         # 匹配失败，弹出弹窗
         self.show_dialog_signal.emit("危", "配方识别失败,请检查自己的配方")
@@ -974,14 +974,15 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         msg.setWindowTitle(title)
         msg.setText(message)
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
-        # 同时显示系统通知
-        notification.notify(
-           title=title,
-           message=message,
-           app_name='天知强卡器',
-           timeout=5  # 通知显示的时间
+        # 同时显示系统通知 打包后有BUG，找不到获取平台的方法，原因不明 这BUG起码四年了
+        # 解决方法：打包时添加--hidden-import plyer.platforms.win.notification
+        plyer.notification.notify(
+            title=title,
+            message=message,
+            app_name='天知强卡器',
+            timeout=5  # 通知显示的时间
         )
-        msg.exec()  
+        msg.exec()
         
 
     # 输出日志
