@@ -665,22 +665,6 @@ li.checked::marker { content: &quot;\2612&quot;; }
        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:14pt; color:#0000ff;&quot;&gt;此为每次制卡时，制作的卡片次数&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:14pt; color:#0000ff;&quot;&gt;请注意自己的香料剩余&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_39">
-      <property name="geometry">
-       <rect>
-        <x>320</x>
-        <y>80</y>
-        <width>54</width>
-        <height>81</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>香料使用上限占位</string>
-      </property>
-      <property name="wordWrap">
-       <bool>true</bool>
-      </property>
-     </widget>
      <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
@@ -895,6 +879,38 @@ li.checked::marker { content: &quot;\2612&quot;; }
          </property>
          <property name="value">
           <number>0</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="">
+      <property name="geometry">
+       <rect>
+        <x>283</x>
+        <y>60</y>
+        <width>211</width>
+        <height>42</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_7">
+       <item>
+        <widget class="QLabel" name="label_39">
+         <property name="text">
+          <string>制作多少次卡片后，自动停止制作？</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="produce_times_input">
+         <property name="toolTip">
+          <string>设置成0，则不会自动停止</string>
+         </property>
+         <property name="suffix">
+          <string>次</string>
+         </property>
+         <property name="maximum">
+          <number>50000</number>
          </property>
         </widget>
        </item>

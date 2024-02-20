@@ -60,6 +60,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.cards_enough = False
         self.enhance_times = 0
         self.enhance_count = 0
+        self.produce_count = 0
         self.settings = self.load_settings()  # 读取设置作为全局变量
         self.statistics = self.load_statistics()  # 读取统计数据作为全局变量
         self.min_level = int(self.settings["个人设置"]["最小星级"])
@@ -167,6 +168,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.enhanceronlybtn.setEnabled(False)
         self.startbtn.setEnabled(False)
         self.stopbtn.setEnabled(True)
+        # 正式开始前先防呆
+        self.dull_detection()
         self.EnhancerThread.start_loop()
 
     # 停止按钮
@@ -183,6 +186,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.is_running = True
         self.stopbtn.setEnabled(True)
         self.startbtn.setEnabled(False)
+        # 正式开始前先防呆
+        self.dull_detection()
         self.enhanceonlyThread.start_enhance()
         
     
@@ -233,12 +238,15 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 recipe_name = filename.replace("配方.png", "")
                 self.recipe_box.addItem(recipe_name)
             # 读取设置中的所选卡片，如果有的话，就自动选择这个卡片
-            selected_card_name = self.settings.get("所选卡片", {}).get("卡片名称", None)
+            selected_card_name = self.settings.get("所选卡片", {}).get("卡片名称", "无")
             # 在 QComboBox 中查找这个卡片名称对应的索引
             index = self.recipe_box.findText(selected_card_name)
             if index >= 0:
                 # 如果找到了，设置 QComboBox 当前选中的索引
                 self.recipe_box.setCurrentIndex(index)
+            else:
+                # 如果没找到，就默认选择第一个
+                self.recipe_box.setCurrentIndex(0)
             # 每次更改选项时，都要保存字典
             self.recipe_box.currentIndexChanged.connect(self.on_recipe_selected)
     
@@ -323,6 +331,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.produce_interval_input.setValue(self.produce_interval)
         self.enhance_interval_input.setValue(self.enhance_interval)
         self.enhance_check_interval_input.setValue(self.enhance_check_interval)
+        self.produce_times_input.setValue(int(self.settings.get("个人设置", {}).get("制卡次数上限", 0)))
 
         # 把控件都连接上字典
         self.max_level_input.valueChanged.connect(self.on_setting_changed)
@@ -333,6 +342,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.produce_interval_input.valueChanged.connect(self.on_setting_changed)
         self.enhance_interval_input.valueChanged.connect(self.on_setting_changed)
         self.enhance_check_interval_input.valueChanged.connect(self.on_setting_changed)
+        self.produce_times_input.valueChanged.connect(self.on_setting_changed)
 
     # 初始化状态栏
     def init_statusbar(self):
@@ -456,6 +466,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.settings["个人设置"]["强卡间隔"] = f"{value}"
         elif sender_name == "enhance_check_interval_input":
             self.settings["个人设置"]["强卡检测间隔"] = f"{value}"
+        elif sender_name == "produce_times_input":
+            self.settings["个人设置"]["制卡次数上限"] = f"{value}"
         # 保存设置
         self.save_settings(self.settings)
 
@@ -850,6 +862,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     QtCore.QThread.msleep(self.produce_interval)
                 # 输出统计信息
                 self.edit_statistics(1, spice_name, int(count))
+                # 统计制卡次数
+                self.produce_count += int(count)
+                if int(self.settings.get("个人设置", {}).get("制卡次数上限", 0)) != 0 and self.produce_count >= int(self.settings.get("个人设置", {}).get("制卡次数上限", 0)):
+                    self.show_dialog_signal.emit("登登！", "制卡达到上限啦~")
+                    return
         
     
 
@@ -998,6 +1015,26 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             position = 2
             return position
         return None
+    
+    # 防呆检测，避免一些奇怪的问题
+    def dull_detection(self):
+        # 能使用的强卡方案里，有没有副卡全是无的？
+        for j in range(self.max_level, self.min_level, -1):
+            # 初始化无计数
+            None_count = 0
+            # 遍历可用的强卡方案
+            for k in range(3):
+                subcard_level = (self.settings["强化方案"][f"{j-1}-{j}"].get(f"副卡{k+1}", "无"))
+                if subcard_level == "无":
+                    # 将无计数加一
+                    None_count += 1
+                # 如果有三个无，就直接弹窗，并停止运行
+                if None_count == 3:
+                    self.show_dialog_signal.emit("这……", f"{j-1}-{j}方案的副卡全是无，回去再设置设置吧……")
+                    self.onStop()
+                    return
+        # 通过防呆检测，就没事，正常开始
+        return
 
     # 劲 爆 弹 窗
     @QtCore.pyqtSlot(str, str)
