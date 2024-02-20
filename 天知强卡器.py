@@ -885,6 +885,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 subcard_level = (self.settings["强化方案"][f"{j-1}-{j}"].get(f"副卡{k+1}", "无"))
                 if subcard_level != "无":
                     subcards.append(int(subcard_level))
+            # 保险，如果使用卡片全部低于最低星级，就跳过这次强卡
+            if min(subcards) < self.min_level:
+                continue
             # 死循环，直到所有卡片都被强化完毕，废案，卡片自己会跑！
             # 用数组来比较，目前是否可以执行这个强化方案
             can_enhance = all(card_level_dict.get(int(subcard), 0) >= subcards.count(subcard) for subcard in subcards)
