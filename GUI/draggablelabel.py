@@ -1,5 +1,8 @@
 from PyQt6 import QtCore, QtWidgets, QtGui
 import win32gui
+import ctypes
+from ctypes.wintypes import POINT
+
 
 # 拖曳图片控件
 class DraggableLabel(QtWidgets.QLabel):
@@ -36,9 +39,9 @@ class DraggableLabel(QtWidgets.QLabel):
             self.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.ArrowCursor))  # 恢复默认鼠标样式
             self.closeFloatWindow()  # 释放鼠标时关闭悬浮窗口
             # 获取鼠标释放时的全局位置
-            cursor_pos = event.globalPosition().toPoint()
+            cursor_x, cursor_y = self.get_physical_cursor_pos()
             # 获取当前位置的窗口句柄
-            handle = win32gui.WindowFromPoint((cursor_pos.x(), cursor_pos.y()))
+            handle = win32gui.WindowFromPoint((cursor_x, cursor_y))
             self.handleChanged.emit(handle)
 
     def createFloatWindow(self, position):
@@ -60,3 +63,10 @@ class DraggableLabel(QtWidgets.QLabel):
             self.float_window.close()
             self.float_window = None
         self.float_window_timer.stop()  # 停止计时器
+    
+    def get_physical_cursor_pos(self):
+        # 定义POINT结构
+        pt = POINT()
+        # 调用函数获取鼠标的物理位置
+        ctypes.windll.user32.GetPhysicalCursorPos(ctypes.byref(pt))
+        return pt.x, pt.y

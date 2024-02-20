@@ -9,7 +9,7 @@ import win32api
 import win32con
 import win32ui
 import json
-from ctypes import windll
+from ctypes import windll, c_void_p
 import numpy as np
 import os
 import cv2
@@ -49,8 +49,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         uic.loadUi(ui_path, self)
         # 设置窗口图标
         self.setWindowIcon(QtGui.QIcon("items/icon/furina.ico"))
-        
 
+        # 初始化窗口dpi
+        self.dpi = self.get_system_dpi()
+        
         # 变量初始化
         self.version = "0.0.9"
         self.handle = None
@@ -161,6 +163,14 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         layout = QtWidgets.QVBoxLayout(self.tab_3)
         layout.addWidget(stats_tab_widget)
         
+    # 获取系统dpi
+    def get_system_dpi(self):
+        # 创建一个设备上下文（DC）用于屏幕
+        hdc = windll.user32.GetDC(0)
+        # 获取屏幕的水平DPI
+        dpi = windll.gdi32.GetDeviceCaps(hdc, 88)  # 88 is the index for LOGPIXELSX
+        windll.user32.ReleaseDC(0, hdc)
+        return dpi
 
     # 开始按钮
     def onStart(self):
@@ -224,7 +234,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     def init_log_message(self):
         self.send_log_message(f"当当！天知强卡器启动成功！目前版本号为{self.version}")
         self.send_log_message("使用前请关闭二级密码，目前版本号较低，请使用小号做实验后再使用")
-        self.send_log_message("目前仅支持360游戏大厅,也请保证系统缩放为1.0")
+        self.send_log_message("目前仅支持360游戏大厅,但支持任何系统缩放")
         self.send_log_message("目前无法应对美食大赛任务，请注意自己的美食大赛完成进度")
         self.send_log_message("[github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>https://github.com/a1929238/tenchi-cards-enhancer</a>")
         self.send_log_message("[QQ群 交流·反馈·催更] 142272678 ")
@@ -537,18 +547,30 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
     # 左键单击
     def click(self, x, y):
+        # 获取系统缩放比例（默认DPI是96）
+        scale_factor = self.dpi / 96.0
+        # 调整坐标
+        scaled_x = int(x * scale_factor)
+        scaled_y = int(y * scale_factor)
         # 将x和y转化成矩阵
-        lParam = win32api.MAKELONG(x, y)
+        lParam = win32api.MAKELONG(scaled_x, scaled_y)
         #发送一次鼠标左键单击
         win32gui.PostMessage(self.handle, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam)
         win32gui.PostMessage(self.handle, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, lParam)
     
     # 拖曳,x1y1为需要拖曳的距离
     def drag(self, x, y, x1, y1):
+        # 获取系统缩放比例（默认DPI是96）
+        scale_factor = self.dpi / 96.0
+        # 调整坐标
+        scaled_x = int(x * scale_factor)
+        scaled_y = int(y * scale_factor)
+        scaled_x1 = int(x1 * scale_factor)
+        scaled_y1 = int(y1 * scale_factor)
         # 将x和y转化成矩阵，此矩阵表示移动时，鼠标的初始位置
-        lParam = win32api.MAKELONG(x, y)
+        lParam = win32api.MAKELONG(scaled_x, scaled_y)
         # 将x+x1和y+y1转化成矩阵，此矩阵表示鼠标要移动到的目标位置
-        lParam1 = win32api.MAKELONG(x+x1, y+y1)
+        lParam1 = win32api.MAKELONG(scaled_x+scaled_x1, scaled_y+scaled_y1)
         #按下，移动，抬起
         win32gui.PostMessage(self.handle, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam)
         win32gui.PostMessage(self.handle, win32con.WM_MOUSEMOVE, win32con.MK_LBUTTON, lParam1)
@@ -1184,6 +1206,10 @@ def main():
     enhancer = tenchi_cards_enhancer()
     enhancer.show()
     sys.exit(app.exec())
-    
+
+# 设置进程为每个显示器DPI感知V2
+DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = c_void_p(-4)
+windll.user32.SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+
 if __name__ == '__main__':
     main()
