@@ -778,10 +778,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 self.click(55 + 49 * x, 550)
                 self.edit_statistics(0, level)
                 return        
-            # 没找到，就点击六下右滑键，再截一次图
+            # 没找到，就点击五下右滑键，再截一次图
             for j in range(6):
                 self.click(532, 562)
-                QtCore.QThread.msleep(80)
+                QtCore.QThread.msleep(150)
             img = self.get_image(33, 526, 490, 49)
             # 重复前面的读图操作
             x = self.match_image(img, clover_img, 1, bind)
@@ -1091,10 +1091,11 @@ class EnhancerThread(QtCore.QThread):
             # 打开运行标志 直接进入主循环
             self.enhancer.is_running = True
         elif position == 2:
+            # 打开运行标志
+            self.enhancer.is_running = True
             # 强化主函数
             self.enhancer.main_enhancer()
-            # 打开运行标志, 点击卡片制作，进入主循环
-            self.enhancer.is_running = True
+            # 点击卡片制作，进入主循环
             self.enhancer.click(108, 258)
             QtCore.QThread.msleep(500)
         else:
