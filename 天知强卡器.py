@@ -63,6 +63,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.enhance_times = 0
         self.enhance_count = 0
         self.produce_count = 0
+        self.card_info_dict = {}
         self.settings = self.load_settings()  # 读取设置作为全局变量
         self.statistics = self.load_statistics()  # 读取统计数据作为全局变量
         self.min_level = int(self.settings["个人设置"]["最小星级"])
@@ -243,22 +244,47 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 初始化选卡菜单
     def init_recipe(self):
         recipe_dir = "items/recipe"
+        # 获取卡片属性字典
+        with open(self.resource_path('GUI/card_dict/card_info_dict.json'), 'r', encoding='utf-8') as f:
+            self.card_info_dict = json.load(f)
         if os.path.exists(recipe_dir):
-            for filename in os.listdir(recipe_dir): 
+            # 获取卡片名列表
+            filenames = os.listdir(recipe_dir)
+            # 根据评级对文件名进行排序
+            sorted_filenames = sorted(filenames, key=self.sort_key)
+            for filename in sorted_filenames: 
+                # 获取卡片名
                 recipe_name = filename.replace("配方.png", "")
-                self.recipe_box.addItem(recipe_name)
-            # 读取设置中的所选卡片，如果有的话，就自动选择这个卡片
+                # 在卡片名后面加上卡片的属性
+                card_text = f"{recipe_name}-{self.card_info_dict.get(recipe_name, '未知')}"
+                self.recipe_box.addItem(card_text)
+            # 读取设置中的所选卡片，如果有的话，就自动选择这个卡片,这里要加上卡片的属性
             selected_card_name = self.settings.get("所选卡片", {}).get("卡片名称", "无")
+            selected_card = f'{selected_card_name}-{self.card_info_dict.get(selected_card_name, "未知")}'
             # 在 QComboBox 中查找这个卡片名称对应的索引
-            index = self.recipe_box.findText(selected_card_name)
+            index = self.recipe_box.findText(selected_card)
             if index >= 0:
                 # 如果找到了，设置 QComboBox 当前选中的索引
                 self.recipe_box.setCurrentIndex(index)
             else:
-                # 如果没找到，就默认选择第一个
+                # 如果没找到，就默认选择第一个, 并修改设置文件，让它也是第一个
                 self.recipe_box.setCurrentIndex(0)
-            # 每次更改选项时，都要保存字典
+                self.on_recipe_selected(0)
+            # 连接信号，每次更改选项时，都发出信号，保存字典
             self.recipe_box.currentIndexChanged.connect(self.on_recipe_selected)
+    
+    # 好中差卡排序函数
+    def sort_key(self, filename):
+        recipe_name = filename.replace("配方.png", "")
+        rating = self.card_info_dict.get(recipe_name, "")
+        if rating == "好卡":
+            return 1, recipe_name
+        elif rating == "中卡":
+            return 2, recipe_name
+        elif rating == "差卡":
+            return 3, recipe_name
+        else:
+            return 4, recipe_name  # 对于没有评级的卡片，放在最后
     
     # 初始化副卡菜单
     def init_subcard(self):
@@ -405,7 +431,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     
     # 正在选择的卡片，以及实时保存
     def on_recipe_selected(self, index):
-        selected_recipe = self.recipe_box.itemText(index)
+        selected_recipe_name = self.recipe_box.itemText(index)
+        # 把卡片属性的注释分离出来
+        selected_recipe = selected_recipe_name.split("-")[0]
         # 更新设置字典中的所选卡片
         self.settings["所选卡片"]["卡片名称"] = selected_recipe
         # 保存设置
