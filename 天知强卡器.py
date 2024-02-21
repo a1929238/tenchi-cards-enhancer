@@ -849,6 +849,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 每次强化，卡片的顺序都会改变，只能强化一次截一次图，直到强卡器返回False，才停止循环
         while self.is_running:
             for i in range(4):
+                # 点一下滑块的最上端
+                self.click(908, 120)
                 # 获取截图
                 img = self.get_image(559, 91, 343, 456)
                 # 尝试获取强化卡片字典
