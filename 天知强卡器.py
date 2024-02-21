@@ -942,6 +942,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             if bind == self.settings["个人设置"]["只用绑定卡"]:
                 # 如果字典中存在level，则给level的计数加1，否则初始化为1
                 card_level_dict[level] = card_level_dict.setdefault(level, 0) + 1
+            elif bind != self.settings["个人设置"]["只用绑定卡"] and level == 0:
+                # 0卡不论情况都加到字典内
+                card_level_dict[level] = card_level_dict.setdefault(level, 0) + 1
         # 按照最高强化卡片，从高到低，遍历设置里的强化方案，获取所需副卡，如果卡片总量大于等于方案所需卡片，就遍历card字典的位置，点击卡片，强化一次
         for j in range(self.max_level, self.min_level, -1):
             # 初始化一个数组来存储当前强化方案所需的所有卡
@@ -962,6 +965,14 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 for subcard in subcards: # 遍历所有强化需要的卡, 顺序为主卡，副卡1，副卡2，副卡3
                     for position, card_info in card_dict.items():
                         if card_info["level"] == subcard and card_info["bind"] == self.settings["个人设置"]["只用绑定卡"]:
+                            x, y = int(position.split("-")[0]), int(position.split("-")[1])
+                            # 点击目标卡片，千万记得要加上偏移值
+                            self.click(580 + x * 49, 115 + y * 57 + self.offset)
+                            # 把card_dict里对应位置的卡片删掉，免得重复点击
+                            del card_dict[position]
+                            break
+                        elif card_info["level"] == subcard and subcard == 0:
+                            # 0卡无视绑定状态
                             x, y = int(position.split("-")[0]), int(position.split("-")[1])
                             # 点击目标卡片，千万记得要加上偏移值
                             self.click(580 + x * 49, 115 + y * 57 + self.offset)
