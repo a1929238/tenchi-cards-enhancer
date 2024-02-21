@@ -1183,7 +1183,7 @@ class EnhancerThread(QtCore.QThread):
             position = self.enhancer.check_position()
             if position == 2:
                 # 点一下滑块的最上端
-                self.click(908, 120)
+                self.enhancer.click(908, 120)
                 # 强化主函数
                 self.enhancer.main_enhancer()
             # 数组卡片全部强化完成后，点击卡片制作，再次循环
