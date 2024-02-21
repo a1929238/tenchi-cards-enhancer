@@ -849,8 +849,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 每次强化，卡片的顺序都会改变，只能强化一次截一次图，直到强卡器返回False，才停止循环
         while self.is_running:
             for i in range(4):
-                # 点一下滑块的最上端
-                self.click(908, 120)
                 # 获取截图
                 img = self.get_image(559, 91, 343, 456)
                 # 尝试获取强化卡片字典
@@ -1184,6 +1182,8 @@ class EnhancerThread(QtCore.QThread):
             # 先判定是否在卡片强化页面，如果在，开始强化
             position = self.enhancer.check_position()
             if position == 2:
+                # 点一下滑块的最上端
+                self.click(908, 120)
                 # 强化主函数
                 self.enhancer.main_enhancer()
             # 数组卡片全部强化完成后，点击卡片制作，再次循环
