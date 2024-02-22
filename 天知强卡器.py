@@ -490,22 +490,29 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         sender_name = sender.objectName()
         if sender_name == "max_level_input":
             self.settings["个人设置"]["最大星级"] = f"{value}"
+            self.max_level = value
         elif sender_name == "min_level_input":
             self.settings["个人设置"]["最小星级"] = f"{value}"
+            self.min_level = value
         elif sender_name == "bind_btn":
             self.settings["个人设置"]["只用绑定卡"] = sender.isChecked()
         elif sender_name == "bind_btn1":
             self.settings["个人设置"]["不绑草替代"] = sender.isChecked()
         elif sender_name == "reload_count_input":
             self.settings["个人设置"]["刷新次数"] = f"{value}"
+            self.reload_count = value
         elif sender_name == "produce_interval_input":
             self.settings["个人设置"]["制卡间隔"] = f"{value}"
+            self.produce_interval = value
         elif sender_name == "enhance_interval_input":
             self.settings["个人设置"]["强卡间隔"] = f"{value}"
+            self.enhance_interval = value
         elif sender_name == "enhance_check_interval_input":
             self.settings["个人设置"]["强卡检测间隔"] = f"{value}"
+            self.enhance_check_interval = value
         elif sender_name == "produce_times_input":
             self.settings["个人设置"]["制卡次数上限"] = f"{value}"
+            self.produce_count = value
         # 保存设置
         self.save_settings(self.settings)
 
@@ -677,7 +684,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                         level_img = block[8:15, 9:16]
                         # 初始化level
                         level = 0
-                        cv2.imwrite(f"temp/level{i}-{j}.png", level_img)
                         # 用设置里的卡片上下限来只识别指定星级的卡片
                         for k in range(self.min_level, self.max_level+1):
                             level_image = self.imread(f"items/level/{k}.png")
@@ -686,6 +692,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                                 break
                         if self.min_level == 0 and level == 0:
                             level = 0
+                            # 0卡是否被视为绑定，取决于个人设置
+                            temp_card_dict.setdefault(f"{j}-{i}", {})["bind"] = self.settings["个人设置"]["只用绑定卡"]
                         temp_card_dict.setdefault(f"{j}-{i}", {})["level"] = level        
             # 返回字典，有位置，是否绑定，星级
             return temp_card_dict
@@ -846,9 +854,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 强化卡片主函数
     def main_enhancer(self):
         # 还没有想好拖曳几次，悲
+        # 尝试方案，拖曳7次，每次拖四格
         # 每次强化，卡片的顺序都会改变，只能强化一次截一次图，直到强卡器返回False，才停止循环
         while self.is_running:
-            for i in range(4):
+            for i in range(7):
                 # 获取截图
                 img = self.get_image(559, 91, 343, 456)
                 # 尝试获取强化卡片字典
@@ -863,7 +872,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 if not self.is_running:
                     return
                 # 合成屋卡片拖曳17个像素正好是一格,但是拖曳8次后会有2像素偏移，用新方法就无视偏移啦
-                for j in range(6):
+                for j in range(4):
                     self.drag(908, 120 + i * 119 + j * 17, 0, 17)
                     QtCore.QThread.msleep(200)
                 # 四次拖曳截图都没有获取到卡片，退出循环
