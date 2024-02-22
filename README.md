@@ -11,7 +11,7 @@ QQ群内文件 786921130
 [AND YOU] 你也可以随意分流发行版，分享给朋友们。
 
 ## 预览图片
-![image]https://github.com/a1929238/tenchi-cards-enhancer/blob/main/preview/preview.png
+![image](https://github.com/a1929238/tenchi-cards-enhancer/blob/main/preview/preview.png)
 
 ## 功能介绍
 1.完全自动强卡！基于图像识别所有配方，能够自由地选择所有配方进行制作和强化。
