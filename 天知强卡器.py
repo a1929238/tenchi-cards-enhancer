@@ -54,7 +54,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.dpi = self.get_system_dpi()
         
         # 变量初始化
-        self.version = "0.0.9"
+        self.version = "0.1.0"
         self.handle = None
         self.card_dict = {}
         self.is_running = False
@@ -234,11 +234,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 初始化日志信息
     def init_log_message(self):
         self.send_log_message(f"当当！天知强卡器启动成功！目前版本号为{self.version}")
-        self.send_log_message("使用前请关闭二级密码，目前版本号较低，请使用小号做实验后再使用")
+        self.send_log_message("使用前请关闭二级密码")
         self.send_log_message("目前仅支持360游戏大厅,但支持任何系统缩放")
         self.send_log_message("目前无法应对美食大赛任务，请注意自己的美食大赛完成进度")
         self.send_log_message("[github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>https://github.com/a1929238/tenchi-cards-enhancer</a>")
-        self.send_log_message("[QQ群 交流·反馈·催更] 142272678 ")
+        self.send_log_message("[QQ群 交流·反馈·催更] 786921130 ")
         self.send_log_message("如果觉得好用的话，把软件推荐给更多的人嘛，反正不要钱~")
     
     # 初始化选卡菜单
