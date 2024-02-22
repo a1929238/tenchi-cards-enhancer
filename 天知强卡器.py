@@ -63,6 +63,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.enhance_times = 0
         self.enhance_count = 0
         self.produce_count = 0
+        self.found_clover = False
         self.card_info_dict = {}
         self.settings = self.load_settings()  # 读取设置作为全局变量
         self.statistics = self.load_statistics()  # 读取统计数据作为全局变量
@@ -652,6 +653,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         elif type == 2: # 卡片分割
             # 初始化卡片字典
             temp_card_dict = {}
+            # 初始化偏移值
+            self.offset = 0
             # 方法更新，用模板匹配图片中的第一行，然后把色块以上的图片全部切掉，再识别。这样无论滑块在哪里，都能确保找到七行道具
             line_img = self.imread("items/position/line.png")
             if line_img.shape[0] <= image.shape[0] and line_img.shape[1] <= image.shape[1]:
@@ -685,7 +688,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                         # 初始化level
                         level = 0
                         # 用设置里的卡片上下限来只识别指定星级的卡片
-                        for k in range(self.min_level, self.max_level+1):
+                        for k in range(self.min_level, max(self.max_level+1, 13)):
                             level_image = self.imread(f"items/level/{k}.png")
                             if np.array_equal(level_img, level_image):
                                 level = k
@@ -835,6 +838,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             if x is not None:
                 self.click(55 + 49 * x, 550)
                 self.edit_statistics(0, level)
+                self.found_clover = True
                 return        
             # 没找到，就点击五下右滑键，再截一次图
             for j in range(6):
@@ -846,9 +850,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             if x is not None:
                 self.click(55 + 49 * x, 550)
                 self.edit_statistics(0, level)
+                self.found_clover = True
                 return
-            # 还是没找到，就停止运行
-            self.is_running = False
+            # 还是没找到，就停止四叶草标识
+            self.found_clover = False
         return
     
     # 强化卡片主函数
@@ -980,7 +985,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             if can_enhance: # 如果可以强化，就索引card_dict，寻找目标星级卡片的位置
                 for subcard in subcards: # 遍历所有强化需要的卡, 顺序为主卡，副卡1，副卡2，副卡3
                     for position, card_info in card_dict.items():
-                        if card_info["level"] == subcard and card_info["bind"] == self.settings["个人设置"]["只用绑定卡"]:
+                        if card_info["level"] == subcard and card_info["bind"] == self.settings["个人设置"]["只用绑定卡"] and self.offset != 0: # 增加偏移值检测，偏移值是一定不为0的
                             x, y = int(position.split("-")[0]), int(position.split("-")[1])
                             # 点击目标卡片，千万记得要加上偏移值
                             self.click(580 + x * 49, 115 + y * 57 + self.offset)
@@ -990,13 +995,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 # 根据设置，点击四叶草
                 if self.settings["强化方案"][f"{j-1}-{j}"].get("四叶草", "无") != "无":
                     self.get_spice_and_clover(1, self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"])
-                # 如果没找到四叶草，就会关闭运行标识
-                if not self.is_running:
+                # 如果没找到四叶草，就会关闭查找四叶草标识
+                if not self.found_clover:
                     # 如果在强化绑定卡时，开启了不绑1,2草替代，就在找不到绑定1,2草时，点击不绑1,2草替代
                     if self.settings["个人设置"]["不绑草替代"] == True and self.settings["个人设置"]["只用绑定卡"] == True and self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"] in ["1级", "2级"]:
                         self.get_spice_and_clover(1, self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"], False)
-                        # 重新打开运行标识
-                        self.is_running = True
                     else:
                         # 没有就停止，同时发出弹窗
                         self.cards_enough = False
@@ -1201,8 +1204,6 @@ class EnhancerThread(QtCore.QThread):
             # 先判定是否在卡片强化页面，如果在，开始强化
             position = self.enhancer.check_position()
             if position == 2:
-                # 点一下滑块的最上端
-                self.enhancer.click(908, 120)
                 # 强化主函数
                 self.enhancer.main_enhancer()
             # 数组卡片全部强化完成后，点击卡片制作，再次循环
