@@ -237,7 +237,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.send_log_message("使用前请关闭二级密码")
         self.send_log_message("目前仅支持360游戏大厅,但支持任何系统缩放")
         self.send_log_message("目前无法应对美食大赛任务，请注意自己的美食大赛完成进度")
-        self.send_log_message("[github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>https://github.com/a1929238/tenchi-cards-enhancer</a>")
+        self.send_log_message("最新版本 [github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>https://github.com/a1929238/tenchi-cards-enhancer</a>")
         self.send_log_message("[QQ群 交流·反馈·催更] 786921130 ")
         self.send_log_message("如果觉得好用的话，把软件推荐给更多的人嘛，反正不要钱~")
     
@@ -900,6 +900,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         card_dict = self.match_image(img, card_image, 2)
         if card_dict:
             self.card_dict = card_dict
+        else:
+            # 没有找到卡片，则初始化卡片字典
+            self.card_dict = {}
+
         
     
     # 生产卡片
@@ -1190,7 +1194,7 @@ class EnhancerThread(QtCore.QThread):
             # 如果停止标识，则停止
             if not self.enhancer.is_running:
                 break
-            # 遍历完所有制作后，点击卡片强化
+            # 遍历完所有制作后，点击卡片强化标签
             QtCore.QThread.msleep(500)
             self.enhancer.click(108, 320)
             QtCore.QThread.msleep(500)
