@@ -19,6 +19,7 @@ import plyer
 class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 定义信号
     show_dialog_signal = QtCore.pyqtSignal(str, str)
+    log_signal = QtCore.pyqtSignal(str)
     
     """
     Initializes the GUI by loading the UI file, setting the window icon, initializing variables, connecting signals/slots, starting background threads, etc.
@@ -104,6 +105,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.EnhancerThread.showDialogSignal.connect(self.show_dialog)
         self.enhanceonlyThread.showDialogSignal.connect(self.show_dialog)
         self.show_dialog_signal.connect(self.show_dialog)
+        self.log_signal.connect(self.send_log_message)
 
 
         # 配置，初始化配方选择菜单
@@ -383,6 +385,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
     # 初始化状态栏
     def init_statusbar(self):
+        # 设置颜色蒙版
+        self.statusBar.setStyleSheet("QStatusBar{background-color: rgba(240, 248, 255, 0.8);}")
         # 获取打开程序的时间
         self.start_time = QtCore.QElapsedTimer()
         self.start_time.start()  # 开始计时
@@ -1024,10 +1028,12 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 # 强化之后截图强化区域，判定成功/失败，输出日志
                 if self.check_enhance_result(j):
                     # 向日志输出强化信息
-                    self.send_log_message(f'{self.settings["所选卡片"]["卡片名称"]}，{self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"]}四叶草，{j-1}星上{j}星强化成功')
+                    text = f'{self.settings["所选卡片"]["卡片名称"]}，{self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"]}四叶草，{j-1}星上{j}星强化成功'
+                    self.log_signal.emit(text)
                 else:
                     # 向日志输出强化信息
-                    self.send_log_message(f'{self.settings["所选卡片"]["卡片名称"]}，{self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"]}四叶草，{j-1}星上{j}星强化失败')
+                    text = f'{self.settings["所选卡片"]["卡片名称"]}，{self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"]}四叶草，{j-1}星上{j}星强化失败'
+                    self.log_signal.emit(text)
                 # 点掉强化区域的卡片后，才能再次进行强化
                 self.click(287, 343)
                 # 强化次数+1
@@ -1160,7 +1166,7 @@ class EnhancerThread(QtCore.QThread):
             self.enhancer.main_enhancer()
             # 点击卡片制作，进入主循环
             self.enhancer.click(108, 258)
-            QtCore.QThread.msleep(500)
+            QtCore.QThread.msleep(1000)
         else:
             # 未知位置，弹窗提示
             self.showDialogSignal.emit("哇哦", "未知位置，你好像被卡住了")
@@ -1191,7 +1197,7 @@ class EnhancerThread(QtCore.QThread):
             # 遍历完所有制作后，点击卡片强化标签
             QtCore.QThread.msleep(500)
             self.enhancer.click(108, 320)
-            QtCore.QThread.msleep(500)
+            QtCore.QThread.msleep(1000)
             # 先判定是否在卡片强化页面，如果在，开始强化
             position = self.enhancer.check_position()
             if position == 2:
@@ -1199,7 +1205,7 @@ class EnhancerThread(QtCore.QThread):
                 self.enhancer.main_enhancer()
             # 数组卡片全部强化完成后，点击卡片制作，再次循环
             self.enhancer.click(108, 258)
-            QtCore.QThread.msleep(500)
+            QtCore.QThread.msleep(1000)
 
     def start_loop(self):
         if self.enhancer.handle is not None:
