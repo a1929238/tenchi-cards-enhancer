@@ -54,7 +54,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.dpi = self.get_system_dpi()
         
         # 变量初始化
-        self.version = "0.1.0"
+        self.version = "0.1.1"
         self.handle = None
         self.card_dict = {}
         self.is_running = False
@@ -63,7 +63,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.enhance_times = 0
         self.enhance_count = 0
         self.produce_count = 0
-        self.found_clover = False
+        self.found_clover = True
         self.card_info_dict = {}
         self.settings = self.load_settings()  # 读取设置作为全局变量
         self.statistics = self.load_statistics()  # 读取统计数据作为全局变量
@@ -1030,15 +1030,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     self.send_log_message(f'{self.settings["所选卡片"]["卡片名称"]}，{self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"]}四叶草，{j-1}星上{j}星强化失败')
                 # 点掉强化区域的卡片后，才能再次进行强化
                 self.click(287, 343)
-                # 保险装置，检查主卡位是不是空的，只检查10次，每次间隔200毫秒
-                for i in range(10):
-                    # 获得主卡槽图片
-                    main_card_img = self.get_image(267, 323, 40, 50)
-                    if np.array_equal(main_card_img, main_card_target_img):
-                        break # 上面没卡了就强化下一次
-                    # 检测等待时间
-                    QtCore.QThread.msleep(self.enhance_check_interval)
-                    self.click(287, 343)
                 # 强化次数+1
                 self.enhance_times += 1
                 self.enhance_count += 1
