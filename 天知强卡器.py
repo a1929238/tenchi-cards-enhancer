@@ -909,9 +909,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         card_dict = self.match_image(img, card_image, 2)
         if card_dict:
             self.card_dict = card_dict
-        else:
-            # 没有找到卡片，则初始化卡片字典
-            self.card_dict = {}
 
         
     
@@ -948,8 +945,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         card_dict = self.card_dict
         # 初始化当前页面卡片星级总量字典
         card_level_dict = {}
-        # 读取主卡空卡槽图片
-        main_card_target_img = self.imread("items/position/main_card.png")
         # 读取副卡空卡槽图片
         sub_card_target_img = self.imread("items/position/sub_card.png")
         # 遍历card字典，获得一共有多少星级的卡片
@@ -980,16 +975,19 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 死循环，直到所有卡片都被强化完毕，废案，卡片自己会跑！
             # 用数组来比较，目前是否可以执行这个强化方案
             can_enhance = all(card_level_dict.get(int(subcard), 0) >= subcards.count(subcard) for subcard in subcards)
-            # 在比较之后，为了留存高级方案卡片，在等级字典内减去高级方案所需卡片
-            for subcard in subcards:
-                card_level_dict[subcard] = card_level_dict.get(subcard, 0) - subcards.count(subcard)
-                # 如果减去之后对应键值小于零，则从字典中除去对应键
-                if card_level_dict[subcard] < 0:
-                    del card_level_dict[subcard]
+            # 额外比较，是否满足主卡需求？
+            main_card_needed = card_level_dict.get(subcards[0], 0) >= 1
+            # 在比较之后，如果卡组内存在主卡，为了留存高级方案卡片，在等级字典内减去高级方案所需卡片
+            if main_card_needed:
+                for subcard in subcards:
+                    card_level_dict[subcard] = card_level_dict.get(subcard, 0) - subcards.count(subcard)
+                    # 如果减去之后对应键值小于零，则从字典中除去对应键
+                    if card_level_dict[subcard] < 0:
+                        del card_level_dict[subcard]
             if can_enhance: # 如果可以强化，就索引card_dict，寻找目标星级卡片的位置
                 for subcard in subcards: # 遍历所有强化需要的卡, 顺序为主卡，副卡1，副卡2，副卡3
                     for position, card_info in card_dict.items():
-                        if card_info["level"] == subcard and card_info["bind"] == self.settings["个人设置"]["只用绑定卡"] and self.offset != 0: # 增加偏移值检测，偏移值是一定不为0的
+                        if card_info["level"] == subcard and card_info["bind"] == self.settings["个人设置"]["只用绑定卡"]: # 增加偏移值检测，偏移值是一定不为0的
                             x, y = int(position.split("-")[0]), int(position.split("-")[1])
                             # 点击目标卡片，千万记得要加上偏移值
                             self.click(580 + x * 49, 115 + y * 57 + self.offset)
