@@ -655,23 +655,26 @@ li.checked::marker { content: &quot;\2612&quot;; }
      <widget class="QLabel" name="label_28">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>0</y>
-        <width>481</width>
-        <height>61</height>
+        <x>60</x>
+        <y>10</y>
+        <width>101</width>
+        <height>31</height>
        </rect>
       </property>
+      <property name="toolTip">
+       <string>该数据为完整一轮制卡时所制作的卡片数</string>
+      </property>
       <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:14pt; color:#0000ff;&quot;&gt;此为每次制卡时，制作的卡片次数&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:14pt; color:#0000ff;&quot;&gt;请注意自己的香料剩余&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:12pt; color:#0055ff;&quot;&gt;单轮制卡数&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
      <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
-        <x>160</x>
-        <y>60</y>
+        <x>60</x>
+        <y>50</y>
         <width>111</width>
-        <height>239</height>
+        <height>221</height>
        </rect>
       </property>
       <layout class="QFormLayout" name="formLayout_3">
@@ -887,8 +890,8 @@ li.checked::marker { content: &quot;\2612&quot;; }
      <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
-        <x>283</x>
-        <y>60</y>
+        <x>60</x>
+        <y>290</y>
         <width>211</width>
         <height>42</height>
        </rect>
@@ -911,6 +914,178 @@ li.checked::marker { content: &quot;\2612&quot;; }
          </property>
          <property name="maximum">
           <number>50000</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QLabel" name="label_43">
+      <property name="geometry">
+       <rect>
+        <x>170</x>
+        <y>10</y>
+        <width>121</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string>当香料使用超过该上限时，制卡时将跳过该香料不做，设为0则不会跳过</string>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:12pt; color:#0055ff;&quot;&gt;香料使用上限&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
+     <widget class="QWidget" name="">
+      <property name="geometry">
+       <rect>
+        <x>190</x>
+        <y>50</y>
+        <width>81</width>
+        <height>221</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_8">
+       <item>
+        <widget class="QSpinBox" name="spice0_2">
+         <property name="suffix">
+          <string>次</string>
+         </property>
+         <property name="minimum">
+          <number>0</number>
+         </property>
+         <property name="maximum">
+          <number>9999</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="spice1_2">
+         <property name="suffix">
+          <string>次</string>
+         </property>
+         <property name="minimum">
+          <number>0</number>
+         </property>
+         <property name="maximum">
+          <number>9999</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="spice2_2">
+         <property name="suffix">
+          <string>次</string>
+         </property>
+         <property name="minimum">
+          <number>0</number>
+         </property>
+         <property name="maximum">
+          <number>9999</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="spice3_2">
+         <property name="suffix">
+          <string>次</string>
+         </property>
+         <property name="minimum">
+          <number>0</number>
+         </property>
+         <property name="maximum">
+          <number>9999</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="spice4_2">
+         <property name="suffix">
+          <string>次</string>
+         </property>
+         <property name="minimum">
+          <number>0</number>
+         </property>
+         <property name="maximum">
+          <number>9999</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="spice5_2">
+         <property name="suffix">
+          <string>次</string>
+         </property>
+         <property name="minimum">
+          <number>0</number>
+         </property>
+         <property name="maximum">
+          <number>9999</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="spice6_2">
+         <property name="suffix">
+          <string>次</string>
+         </property>
+         <property name="minimum">
+          <number>0</number>
+         </property>
+         <property name="maximum">
+          <number>9999</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="spice7_2">
+         <property name="suffix">
+          <string>次</string>
+         </property>
+         <property name="minimum">
+          <number>0</number>
+         </property>
+         <property name="maximum">
+          <number>9999</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="spice8_2">
+         <property name="suffix">
+          <string>次</string>
+         </property>
+         <property name="minimum">
+          <number>0</number>
+         </property>
+         <property name="maximum">
+          <number>9999</number>
+         </property>
+         <property name="value">
+          <number>0</number>
          </property>
         </widget>
        </item>
@@ -968,7 +1143,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <x>170</x>
         <y>0</y>
         <width>311</width>
-        <height>71</height>
+        <height>51</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_11">
@@ -992,19 +1167,6 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <widget class="QCheckBox" name="bind_btn1">
          <property name="text">
           <string>是否在绑定1,2草用完后使用不绑1,2草？</string>
-         </property>
-         <property name="autoExclusive">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="dynamic_btn">
-         <property name="toolTip">
-          <string>开启后，将会在强化完成后，额外增加一轮制卡-强化，来清理因为不合理的制卡方案而积压的卡片</string>
-         </property>
-         <property name="text">
-          <string>是否开启动态制卡？</string>
          </property>
          <property name="autoExclusive">
           <bool>false</bool>
@@ -1065,9 +1227,9 @@ li.checked::marker { content: &quot;\2612&quot;; }
      <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
-        <x>210</x>
-        <y>80</y>
-        <width>251</width>
+        <x>0</x>
+        <y>120</y>
+        <width>211</width>
         <height>21</height>
        </rect>
       </property>
@@ -1104,7 +1266,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>70</y>
+        <y>50</y>
         <width>171</width>
         <height>71</height>
        </rect>
@@ -1352,6 +1514,9 @@ border-radius: 20px;</string>
     </property>
    </widget>
    <widget class="QWidget" name="frosted_layer" native="true">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>0</x>
@@ -1370,6 +1535,59 @@ border-radius: 20px;</string>
      <string notr="true">background-color: rgba(255, 255, 255, 150);</string>
     </property>
    </widget>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>1</x>
+      <y>540</y>
+      <width>261</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QLabel" name="label_44">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(0, 0, 255);</string>
+       </property>
+       <property name="text">
+        <string>制卡模式:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="produce_mode_box">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="toolTip">
+        <string>共有三种模式:固定制卡会还原你的制卡方案，缺点是制卡方案设计不合理时会导致卡片堆积；混合制卡会用动态与固定方案轮流制卡，稍微变更制卡方案，但是卡片减少堆积；动态制卡会在一轮固定制卡后，只动态制卡，会破坏原有的制卡方案，但不会导致卡片堆积</string>
+       </property>
+       <property name="editable">
+        <bool>false</bool>
+       </property>
+       <property name="currentText">
+        <string/>
+       </property>
+       <property name="currentIndex">
+        <number>-1</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
    <zorder>frosted_layer</zorder>
    <zorder>tabWidget</zorder>
    <zorder>handle_tips</zorder>
@@ -1379,6 +1597,8 @@ border-radius: 20px;</string>
    <zorder>layoutWidget</zorder>
    <zorder>layoutWidget</zorder>
    <zorder>stopbtn</zorder>
+   <zorder>produce_mode_box</zorder>
+   <zorder>label_44</zorder>
   </widget>
   <widget class="QStatusBar" name="statusBar">
    <property name="sizeGripEnabled">
