@@ -884,7 +884,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>283</x>
@@ -965,10 +965,10 @@ li.checked::marker { content: &quot;\2612&quot;; }
      <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
-        <x>150</x>
+        <x>170</x>
         <y>0</y>
         <width>311</width>
-        <height>51</height>
+        <height>71</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_11">
@@ -992,6 +992,19 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <widget class="QCheckBox" name="bind_btn1">
          <property name="text">
           <string>是否在绑定1,2草用完后使用不绑1,2草？</string>
+         </property>
+         <property name="autoExclusive">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="dynamic_btn">
+         <property name="toolTip">
+          <string>开启后，将会在强化完成后，额外增加一轮制卡-强化，来清理因为不合理的制卡方案而积压的卡片</string>
+         </property>
+         <property name="text">
+          <string>是否开启动态制卡？</string>
          </property>
          <property name="autoExclusive">
           <bool>false</bool>
@@ -1049,11 +1062,11 @@ li.checked::marker { content: &quot;\2612&quot;; }
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>210</x>
-        <y>60</y>
+        <y>80</y>
         <width>251</width>
         <height>21</height>
        </rect>
@@ -1087,12 +1100,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>60</y>
-        <width>181</width>
+        <y>70</y>
+        <width>171</width>
         <height>71</height>
        </rect>
       </property>

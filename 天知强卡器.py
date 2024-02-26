@@ -55,7 +55,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.dpi = self.get_system_dpi()
         
         # 变量初始化
-        self.version = "0.1.1"
+        self.version = "0.1.2"
         self.handle = None
         self.card_dict = {}
         self.is_running = False
@@ -66,6 +66,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.produce_count = 0
         self.found_clover = True
         self.card_info_dict = {}
+        # 初始化临时卡片星级字典，作用是判断此时已有的星级
+        self.temp_card_level_dict = {}
         self.settings = self.load_settings()  # 读取设置作为全局变量
         self.statistics = self.load_statistics()  # 读取统计数据作为全局变量
         self.min_level = int(self.settings["个人设置"]["最小星级"])
@@ -366,6 +368,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.min_level_input.setValue(self.min_level)
         self.bind_btn.setChecked(bind_only)
         self.bind_btn1.setChecked(unbind_clover_replace)
+        self.dynamic_btn.setChecked(self.settings.get("个人设置", {}).get("是否动态制卡", True))
         self.reload_count_input.setValue(self.reload_count)
         self.produce_interval_input.setValue(self.produce_interval)
         self.enhance_interval_input.setValue(self.enhance_interval)
@@ -377,6 +380,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.min_level_input.valueChanged.connect(self.on_setting_changed)
         self.bind_btn.clicked.connect(self.on_setting_changed)
         self.bind_btn1.clicked.connect(self.on_setting_changed)
+        self.dynamic_btn.clicked.connect(self.on_setting_changed)
         self.reload_count_input.valueChanged.connect(self.on_setting_changed)
         self.produce_interval_input.valueChanged.connect(self.on_setting_changed)
         self.enhance_interval_input.valueChanged.connect(self.on_setting_changed)
@@ -503,6 +507,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.settings["个人设置"]["只用绑定卡"] = sender.isChecked()
         elif sender_name == "bind_btn1":
             self.settings["个人设置"]["不绑草替代"] = sender.isChecked()
+        elif sender_name == "dynamic_btn":
+            self.settings["个人设置"]["是否动态制卡"] = sender.isChecked()
         elif sender_name == "reload_count_input":
             self.settings["个人设置"]["刷新次数"] = f"{value}"
             self.reload_count = value
@@ -882,10 +888,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     return
                 # 合成屋卡片拖曳17个像素正好是一格,但是拖曳8次后会有2像素偏移，用新方法就无视偏移啦
                 for j in range(4):
-                    self.drag(908, 120 + i * 119 + j * 17, 0, 17)
+                    self.drag(908, 120 + i * 68 + j * 17, 0, 17)
                     QtCore.QThread.msleep(200)
-                # 四次拖曳截图都没有获取到卡片，退出循环
-                if i == 3:
+                # 七次拖曳截图都没有获取到卡片，退出循环
+                if i == 6:
                     return
 
 
@@ -913,11 +919,13 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         
     
     # 生产卡片
-    def card_producer(self):
+    def card_producer(self, spice_index = None):
         # 根据设置文件，进行循环
         # 香料顺序由从低到高生产卡片
+        # 为避免强卡时卡片堆积，尝试改变方法
+        index = 0
         for spice_name, count in self.settings["生产方案"].items():
-            if int(count):
+            if int(count) and spice_index is None:
                 # 点击对应香料
                 self.get_spice_and_clover(0, spice_name)
                 for i in range(int(count)):
@@ -936,8 +944,42 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 if int(self.settings.get("个人设置", {}).get("制卡次数上限", 0)) != 0 and self.produce_count >= int(self.settings.get("个人设置", {}).get("制卡次数上限", 0)):
                     self.show_dialog_signal.emit("登登！", "制卡达到上限啦~")
                     return
+            # 制作一轮小于索引等级，且在制作计划之内的卡片
+            elif spice_index is not None:
+                if int(count) and index <= spice_index:
+                    # 点击对应香料
+                    self.get_spice_and_clover(0, spice_name)
+                    for i in range(int(count)):
+                        # 如果检测到停止标识，就退出
+                        if not self.is_running:
+                            return
+                        # 制作多少次~
+                        self.click(285, 425)
+                        QtCore.QThread.msleep(self.produce_interval)
+                    # 输出统计信息
+                    self.edit_statistics(1, spice_name, int(count))
+                    # 统计制卡次数
+                    self.produce_count += int(count)
+                    if int(self.settings.get("个人设置", {}).get("制卡次数上限", 0)) != 0 and self.produce_count >= int(self.settings.get("个人设置", {}).get("制卡次数上限", 0)):
+                        self.show_dialog_signal.emit("登登！", "制卡达到上限啦~")
+                        return
+            index += 1
         
-    
+    # 动态生产卡片
+    def dynamic_card_producer(self):
+        # 初始化变量
+        min_sub_card = 8
+        min_level = 8
+        for level in self.temp_card_level_dict:
+            if int(level) < min_level:
+                min_level = int(level)
+        # 查找出最低星级卡片强化方案所用最低的副卡
+        for i in range(3):
+            sub_card = self.settings["强化方案"][f"{min_level}-{min_level + 1}"].get(f"副卡{i + 1}", "无")
+            if sub_card != "无":
+                min_sub_card = int(sub_card)
+        # 按照生产方案指定次数，制作一轮最低副卡
+        self.card_producer(min_sub_card)
 
     # 强化卡片，强化当前页所有符合条件的卡片
     def card_enhancer(self):
@@ -971,6 +1013,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     subcards.append(int(subcard_level))
             # 保险，如果使用卡片全部低于最低星级，就跳过这次强卡
             if min(subcards) < self.min_level:
+                continue
+            # 当主卡为0时，如果选择强化绑定卡，就跳过这次强卡
+            if subcards[0] == 0 and self.settings["个人设置"]["只用绑定卡"]:
                 continue
             # 死循环，直到所有卡片都被强化完毕，废案，卡片自己会跑！
             # 用数组来比较，目前是否可以执行这个强化方案
@@ -1041,6 +1086,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 self.cards_enough = True
                 break
             else:
+                # 更新临时卡片星级字典
+                self.temp_card_level_dict = card_level_dict.keys()
                 self.cards_enough = False
         return
     
@@ -1192,7 +1239,7 @@ class EnhancerThread(QtCore.QThread):
             # 如果停止标识，则停止
             if not self.enhancer.is_running:
                 break
-            # 遍历完所有制作后，点击卡片强化标签
+            # 遍历完所有制作后，点击卡片强化
             QtCore.QThread.msleep(500)
             self.enhancer.click(108, 320)
             QtCore.QThread.msleep(1000)
@@ -1201,6 +1248,28 @@ class EnhancerThread(QtCore.QThread):
             if position == 2:
                 # 强化主函数
                 self.enhancer.main_enhancer()
+            # 动态制卡选项，如果开启选项，则会检查卡片星级临时字典，查找最低星级卡片的强化方案，制作其副卡
+            if self.enhancer.settings["个人设置"]["是否动态制卡"] and self.enhancer.is_running:
+                # 点击卡片制作
+                self.enhancer.click(108, 258)
+                QtCore.QThread.msleep(1000)
+                position = self.enhancer.check_position() # 获取位置标识
+                if position == 1:
+                    # 点击配方
+                    self.enhancer.get_recipe(target_image)
+                    # 启动动态制卡
+                    self.enhancer.dynamic_card_producer()
+                # 点击卡片强化
+                QtCore.QThread.msleep(500)
+                self.enhancer.click(108, 320)
+                QtCore.QThread.msleep(1000)
+                # 先判定是否在卡片强化页面，如果在，开始强化
+                position = self.enhancer.check_position()
+                if position == 2:
+                    # 强化主函数
+                    self.enhancer.main_enhancer()
+                # 重置临时卡片星级字典
+                self.temp_card_level_dict = {}
             # 数组卡片全部强化完成后，点击卡片制作，再次循环
             self.enhancer.click(108, 258)
             QtCore.QThread.msleep(1000)
