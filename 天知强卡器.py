@@ -1,6 +1,8 @@
 # 天知强卡器，打算用pyqt5做GUI
 # setting字典的结构为:setting[type][name][count]
 # 统计数据字典的结构为:statistics[type][name][count]
+# 0.2.0更新计划：将制卡变为队列，以便处理不同配方的制作；改变配方选择页，使其可以选择任意种配方，并单独调整制作；改变强化方案页，使其在点击强化种类文本后，进入一个新的页面，细节定制强化时的种类；改进强化方法，现在以字典匹配的形式进行强化；改进统计页，将统计页更改为趣味数据，并增加一些简单处理后的数据；解耦合主类，把多个功能拆成多个类
+# 已完成计划：增加全局变量，将一些使用次数多的图像存储为全局变量，初始化时读取
 # -*- coding: utf-8 -*-
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import sys
@@ -14,6 +16,8 @@ import numpy as np
 import os
 import cv2
 import plyer
+from module.ResourceInit import ResourceInit
+from module.utils import imread
 
 
 class tenchi_cards_enhancer(QtWidgets.QMainWindow):
@@ -132,6 +136,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
         # 连接测试按钮
         # self.test_btn.clicked.connect(self.test)
+
+        # 创建ResourcesInit实例
+        self.resources = ResourceInit()
 
     # 打包后绝对路径函数
     def resource_path(self, relative_path):
@@ -683,7 +690,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         elif type == 1: # 香料/四叶草分割
             # 因为就一行，所以分割成10个就行
             column = 10
-            bind_image = self.imread("items/bind_icon/spice_bind.png")
             for j in range(column):
                 block = image[0: 49, j * 49:(j + 1) * 49]
                 # 先识别种类，再识别是否绑定
@@ -693,11 +699,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     # 识别到种类，开始识别是否绑定,根据设置判断是否需要绑定
                     bind_flag = block[38:45, 3:9]
                     if bind == True:
-                        if np.array_equal(bind_flag, bind_image):
+                        if np.array_equal(bind_flag, self.resources.spice_bind_img):
                         # 返回香料/四叶草位置
                             return j
                     else:
-                        if not np.array_equal(bind_flag, bind_image):
+                        if not np.array_equal(bind_flag, self.resources.spice_bind_img):
                         # 返回香料/四叶草位置
                             return j
             return None
@@ -707,7 +713,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 初始化偏移值
             self.offset = 0
             # 方法更新，用模板匹配图片中的第一行，然后把色块以上的图片全部切掉，再识别。这样无论滑块在哪里，都能确保找到七行道具
-            line_img = self.imread("items/position/line.png")
+            line_img = self.resources.line_img
             if line_img.shape[0] <= image.shape[0] and line_img.shape[1] <= image.shape[1]:
                 # 进行模板匹配
                 result = cv2.matchTemplate(image, line_img, cv2.TM_CCOEFF_NORMED)
@@ -721,7 +727,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 按照分割规则，先把图片分割成49 * 57像素的块，然后再分割出3个区域：卡片本体，绑定标志，星级标志
             rows = 7
             column = 7
-            bind_image = self.imread("items/bind_icon/card_bind.png")
             for i in range(rows):
                 for j in range(column):
                     block = image[i * 57:(i + 1) * 57, j * 49:(j + 1) * 49]
@@ -729,7 +734,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     if np.array_equal(card, target_image):
                         # 寻找到目标图像，开始检测是否绑定
                         bind_flag = block[45:52, 5:11]
-                        if np.array_equal(bind_flag, bind_image):
+                        if np.array_equal(bind_flag, self.resources.card_bind_img):
                             # 是绑定卡，就给卡片字典的对应位置的绑定调整为true
                             temp_card_dict.setdefault(f"{j}-{i}", {})["bind"] = True
                         else:
@@ -740,8 +745,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                         level = 0
                         # 用设置里的卡片上下限来只识别指定星级的卡片
                         for k in range(self.min_level, max(self.max_level+1, 13)):
-                            level_image = self.imread(f"items/level/{k}.png")
-                            if np.array_equal(level_img, level_image):
+                            if np.array_equal(level_img, self.resources.level_images[k]):
                                 level = k
                                 break
                         if self.min_level == 0 and level == 0:
@@ -753,14 +757,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             return temp_card_dict
 
         return None, None
-    
-    # 读取图像函数，读取图像并返回矩阵
-    def imread(self, filename):
-        # 使用 np.fromfile 读取数据
-        data = np.fromfile(filename, dtype=np.uint8)
-        # 使用 cv2.imdecode() 解码图像数据
-        image = cv2.imdecode(data, cv2.IMREAD_COLOR)
-        return image
     
     # 保存设置到JSON文件
     def save_settings(self, settings, filename='setting.json'):
@@ -867,7 +863,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 QtCore.QThread.msleep(200)
                 return
             # 识图，点击对应香料
-            spice_img = self.imread(f"items/spice/{level}.png")
+            spice_img = self.resources.spice_images[level]
             x = self.match_image(img, spice_img, 1)
             if x is not None:
                 self.click(55 + 49 * x, 550)
@@ -886,7 +882,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.show_dialog_signal.emit("什么！", "没有找到目标香料!")
         elif type == 1:
             # 查找对应四叶草,level是字符串
-            clover_img = self.imread(f"items/clover/{level}四叶草.png")
+            clover_img = self.resources.clover_images[level]
             # 点击对应四叶草
             x = self.match_image(img, clover_img, 1, bind)
             if x is not None:
@@ -957,7 +953,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.card_dict = {}
         # 遍历当前页面的卡片,识图出设置中目标卡片
         card_name = self.settings["所选卡片"]["卡片名称"]
-        card_image = self.imread(f"items/card/{card_name}.png")
+        card_image = imread(f"items/card/{card_name}.png")
         card_dict = self.match_image(img, card_image, 2)
         if card_dict:
             self.card_dict = card_dict
@@ -980,7 +976,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             spice_name = spice_list[index]
             count = int(self.settings["生产方案"][spice_name])
             # 如果本次制作次数超过了次数上限，就跳过该香料
-            if self.spice_used[index] >= int(self.settings["香料使用上限"][spice_name]):
+            if self.spice_used[index] >= int(self.settings["香料使用上限"][spice_name]) and int(self.settings["香料使用上限"][spice_name]) != 0:
                 break
             if count != 0:
                 # 点击对应香料
@@ -1006,23 +1002,23 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     self.show_dialog_signal.emit("登登！", "制卡达到上限啦~")
                     return
         
-    # 动态生产卡片
-    def dynamic_card_producer(self):
+    # 动态生产卡片，方法1
+    def dynamic_card_producer1(self):
         # 初始化变量
         max_sub_card = 8
-        min_level = 8
-        min_level_list = []
+        level_list = []
         sub_card_list = []
         for level, number in self.temp_card_level_dict.items():
             # 寻找出目前所有低于8星级的卡片
-            if int(level) < min_level:
-                min_level_list.append(level)
-        # 查找出最低星级卡片强化方案所用最高的副卡
-        for min_level in min_level_list:
+            if int(level) < 8:
+                level_list.append(level)
+        # 查找出目前已有卡片的强化方案所用最高的副卡
+        for level in level_list:
             for i in range(3):
-                sub_card = self.settings["强化方案"][f"{min_level}-{min_level + 1}"].get(f"副卡{i + 1}", "无")
+                sub_card = self.settings["强化方案"][f"{level}-{level + 1}"].get(f"副卡{i + 1}", "无")
                 if sub_card != "无":
                     sub_card_list.append(int(sub_card))
+        # 选出最高星级的副卡
         max_sub_card = max(sub_card_list)
         # 遍历生产方案，查询对应的副卡是否在生产计划之内，如果不在，就往下一级的副卡做
         spice_list = list(self.settings["生产方案"].keys())
@@ -1031,10 +1027,44 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             spice_name = spice_list[currect_spice]
             count = int(self.settings["生产方案"][spice_name])
             # 需要有对应生产方案，且生产卡片星级低于最高副卡要求，且不能和当前已有副卡重复，且需要是可用副卡
-            if count != 0 and currect_spice <= max_sub_card and currect_spice not in min_level_list and currect_spice in sub_card_list:
+            if count != 0 and currect_spice <= max_sub_card and currect_spice not in level_list and currect_spice in sub_card_list:
                 # 按照生产方案指定次数，制作一轮需求的副卡中，星级最高的卡片
                 self.card_producer(currect_spice)
                 return
+    
+    # 动态生产卡片，方法2
+    def dynamic_card_producer(self):
+        # 创建一个包含0-8星级的列表
+        all_levels = list(range(9))
+
+        # 初始化空列表
+        empty_levels = []
+        # 遍历所有星级
+        for level in all_levels:
+            # 将星级转换为字符串
+            level_str = str(level)
+            # 检查星级是否在字典的键中
+            if level_str not in self.temp_card_level_dict:
+                # 如果不在字典的键中，添加到empty_levels列表中
+                empty_levels.append(level_str)
+
+        # 如果没有空的星级，则不进行生产
+        if not empty_levels:
+            return
+
+        # 对没有卡片的星级进行排序，从高到低
+        empty_levels.sort(reverse=True)
+
+        # 创建一个列表，包含"生产方案"字典的所有键
+        spice_list = list(self.settings["生产方案"].keys())
+
+        # 从高星级向低星级遍历，找到第一个在生产方案内的卡片
+        for level in empty_levels:
+            spice_name = spice_list[int(level)]
+            count = int(self.settings["生产方案"][spice_name])
+            if count > 0:
+                self.card_producer(level)
+                return  # 生产完成后返回
 
     # 强化卡片，强化当前页所有符合条件的卡片
     def card_enhancer(self):
@@ -1042,8 +1072,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         card_dict = self.card_dict
         # 初始化当前页面卡片星级总量字典
         card_level_dict = {}
-        # 读取副卡空卡槽图片
-        sub_card_target_img = self.imread("items/position/sub_card.png")
         # 遍历card字典，获得一共有多少星级的卡片
         for position, card_info in card_dict.items():
             # 获得当前卡片字典的星级
@@ -1115,7 +1143,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     # 获得副卡槽图片
                     sub_card_image = self.get_image(267, 253, 40, 50)
                     # 判定副卡槽图片是否和副卡空卡槽图片一样
-                    if np.array_equal(sub_card_image, sub_card_target_img):
+                    if np.array_equal(sub_card_image, self.resources.sub_card_icon):
                         break # 卡槽空了就点掉主卡，进行下一次强化
                     # 检测等待时间
                     QtCore.QThread.msleep(self.enhance_check_interval)
@@ -1156,7 +1184,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 截图强化区域
         result_img = self.get_image(267, 323, 40, 50)
         level_img = result_img[5:12, 5:12]
-        success_img = self.imread(f"items/level/{level}.png")
+        success_img = self.resources.level_images[level]
         level_list = [] # 初始化数组。 数组内数分别为卡片星级，卡片强化后星级
         # 判定强化结果
         if np.array_equal(level_img, success_img):
@@ -1166,10 +1194,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         else:
             if level <= 6:
                 level_list = [level - 1, level - 1]
-                self.edit_statistics(3, level_list)
             else:
                 level_list = [level - 1, level - 2]
-                self.edit_statistics(3, level_list)
+            self.edit_statistics(3, level_list)
             return False 
     
     # 当前位置判定 position——0:可以看到合成屋图标的位置 1:可以看到制作说明图标的位置 2:可以看到强化说明图标的位置
@@ -1177,15 +1204,15 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         position = None
         # 第一次判断，合成屋图标
         img = self.get_image(672, 550, 15, 15)
-        if np.array_equal(img, self.imread("items/position/合成屋.png")):
+        if np.array_equal(img, self.resources.compose_icon):
             position = 0
             return position
         # 第二次判断，根据XX说明判断目前所处位置
         img = self.get_image(816, 28, 69, 22)
-        if np.array_equal(img, self.imread("items/position/制作说明.png")):
+        if np.array_equal(img, self.resources.produce_help_icon):
             position = 1
             return position
-        elif np.array_equal(img, self.imread("items/position/强化说明.png")):
+        elif np.array_equal(img, self.resources.enhance_help_icon):
             position = 2
             return position
         return None
@@ -1298,7 +1325,7 @@ class EnhancerThread(QtCore.QThread):
                 self.enhancer.get_recipe(target_image)
                 # 遍历制作生产方案中的所有卡片
                 self.enhancer.card_producer()
-            elif position == 1 and produce_mode == 2 and self.enhancer.enhance_times == 0: # 如果是动态制卡模式，并且强化次数为0，则只会制作第一轮
+            elif position == 1 and produce_mode == 2 and self.enhancer.enhance_count == 0: # 如果是动态制卡模式，并且强化次数为0，则只会制作第一轮
                 # 点击配方
                 self.enhancer.get_recipe(target_image)
                 # 遍历制作生产方案中的所有卡片
