@@ -62,7 +62,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.dpi = self.get_system_dpi()
         
         # 变量初始化
-        self.version = "0.1.3"
+        self.version = "0.2.0"
         self.handle = None
         self.card_dict = {}
         self.is_running = False
@@ -77,11 +77,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.enhance_type = '无'
 
         # 初始化香料列表
-        # 从default_settings中获取香料列表
-        filename = resource_path('GUI/default/setting.json')
+        # 从default_constants中获取香料列表
+        filename = resource_path('GUI/default/default_constants.json')
         with open(filename, 'r', encoding='utf-8') as f:
-            default_settings = json.load(f)
-        self.spice_list = default_settings['默认香料字典']
+            default_constants = json.load(f)
+        self.spice_list = list(default_constants['默认香料字典'])
 
         self.spice_used = {}
         for i in range(9):
@@ -110,6 +110,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.furina.setMovie(self.furina_movie)
         self.furina_movie.start()
         self.furina.handleChanged.connect(self.update_handle_display)
+
+        # 初始化芙宁娜助手
+        self.init_furina_helper()
 
         # 配置开始和停止按钮，将开始与停止连接上槽
         self.startbtn.setEnabled(False) # 没有句柄时，开始与仅强化都不可用
@@ -197,7 +200,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 创建布局并添加新的 QTabWidget 到 tab_3
         layout = QtWidgets.QVBoxLayout(self.tab_3)
         layout.addWidget(stats_tab_widget)
-        
+    
     # 获取系统dpi
     def get_system_dpi(self):
         # 创建一个设备上下文（DC）用于屏幕
@@ -234,31 +237,58 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 正式开始前先防呆
         self.dull_detection()
         self.enhanceonlyThread.start_enhance()
-        
     
-    # 测试功能
-    def test(self):
-        # 测试强化结果截图
-        # self.check_enhance_result(0)
+    # 芙芙助手，功能强大
+    def init_furina_helper(self):
+        # 乌瑟勋爵，一键统一所有强化方案用卡
+        # 初始化配方选择框
+        self.init_recipe_box(self.GentilhommeUsher_box)
+        # 将按钮连接上一键统一功能
+        self.GentilhommeUsher_btn.clicked.connect(self.gentilhomme_usher)
+        # 海薇玛夫人，一键将副卡星级设置为最优路径
+        self.SurintendanteChevalmarin_btn.clicked.connect(self.surintendante_chevalmarin)
+        # 蟹贝蕾妲小姐，一键设置所有强化方案用料为绑定/不绑
+        self.MademoiselleCrabaletta_btn.clicked.connect(self.mademoiselle_crabaletta)
 
-        # 测试位置检测
-        # self.check_position()
+    # 乌瑟勋爵！
+    def gentilhomme_usher(self):
+        # 获取选择框当前文本
+        text = self.GentilhommeUsher_box.currentText()
+        # 分离出卡片名
+        card_name = text.split("-")[0]
+        enhance_plan = self.settings["强化方案"]
+        # 迭代强化方案的所~有主副卡，将其名称设置为卡片名
+        for i in range(16):
+            for j in range(4):
+                if j == 0:
+                    enhance_plan[f'{i}-{i+1}']['主卡']['卡片名称'] = card_name
+                elif j in [1, 2, 3]:
+                    enhance_plan[f'{i}-{i+1}'][f'副卡{j}']['卡片名称'] = card_name
+        self.settings["强化方案"] = enhance_plan
+        # 保存强化方案！
+        self.save_settings(self.settings)
 
-        # 测试合成屋卡片切割
-
-        # 测试合成屋字典获取
-        #img = self.get_image(559, 91, 343, 456)
-        #cv2.imwrite(f'test.png', img)
-        #self.get_card_dict(img)
-        #print(self.card_dict)
-        #return
-
-        # 测试主卡是否还在
-        # self.check_main_card()
-        # 获取副卡图片
-        img = self.get_image(267, 253, 40, 50)
-        cv2.imwrite(f'test.png', img)
+    # 海薇玛夫人！
+    def surintendante_chevalmarin(self):
+        # 替换所有副卡的星级为最优路径
+        # 保存强化方案
         return
+    
+    # 蟹贝蕾妲小姐！
+    def mademoiselle_crabaletta(self):
+        # 获取绑定/不绑按钮的选择状态
+        is_bind = self.bind_radio_btn.isChecked()
+        enhance_plan = self.settings["强化方案"]
+        # 迭代所有主副卡，将其绑定设置为选择的状态
+        for i in range(16):
+            for j in range(4):
+                if j == 0:
+                    enhance_plan[f'{i}-{i+1}']['主卡']['绑定'] = is_bind
+                elif j in [1, 2, 3]:
+                    enhance_plan[f'{i}-{i+1}'][f'副卡{j}']['绑定'] = is_bind
+        self.settings["强化方案"] = enhance_plan
+        # 保存强化方案！
+        self.save_settings(self.settings)
 
     # 保存当前设置
     def save_current_settings(self):
@@ -1280,13 +1310,13 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 获取主卡信息
             main_card_info = enhance_plan["主卡"]
             # 给主卡信息加上星级
-            main_card_info['星级'] = enhance_level - 1
+            main_card_info['星级'] = f'{enhance_level - 1}'
             # 获取副卡信息
             sub_card_infos = []
             for i in range(1, 4):
                 sub_card_info = enhance_plan[f"副卡{i}"]
                 # 如果副卡存在星级，则将其添加到数组内
-                if sub_card_info["星级"] != "无":
+                if sub_card_info.get("星级", "无") != "无":
                     sub_card_infos.append(sub_card_info)
             # 解耦合，检查是否可以强化
             can_enhance, positions = self.can_enhance(main_card_info, sub_card_infos)
@@ -1295,7 +1325,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     x, y = int(position.split("-")[0]), int(position.split("-")[1])
                     # 点击目标卡片，千万记得要加上偏移值
                     self.click(580 + x * 49, 115 + y * 57 + self.offset)
-                    break
                 # 根据设置，点击四叶草
                 if enhance_plan["四叶草"]['种类'] != "无":
                     self.get_spice_and_clover(1, enhance_plan["四叶草"]['种类'], enhance_plan["四叶草"]['绑定'])
@@ -1343,18 +1372,18 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
     # 是否可强化检查,还能修改临时强化字典，保证低级方案不会使用高级方案主卡存在时的副卡，以及返回位置列表
     def can_enhance(self, main_card_info: dict, sub_card_infos: list) -> tuple[bool, list]:
+        # 初始化点击位置列表
+        positions = []
         # 检查是否存在主卡
         for position, card_info in list(self.card_dict.items()):
             if card_info == main_card_info:
-                # 初始化点击位置列表
-                positions = []
                 # 向列表添加主卡位置
                 positions.append(position)
                 # 从字典中删除找到的主卡
                 del self.card_dict[position]
                 break
-            else:
-                return False, None
+        if not positions:
+            return False, None
         # 遍历副卡信息列表
         for sub_card_info in sub_card_infos:
             # 查找副卡信息是否在self.card_dict中
@@ -1418,8 +1447,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 初始化无计数
             None_count = 0
             # 遍历可用的强卡方案
-            for k in range(3):
-                subcard_level = (self.settings["强化方案"][f"{j-1}-{j}"].get(f"副卡{k+1}", "无"))
+            for k in range(1, 4):
+                subcard_level = self.settings["强化方案"][f"{j-1}-{j}"][f'副卡{k}'].get('星级', '无')
                 if subcard_level == "无":
                     # 将无计数加一
                     None_count += 1
@@ -1470,23 +1499,56 @@ class EnhancerThread(QtCore.QThread):
 
     # 强卡器循环,分为3种模式，分别是：1.固定制卡 2.混合制卡 3.动态制卡
     def run(self):        
-        # 读取用户设置，根据设置进行下一步操作
-        target_image_path = "items/recipe/" + self.enhancer.settings["所选卡片"]["卡片名称"] + "配方.png"
-        target_image = self.enhancer.imread(target_image_path)
         # 读取制卡模式
-        produce_mode = self.enhancer.settings["个人设置"]["制卡模式"]
-        # 使用截图与识图函数判断当前位置，一共有三次判断：1.判断窗口上是否有合成屋图标，如果有就点击 2.根据右上角的“XX说明”判断目前所处位置，分别执行不同操作 
+        produce_mode = int(self.enhancer.settings["个人设置"]["制卡模式"])
+        # 初始化位置，保证位置在合成屋或强化页面
+        if not self.init_position():
+            return
+        while self.enhancer.is_running:
+            # 如果强化到了一定次数，就退出重进一下合成屋，防止卡顿
+            if self.enhancer.enhance_times >= self.enhancer.reload_count:
+                self.reload()
+            position = self.enhancer.check_position() # 获取位置标识
+            if position == 1 and produce_mode != 2: # 如果是动态制卡模式，会跳过这个制作
+                # 遍历制卡方案，添加到队列
+                self.enhancer.create_produce_queue()
+            if position == 1 and produce_mode != 0: # 如果是静态制卡模式，会跳过这个制作
+                # 调用动态队列添加方法
+                return
+            # 执行队列
+            print("执行队列")
+            self.enhancer.execute_produce_queue()
+            # 如果停止标识，则停止
+            if not self.enhancer.is_running:
+                break
+            # 遍历完所有制作后，点击卡片强化
+            QtCore.QThread.msleep(500)
+            self.enhancer.click(108, 320)
+            QtCore.QThread.msleep(1500)
+            # 先判定是否在卡片强化页面，如果在，开始强化
+            position = self.enhancer.check_position()
+            if position == 2:
+                # 强化主函数
+                self.enhancer.main_enhancer()
+            # 数组卡片全部强化完成后，点击卡片制作，再次循环
+            self.enhancer.click(108, 258)
+            QtCore.QThread.msleep(1500)
+
+    # 初始化位置,使用截图与识图函数判断当前位置，一共有三次判断：1.判断窗口上是否有合成屋图标，如果有就点击 2.根据右上角的“XX说明”判断目前所处位置，分别执行不同操作 
+    def init_position(self) -> bool:
         position = self.enhancer.check_position() # 获取位置标识
         if position == 0:
             # 先点击进入合成屋
             self.enhancer.click(685, 558)
             # 停顿久一些，加载图片
-            QtCore.QThread.sleep(1)
+            QtCore.QThread.msleep(1500)
             # 打开运行标志，进入主循环
             self.enhancer.is_running = True
+            return True
         elif position == 1:
             # 打开运行标志 直接进入主循环
             self.enhancer.is_running = True
+            return True
         elif position == 2:
             # 打开运行标志
             self.enhancer.is_running = True
@@ -1494,73 +1556,24 @@ class EnhancerThread(QtCore.QThread):
             self.enhancer.main_enhancer()
             # 点击卡片制作，进入主循环
             self.enhancer.click(108, 258)
-            QtCore.QThread.msleep(1000)
+            QtCore.QThread.msleep(1500)
+            return True
         else:
             # 未知位置，弹窗提示
             self.showDialogSignal.emit("哇哦", "未知位置，你好像被卡住了")
             # 停止运行
             self.enhancer.is_running = False
-            return
-        while self.enhancer.is_running:
-            # 如果强化到了一定次数，就退出重进一下合成屋，防止卡顿
-            if self.enhancer.enhance_times >= self.enhancer.reload_count:
-                # 点击右上角的红叉
+            return False
+
+    def reload(self):
+        # 点击右上角的红叉
                 self.enhancer.click(914, 38)
-                QtCore.QThread.msleep(1000)
+                QtCore.QThread.msleep(1500)
                 # 重新点击合成屋
                 self.enhancer.click(685, 558)
                 QtCore.QThread.msleep(1000)
                 # 归零强化次数
                 self.enhancer.enhance_times = 0
-            position = self.enhancer.check_position() # 获取位置标识
-            if position == 1 and produce_mode != 2: # 如果是动态制卡模式，会跳过这个制作
-                # 如果目前所处界面为卡片制作，首先初始化配方窗口位置，再拖曳截图，遍历判断是否与匹配用户所选配方
-                # 点击配方
-                self.enhancer.get_recipe(target_image)
-                # 遍历制作生产方案中的所有卡片
-                self.enhancer.card_producer()
-            elif position == 1 and produce_mode == 2 and self.enhancer.enhance_count == 0: # 如果是动态制卡模式，并且强化次数为0，则只会制作第一轮
-                # 点击配方
-                self.enhancer.get_recipe(target_image)
-                # 遍历制作生产方案中的所有卡片
-                self.enhancer.card_producer()
-            # 如果停止标识，则停止
-            if not self.enhancer.is_running:
-                break
-            # 遍历完所有制作后，点击卡片强化
-            QtCore.QThread.msleep(500)
-            self.enhancer.click(108, 320)
-            QtCore.QThread.msleep(1000)
-            # 先判定是否在卡片强化页面，如果在，开始强化
-            position = self.enhancer.check_position()
-            if position == 2:
-                # 强化主函数
-                self.enhancer.main_enhancer()
-            # 动态制卡选项，如果开启选项，则会检查卡片星级临时字典，查找最高星级卡片的强化方案，制作其缺失副卡
-            if produce_mode != 0 and self.enhancer.is_running:
-                # 点击卡片制作
-                self.enhancer.click(108, 258)
-                QtCore.QThread.msleep(1000)
-                position = self.enhancer.check_position() # 获取位置标识
-                if position == 1:
-                    # 点击配方
-                    self.enhancer.get_recipe(target_image)
-                    # 启动动态制卡
-                    self.enhancer.dynamic_card_producer()
-                # 点击卡片强化
-                QtCore.QThread.msleep(500)
-                self.enhancer.click(108, 320)
-                QtCore.QThread.msleep(1000)
-                # 先判定是否在卡片强化页面，如果在，开始强化
-                position = self.enhancer.check_position()
-                if position == 2:
-                    # 强化主函数
-                    self.enhancer.main_enhancer()
-                # 重置临时卡片星级字典
-                self.temp_card_level_dict = {}
-            # 数组卡片全部强化完成后，点击卡片制作，再次循环
-            self.enhancer.click(108, 258)
-            QtCore.QThread.msleep(1000)
 
     def start_loop(self):
         if self.enhancer.handle is not None:

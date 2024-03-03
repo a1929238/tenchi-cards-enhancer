@@ -81,7 +81,7 @@ QMainWindow {
     }</string>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab_1">
      <property name="toolTip">
@@ -808,7 +808,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#0055ff;&quot;&gt;当前选择配方：&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>261</x>
@@ -1643,38 +1643,6 @@ border-radius: 20px;</string>
      </item>
     </layout>
    </widget>
-   <widget class="QWidget" name="layoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>510</y>
-      <width>261</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <layout class="QFormLayout" name="formLayout">
-     <item row="0" column="0">
-      <widget class="QLabel" name="label_37">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">color: rgb(0, 0, 255);</string>
-       </property>
-       <property name="text">
-        <string>当前配方:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QComboBox" name="recipe_box">
-       <property name="toolTip">
-        <string>不要选自己没有的配方哦</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
    <widget class="QPushButton" name="stopbtn">
     <property name="geometry">
      <rect>
@@ -1695,33 +1663,11 @@ border-radius: 20px;</string>
      <string>停止</string>
     </property>
    </widget>
-   <widget class="QWidget" name="frosted_layer" native="true">
-    <property name="enabled">
-     <bool>true</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>800</width>
-      <height>600</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">background-color: rgba(255, 255, 255, 150);</string>
-    </property>
-   </widget>
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
-      <x>1</x>
-      <y>540</y>
+      <x>0</x>
+      <y>510</y>
       <width>261</width>
       <height>23</height>
      </rect>
@@ -1770,6 +1716,185 @@ border-radius: 20px;</string>
      </item>
     </layout>
    </widget>
+   <widget class="QLabel" name="handle_tips_2">
+    <property name="geometry">
+     <rect>
+      <x>500</x>
+      <y>130</y>
+      <width>301</width>
+      <height>61</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>还不快说谢谢芙芙~</string>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:14pt; color:#2747d4;&quot;&gt;芙芙知道设置很复杂&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:14pt; color:#2747d4;&quot;&gt;所以派了三个助手来帮你！&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="frosted_layer" native="true">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>800</width>
+      <height>600</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgba(255, 255, 255, 150);</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>500</x>
+      <y>211</y>
+      <width>301</width>
+      <height>177</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout_3">
+     <item>
+      <widget class="QLabel" name="GentilhommeUsher_label">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(0, 0, 255);</string>
+       </property>
+       <property name="text">
+        <string>乌瑟勋爵，一键设置所有强卡方案用卡</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_29">
+       <item>
+        <widget class="QLabel" name="label_37">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: rgb(0, 0, 255);</string>
+         </property>
+         <property name="text">
+          <string>所选配方:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="GentilhommeUsher_box">
+         <property name="toolTip">
+          <string>不要选自己没有的配方哦</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="GentilhommeUsher_btn">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>我改！</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QLabel" name="SurintendanteChevalmarin_label">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(0, 0, 255);</string>
+       </property>
+       <property name="text">
+        <string>海薇玛夫人，一键将副卡星级设置为最优路径</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="SurintendanteChevalmarin_btn">
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="text">
+        <string>最优路径最划算哦！</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="MademoiselleCrabaletta_label">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(0, 0, 255);</string>
+       </property>
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;蟹贝蕾妲小姐，一键设置强化方案用料为绑定/不绑&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_30">
+       <item>
+        <widget class="QRadioButton" name="bind_radio_btn">
+         <property name="text">
+          <string>绑定</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+         <property name="autoRepeat">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="unbind_radio_btn">
+         <property name="text">
+          <string>不绑</string>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
+         </property>
+         <property name="autoRepeat">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="MademoiselleCrabaletta_btn">
+         <property name="text">
+          <string>设置！</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
    <zorder>frosted_layer</zorder>
    <zorder>layoutWidget</zorder>
    <zorder>tabWidget</zorder>
@@ -1780,6 +1905,14 @@ border-radius: 20px;</string>
    <zorder>layoutWidget</zorder>
    <zorder>layoutWidget</zorder>
    <zorder>stopbtn</zorder>
+   <zorder>handle_tips_2</zorder>
+   <zorder>GentilhommeUsher_label</zorder>
+   <zorder>GentilhommeUsher_btn</zorder>
+   <zorder>SurintendanteChevalmarin_label</zorder>
+   <zorder>MademoiselleCrabaletta_label</zorder>
+   <zorder>SurintendanteChevalmarin_btn</zorder>
+   <zorder>bind_radio_btn</zorder>
+   <zorder>unbind_radio_btn</zorder>
   </widget>
   <widget class="QStatusBar" name="statusBar">
    <property name="sizeGripEnabled">
