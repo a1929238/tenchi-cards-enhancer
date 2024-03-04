@@ -281,11 +281,13 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         enhance_plan = self.settings["强化方案"]
         # 迭代所有主副卡，将其绑定设置为选择的状态
         for i in range(16):
-            for j in range(4):
+            for j in range(5):
                 if j == 0:
                     enhance_plan[f'{i}-{i+1}']['主卡']['绑定'] = is_bind
                 elif j in [1, 2, 3]:
                     enhance_plan[f'{i}-{i+1}'][f'副卡{j}']['绑定'] = is_bind
+                elif j == 4:
+                    enhance_plan[f'{i}-{i+1}']['四叶草']['绑定'] = is_bind
         self.settings["强化方案"] = enhance_plan
         # 保存强化方案！
         self.save_settings(self.settings)
@@ -1516,7 +1518,6 @@ class EnhancerThread(QtCore.QThread):
                 # 调用动态队列添加方法
                 return
             # 执行队列
-            print("执行队列")
             self.enhancer.execute_produce_queue()
             # 如果停止标识，则停止
             if not self.enhancer.is_running:
