@@ -32,3 +32,11 @@ def resource_path(relative_path):
     
     # 构建到资源文件的绝对路径
     return os.path.join(base_path, relative_path)
+
+# 隐藏布局内所有控件
+def hide_layout(layout):
+    for i in range(layout.count()):
+        item = layout.itemAt(i)
+        widget = item.widget()
+        if widget is not None:
+            widget.hide()

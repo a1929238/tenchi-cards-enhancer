@@ -17,8 +17,9 @@ import os
 import cv2
 import plyer
 import queue
+import copy
 from module.ResourceInit import ResourceInit
-from module.utils import imread, resource_path
+from module.utils import imread, resource_path, hide_layout
 from GUI.editwindow import EditWindow
 
 class tenchi_cards_enhancer(QtWidgets.QMainWindow):
@@ -81,7 +82,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         filename = resource_path('GUI/default/default_constants.json')
         with open(filename, 'r', encoding='utf-8') as f:
             default_constants = json.load(f)
-        self.spice_list = list(default_constants['默认香料字典'])
+        self.spice_dict = default_constants['默认香料字典']
+        self.best_enhance_plan = default_constants['强化最优路径']
 
         self.spice_used = {}
         for i in range(9):
@@ -271,8 +273,17 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 海薇玛夫人！
     def surintendante_chevalmarin(self):
         # 替换所有副卡的星级为最优路径
+        for enhance_type, enhance_info in self.best_enhance_plan.items():
+            if enhance_type in self.settings["强化方案"]:
+                for material, count in enhance_info.items():
+                    if material in self.settings["强化方案"][enhance_type]:
+                        # 更新第二个字典中的对应用料
+                        self.settings["强化方案"][enhance_type][material].update(count)
+        # 初始化副卡与四叶草菜单
+        self.init_subcard()
+        self.init_clover()
         # 保存强化方案
-        return
+        self.save_settings(self.settings)
     
     # 蟹贝蕾妲小姐！
     def mademoiselle_crabaletta(self):
@@ -345,13 +356,18 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 将配方选择框更改的信号连接上字典的编辑和保存
             recipe_box.currentIndexChanged.connect(self.on_recipe_box_changed)
 
-        # 根据设置文件，初始化选择框的索引
+        # 根据设置文件，初始化选择框的索引，并在星级不存在时，隐藏对应的配方选择框
         for i in range(4):
             recipe_box = getattr(self.edit_window, f'card_box{i}')
             if i == 0:
                 card_name = self.settings["强化方案"][self.enhance_type]["主卡"].get("卡片名称", "无")
             else:
+                # 只会隐藏部分副卡的选择框
+                layout = getattr(self.edit_window, f'horizontalLayout_{i}')
                 card_name = self.settings["强化方案"][self.enhance_type][f"副卡{i}"].get("卡片名称", "无")
+                card_level = self.settings["强化方案"][self.enhance_type][f"副卡{i}"].get("星级", "无")
+                if card_level == "无":
+                    hide_layout(layout)
             index = recipe_box.findText(card_name, QtCore.Qt.MatchFlag.MatchContains | QtCore.Qt.MatchFlag.MatchCaseSensitive)
             recipe_box.setCurrentIndex(index)
 
@@ -414,8 +430,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     def on_recipe_added(self, text):
         # 分离text，使其变成卡片名
         card_name = text.split("-")[0]
-        # 添加 item 时初始化香料字典
-        self.settings['生产方案'][card_name] = self.spice_list
+        # 添加 item 时初始化香料字典，因为要使用初始的常量字典，所以要使用字典的副本
+        self.settings['生产方案'][card_name] = copy.deepcopy(self.spice_dict)
         self.save_settings(self.settings)
 
     def on_recipe_removed(self, text):
@@ -425,6 +441,21 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         if card_name in self.settings['生产方案']:
             del self.settings['生产方案'][card_name]
         self.save_settings(self.settings)
+        # 检查列表是否为空
+        if not self.select_list.listWidget.count():
+            # 更新UI显示为默认提示或空
+            self.current_card_name.setText('当前选择配方：无')
+            # 更新当前所选卡片名
+            self.card_name = "无"
+            # 禁用所有香料框
+            self.init_spice()
+        else:
+            # 如果列表不为空，选择第一个项目
+            self.select_list.listWidget.setCurrentRow(0)
+            self.card_name = self.select_list.listWidget.item(0).data(QtCore.Qt.ItemDataRole.UserRole).split("-")[0]
+            self.current_card_name.setText(f'当前选择配方：{self.card_name}')
+            # 重新初始化香料框
+            self.init_spice()
     
     # 好中差卡排序函数
     def sort_key(self, filename):
@@ -457,14 +488,16 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         for i in range(3):
             for j in range(16):
                 subcard_box_name = f"subcard{i+1}_{j}"
-                subcard_box = getattr(self, subcard_box_name)
-                added_items = set() # 为了避免重复，加上集合
+                subcard_box = getattr(self, subcard_box_name)\
+                # 阻止信号发射
+                subcard_box.blockSignals(True)
+                # 清除现有的选项
+                subcard_box.clear()
                 # 给每个副卡菜单添加上对应等级的副卡选项
                 for n in range(3):
                     value = j - n
-                    if value >= 0 and value not in added_items:
+                    if value >= 0:
                         subcard_box.addItem(str(value))
-                        added_items.add(value)
                 # 不要忘记加上无
                 subcard_box.addItem("无")
                 # 菜单选项添加完后，根据设置文件，设置菜单的当前选中项
@@ -474,6 +507,13 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 if index >= 0:
                     # 如果找到了，设置 QComboBox 当前选中的索引
                     subcard_box.setCurrentIndex(index)
+                # 允许信号发射
+                subcard_box.blockSignals(False)
+                # 尝试断开旧的连接信号
+                try:
+                    subcard_box.currentIndexChanged.disconnect()
+                except TypeError:
+                    pass
                 # 每次更改选项时，都要保存字典
                 subcard_box.currentIndexChanged.connect(self.on_subcard_selected)
     
@@ -482,6 +522,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         for i in range(16):
             clover_box_name = f"clover{i}"
             clover_box = getattr(self, clover_box_name)
+            # 阻止信号发射
+            clover_box.blockSignals(True)
+            # 清除现有的选项
+            clover_box.clear()
             # 给每个四叶草菜单加上所有四叶草
             clover_dir = "items/clover"
             if os.path.exists(clover_dir):
@@ -497,6 +541,13 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             if index >= 0:
                 # 如果找到了，设置 QComboBox 当前选中的索引
                 clover_box.setCurrentIndex(index)
+            # 允许信号发射
+            clover_box.blockSignals(False)
+            # 尝试断开旧的连接信号
+            try:
+                clover_box.currentIndexChanged.disconnect()
+            except TypeError:
+                pass
             # 每次更改选项时，都要保存字典
             clover_box.currentIndexChanged.connect(self.on_clover_selected)
 
@@ -522,10 +573,24 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     spice_bind_box.setChecked(spice_bind)
                     # 每次更改绑定状态时，都要保存字典
                     spice_bind_box.stateChanged.connect(self.on_spice_bind_selected)
+                    # 重新启用这些菜单
+                    spice_bind_box.setEnabled(True)  
+                spice_box.setEnabled(True)
                 # 设置香料盒的数量
                 spice_box.setValue(int(spice_count))
                 # 每次更改次数时，都要保存字典
                 spice_box.valueChanged.connect(self.on_spice_selected)
+        # 如果是无，就把这些香料菜单，香料绑定按钮都禁用
+        else:
+            spice_list = list(self.spice_dict.keys())
+            for i in range(len(spice_list)):
+                spice_box_name = f"spice{i}"
+                spice_box = getattr(self, spice_box_name)
+                if i != 0:
+                    spice_bind_box_name = f"spice_bind{i}"
+                    spice_bind_box = getattr(self, spice_bind_box_name)
+                    spice_bind_box.setEnabled(False)
+                spice_box.setEnabled(False)
                 
     def init_spice_limit(self):
         # 因为更改了香料编辑菜单，把香料上限初始化独立出来
@@ -550,8 +615,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         unbind_clover_replace = self.settings.get("个人设置", {}).get("不绑草替代", False)
         self.max_level_input.setValue(self.max_level)
         self.min_level_input.setValue(self.min_level)
-        self.bind_btn.setChecked(bind_only)
-        self.bind_btn1.setChecked(unbind_clover_replace)
         self.reload_count_input.setValue(self.reload_count)
         self.produce_interval_input.setValue(self.produce_interval)
         self.enhance_interval_input.setValue(self.enhance_interval)
@@ -561,8 +624,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 把控件都连接上字典
         self.max_level_input.valueChanged.connect(self.on_setting_changed)
         self.min_level_input.valueChanged.connect(self.on_setting_changed)
-        self.bind_btn.clicked.connect(self.on_setting_changed)
-        self.bind_btn1.clicked.connect(self.on_setting_changed)
         self.reload_count_input.valueChanged.connect(self.on_setting_changed)
         self.produce_interval_input.valueChanged.connect(self.on_setting_changed)
         self.enhance_interval_input.valueChanged.connect(self.on_setting_changed)
@@ -743,10 +804,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         elif sender_name == "min_level_input":
             self.settings["个人设置"]["最小星级"] = f"{value}"
             self.min_level = value
-        elif sender_name == "bind_btn":
-            self.settings["个人设置"]["只用绑定卡"] = sender.isChecked()
-        elif sender_name == "bind_btn1":
-            self.settings["个人设置"]["不绑草替代"] = sender.isChecked()
         elif sender_name == "reload_count_input":
             self.settings["个人设置"]["刷新次数"] = f"{value}"
             self.reload_count = value
@@ -1191,12 +1248,12 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         spice_limit_settings = self.settings["香料使用上限"]
 
         # 把生产方案字典内无序的内容改成列表,配上有序的索引
-        spice_count = len(self.spice_list)
-        spice_list = self.spice_list
+        spice_list = list(self.spice_dict.keys())
+        spice_count = len(spice_list)
 
         # 如果传入了香料索引，只处理该香料
         if spice_index is not None:
-            spice_list = [self.spice_list[spice_index]]
+            spice_list = [spice_list[spice_index]]
             spice_count = 1
 
         for index in range(spice_count - 1, -1, -1):
@@ -1252,7 +1309,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 选出最高星级的副卡
         max_sub_card = max(sub_card_list)
         # 遍历生产方案，查询对应的副卡是否在生产计划之内，如果不在，就往下一级的副卡做
-        spice_list = list(self.spice_list)
+        spice_list = list(self.spice_dict.keys())
         for j in range(len(spice_list), 0, -1):
             currect_spice = j - 1
             spice_name = spice_list[currect_spice]

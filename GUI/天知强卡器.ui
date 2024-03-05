@@ -81,7 +81,7 @@ QMainWindow {
     }</string>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab_1">
      <property name="toolTip">
@@ -192,14 +192,23 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <x>2</x>
         <y>1</y>
         <width>381</width>
-        <height>483</height>
+        <height>461</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="spacing">
+        <number>0</number>
+       </property>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
           <widget class="QLabel" name="label">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="toolTip">
             <string>鼠标点击下面的数字有惊喜！</string>
            </property>
@@ -210,6 +219,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
          </item>
          <item>
           <widget class="QLabel" name="label_40">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
              <width>70</width>
@@ -223,6 +238,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
          </item>
          <item>
           <widget class="QLabel" name="label_7">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
              <width>70</width>
@@ -236,6 +257,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
          </item>
          <item>
           <widget class="QLabel" name="label_8">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
              <width>69</width>
@@ -249,6 +276,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
          </item>
          <item>
           <widget class="QLabel" name="label_9">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
              <width>69</width>
@@ -1322,44 +1355,6 @@ li.checked::marker { content: &quot;\2612&quot;; }
      <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
-        <x>170</x>
-        <y>0</y>
-        <width>311</width>
-        <height>51</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_11">
-       <item>
-        <widget class="QCheckBox" name="bind_btn">
-         <property name="text">
-          <string>只强化绑定卡吗？不选则只强化不绑卡</string>
-         </property>
-         <property name="checked">
-          <bool>false</bool>
-         </property>
-         <property name="autoRepeat">
-          <bool>false</bool>
-         </property>
-         <property name="autoExclusive">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="bind_btn1">
-         <property name="text">
-          <string>是否在绑定1,2草用完后使用不绑1,2草？</string>
-         </property>
-         <property name="autoExclusive">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="layoutWidget">
-      <property name="geometry">
-       <rect>
         <x>1</x>
         <y>2</y>
         <width>142</width>
@@ -1754,7 +1749,7 @@ border-radius: 20px;</string>
      <string notr="true">background-color: rgba(255, 255, 255, 150);</string>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>500</x>
@@ -1906,13 +1901,6 @@ border-radius: 20px;</string>
    <zorder>layoutWidget</zorder>
    <zorder>stopbtn</zorder>
    <zorder>handle_tips_2</zorder>
-   <zorder>GentilhommeUsher_label</zorder>
-   <zorder>GentilhommeUsher_btn</zorder>
-   <zorder>SurintendanteChevalmarin_label</zorder>
-   <zorder>MademoiselleCrabaletta_label</zorder>
-   <zorder>SurintendanteChevalmarin_btn</zorder>
-   <zorder>bind_radio_btn</zorder>
-   <zorder>unbind_radio_btn</zorder>
   </widget>
   <widget class="QStatusBar" name="statusBar">
    <property name="sizeGripEnabled">

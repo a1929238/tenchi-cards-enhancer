@@ -65,13 +65,15 @@ class MultiSelectComboBox(QWidget):
         
 
     def deleteItem(self, item):
-        # 发出删除项目的信号
+        # 事先保留该 item 的文本
         text = item.data(Qt.ItemDataRole.UserRole)
-        self.recipeRemoved.emit(text)
-    
         # 删除指定的 QListWidgetItem
         row = self.listWidget.row(item)
         self.listWidget.takeItem(row)
+        # 发出删除项目的信号
+        self.recipeRemoved.emit(text)
+    
+        
 
     def onComboBoxChanged(self, index):
         # 当 QComboBox 的选项改变时添加新的 QListWidgetItem
