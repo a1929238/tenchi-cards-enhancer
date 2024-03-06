@@ -332,6 +332,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
         # 创建一个新的编辑窗口
         self.edit_window = EditWindow(label_object_name, self)
+        # 设置编辑窗口图标
+        self.edit_window.setWindowIcon(QtGui.QIcon("items\icon\hutao.ico"))
         # 初始化编辑窗口
         self.init_edit_window(label_object_name)
         self.edit_window.show()
@@ -1356,10 +1358,14 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             missing_levels = [level for level in all_levels if level not in existing_levels]
             # 排序不存在的星级
             missing_levels.sort(reverse=True)
-            # 从高星级向低星级遍历，找到第一个在生产方案内的卡片,目前没有对香料使用达到上限的解决方案
+            # 从高星级向低星级遍历，找到第一个在生产方案内的卡片,且兼顾香料使用上限
             for level in missing_levels:
                 spice_name = spice_list[int(level)]
                 count = int(self.settings["生产方案"][card_name][spice_name]['数量'])
+                spice_limit = int(self.settings["香料使用上限"][spice_name])
+                # 如果本种香料在该次运行时超过了次数上限,就跳过该香料
+                if self.spice_used[level] >= spice_limit and spice_limit != 0:
+                    continue
                 if count > 0:
                     self.add_to_produce_queue(card_name, level)
                     break  # 生产完成后，动态生产另一种卡片
@@ -1483,7 +1489,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             text += "成功！"
         else:
             text += "失败！"
-        text += "所使用卡片："
+        text += "使用卡片："
         for sub_card_info in sub_card_infos:
             sub_card_name = sub_card_info["卡片名称"]
             sub_card_level = sub_card_info["星级"]
