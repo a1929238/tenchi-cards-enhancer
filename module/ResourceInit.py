@@ -12,7 +12,7 @@ class ResourceInit:
         self.spice_bind_img = imread(os.path.join(self.root_dir, "items/bind_icon/spice_bind.png"))
         self.line_img = imread(os.path.join(self.root_dir, "items/position/line.png"))
         # 卡片星级以字典形式存储
-        self.level_images = {k: imread(f"items/level/{k}.png") for k in range(0, 13)}
+        self.level_images = {k: imread(os.path.join(self.root_dir, f"items/level/{k}.png")) for k in range(0, 13)}
         # 四叶草也以字典形式存储
         self.clover_images = self.load_clover_images()
         # 香料也一样

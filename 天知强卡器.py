@@ -1094,59 +1094,34 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         return
         
     # 点击香料/四叶草 type——0:香料,1:四叶草 level——字符串，对不同的type匹配不同的图片
+    # 方法重写了，这样会非常快速
     def get_spice_and_clover(self, type: int, level: str, bind: bool):
-        # 直接第一次截图，查找是否有目标香料/四叶草
-        img = self.get_image(33, 526, 490, 49)
+        # 先获取需要匹配的图片
         if type == 0:
-            # 如果level == 不放香料,那就点击一下香料槽，不放香料
-            if level == "不放香料":
-                QtCore.QThread.msleep(500)
-                self.click(178, 395)
-                QtCore.QThread.msleep(200)
-                return
-            # 识图，点击对应香料
-            spice_img = self.resources.spice_images[level]
-            x = self.match_image(img, spice_img, 1, bind)
-            if x is not None:
-                self.click(55 + 49 * x, 550)
-                return
-            # 没找到，就点击五下右滑键，再截一次图
-            for j in range(5):
-                self.click(532, 562)
-                QtCore.QThread.msleep(250)
+            target_img = self.resources.spice_images[level]
+        elif type == 1:
+            target_img = self.resources.clover_images[level]
+        # 截图，查找，点击/继续截图，重复五次
+        for i in range(5):
+            # 截图，查找是否有目标香料/四叶草
             img = self.get_image(33, 526, 490, 49)
-            # 重复前面的读图操作
-            x = self.match_image(img, spice_img, 1, bind)
+            x = self.match_image(img, target_img, 1, bind)
             if x is not None:
                 self.click(55 + 49 * x, 550)
+                if type == 1:
+                    clover_info = [level, bind]
+                    self.edit_statistics(0, clover_info)
+                    self.found_clover = True
                 return
-            # 如果还是没有找到，就弹出dialog，提示没有找到目标香料
+            # 没找到，点两下右滑键，重来
+            for j in range(2):
+                self.click(532, 562)
+                QtCore.QThread.msleep(50)
+        # 如果最后还是没有找到，就弹窗
+        if type == 0:
             self.show_dialog_signal.emit("什么！", "没有找到目标香料!")
         elif type == 1:
-            # 查找对应四叶草,level是字符串
-            clover_img = self.resources.clover_images[level]
-            # 点击对应四叶草
-            x = self.match_image(img, clover_img, 1, bind)
-            if x is not None:
-                self.click(55 + 49 * x, 550)
-                clover_info = [level, bind]
-                self.edit_statistics(0, clover_info)
-                self.found_clover = True
-                return        
-            # 没找到，就点击五下右滑键，再截一次图
-            for j in range(6):
-                self.click(532, 562)
-                QtCore.QThread.msleep(150)
-            img = self.get_image(33, 526, 490, 49)
-            # 重复前面的读图操作
-            x = self.match_image(img, clover_img, 1, bind)
-            if x is not None:
-                self.click(55 + 49 * x, 550)
-                clover_info = [level, bind]
-                self.edit_statistics(0, clover_info)
-                self.found_clover = True
-                return
-            # 还是没找到，就停止四叶草标识
+            # 停止四叶草标识
             self.found_clover = False
         return
 
@@ -1251,6 +1226,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.card_producer(card_name, spice_index)
             # 标记任务已完成
             self.produce_queue.task_done()
+            # 等待500毫秒，防止因卡顿而出错
+            QtCore.QThread.msleep(500)
     
     # 生产卡片,2.0版本，由生产队列调用，可以获取卡片配方，并选择香料生产卡片，下一个改进的目标是制作绑定或不绑卡
     def card_producer(self, card_name, spice_index=None):
@@ -1413,7 +1390,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 self.click(285, 436)
                 # 初始等待时间，这个等待没法规避
                 QtCore.QThread.msleep(self.enhance_interval)
-                for i in range(10):
+                for i in range(20):
                     # 获得副卡槽图片
                     sub_card_image = self.get_image(267, 253, 40, 50)
                     # 判定副卡槽图片是否和副卡空卡槽图片一样
