@@ -1019,18 +1019,31 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 return json.load(f) # 返回默认字典，如果设置文件不存在
     
     # 编辑并保存统计数据字典 type——0: 四叶草 1:香料 2:使用卡片 3:强化出卡片
-    def edit_statistics(self, type, name, value=1):
+    def edit_statistics(self, type: int, name: list, value=1):
         if type == 0: # 四叶草
-            self.statistics["使用四叶草总和"] = self.update_dict(self.statistics["使用四叶草总和"], f"{name}四叶草", value)
+            # name是列表，包含四叶草名[0]与绑定信息[1]
+            if name[1]:
+                self.statistics["使用四叶草总和"]['绑定'] = self.update_dict(self.statistics["使用四叶草总和"]['绑定'], f"{name[0]}四叶草", value)
+            else:
+                self.statistics["使用四叶草总和"]['不绑'] = self.update_dict(self.statistics["使用四叶草总和"]['不绑'], f"{name[0]}四叶草", value)
         elif type == 1: # 香料
-            self.statistics["使用香料总和"] = self.update_dict(self.statistics["使用香料总和"], name, value * 5)
+            # name也是列表，包含香料名[0]与绑定信息[1]
+            if name[1]:
+                self.statistics["使用香料总和"]['绑定'] = self.update_dict(self.statistics["使用香料总和"]['绑定'], name[0], value * 5)
+            else:
+                self.statistics["使用香料总和"]['不绑'] = self.update_dict(self.statistics["使用香料总和"]['不绑'], name[0], value * 5)
         elif type == 2: # 使用卡片
-            # 卡片总和不同，name是一个数组，所以要遍历数组后分次添加
+            # name还是一个包含主卡与副卡信息的列表，需要摘出列表信息后，再进行统计
             for i in range(len(name)):
-                level = name[i]
-                self.statistics["使用卡片总和"] = self.update_dict(self.statistics["使用卡片总和"], level, value)
+                sub_card_info = name[i]
+                level = sub_card_info["星级"]
+                bind = sub_card_info["绑定"]
+                if bind:
+                    self.statistics["使用卡片总和"]['绑定'] = self.update_dict(self.statistics["使用卡片总和"]["绑定"], level, value)
+                else:
+                    self.statistics["使用卡片总和"]['不绑'] = self.update_dict(self.statistics["使用卡片总和"]["不绑"], level, value)
         elif type == 3: # 强化出卡片，强化次数，成功次数
-            # 强化出卡片也是一个数组，有两个值，分别是强化卡片的星级和强化前的星级，以此统计对应星级的强化次数，还能搞出成功次数
+            # 强化出卡片也是一个列表，有两个值，分别是强化卡片的星级和强化前的星级，以此统计对应星级的强化次数，还能搞出成功次数
             level = name[0]
             after_level = name[1]
             self.statistics["强化次数总和"] = self.update_dict(self.statistics["强化次数总和"], f'{level}-{level + 1}', value)
@@ -1114,7 +1127,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             x = self.match_image(img, clover_img, 1, bind)
             if x is not None:
                 self.click(55 + 49 * x, 550)
-                self.edit_statistics(0, level)
+                clover_info = [level, bind]
+                self.edit_statistics(0, clover_info)
                 self.found_clover = True
                 return        
             # 没找到，就点击五下右滑键，再截一次图
@@ -1126,13 +1140,14 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             x = self.match_image(img, clover_img, 1, bind)
             if x is not None:
                 self.click(55 + 49 * x, 550)
-                self.edit_statistics(0, level)
+                clover_info = [level, bind]
+                self.edit_statistics(0, clover_info)
                 self.found_clover = True
                 return
             # 还是没找到，就停止四叶草标识
             self.found_clover = False
         return
-    
+
     # 强化卡片主函数
     def main_enhancer(self):
         # 还没有想好拖曳几次，悲
@@ -1221,7 +1236,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.add_to_produce_queue(card_name)
 
     # 把内容添加到生产队列
-    def add_to_produce_queue(self, card_name, spice_index = None):
+    def add_to_produce_queue(self, card_name: str, spice_index: int = None):
         self.produce_queue.put((card_name, spice_index))
     
     # 执行生产队列
@@ -1278,8 +1293,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     QtCore.QThread.msleep(self.produce_interval)
 
                 # 输出统计信息
-                self.edit_statistics(1, spice_name, count)
-                # 统计制卡次数
+                spice_statistics = [spice_name, bind] # 将使用的香料名和是否绑定，作为统计信息
+                self.edit_statistics(1, spice_statistics, count)
+                # 统计本次运行中制卡次数
                 self.produce_count += count
                 # 增加该种香料制作计数
                 self.spice_used[index] += count
@@ -1291,7 +1307,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
         
     # 动态生产卡片，方法1
-    def dynamic_card_producer1(self):
+    def dynamic_card_producer_1(self):
         # 初始化变量
         max_sub_card = 8
         level_list = []
@@ -1323,36 +1339,30 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 动态生产卡片，方法2
     def dynamic_card_producer(self):
         # 创建一个包含0-8星级的列表
-        all_levels = list(range(9))
-
-        # 初始化空列表
-        empty_levels = []
-        # 遍历所有星级
-        for level in all_levels:
-            # 将星级转换为字符串
-            level_str = str(level)
-            # 检查星级是否在字典的键中
-            if level_str not in self.temp_card_level_dict:
-                # 如果不在字典的键中，添加到empty_levels列表中
-                empty_levels.append(level_str)
-
-        # 如果没有空的星级，则不进行生产
-        if not empty_levels:
-            return
-
-        # 对没有卡片的星级进行排序，从高到低
-        empty_levels.sort(reverse=True)
-
-        # 创建一个列表，包含"生产方案"字典的所有键
-        spice_list = list(self.settings["生产方案"].keys())
-
-        # 从高星级向低星级遍历，找到第一个在生产方案内的卡片
-        for level in empty_levels:
-            spice_name = spice_list[int(level)]
-            count = int(self.settings["生产方案"][spice_name])
-            if count > 0:
-                self.add_to_produce_queue(level)
-                return  # 生产完成后返回
+        all_levels = list(range(9)) # [0, 1, 2, 3, 4, 5, 6, 7, 8]
+        # 创建一个有所有香料名的列表
+        spice_list = list(self.spice_dict.keys())
+        # 获取生产方案中所有的卡片名
+        card_list = list(self.settings["生产方案"].keys())
+        # 每个卡片名都与临时字典比较，获取出它们各自的空星级列表
+        for card_name in card_list:
+            # 初始化存在星级列表
+            existing_levels = []
+            for key in self.temp_card_level_dict.keys():
+                name, level = key.split("-")
+                if name == card_name:
+                    existing_levels.append(int(level))
+            # 寻找出不存在的星级
+            missing_levels = [level for level in all_levels if level not in existing_levels]
+            # 排序不存在的星级
+            missing_levels.sort(reverse=True)
+            # 从高星级向低星级遍历，找到第一个在生产方案内的卡片,目前没有对香料使用达到上限的解决方案
+            for level in missing_levels:
+                spice_name = spice_list[int(level)]
+                count = int(self.settings["生产方案"][card_name][spice_name]['数量'])
+                if count > 0:
+                    self.add_to_produce_queue(card_name, level)
+                    break  # 生产完成后，动态生产另一种卡片
 
     # 强化卡片，由高到低，强化当前页所有符合条件的卡片
     def card_enhancer(self):
@@ -1366,14 +1376,14 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         for enhance_level in range(self.max_level, self.min_level, -1):
             # 获取当前星级强化方案
             enhance_plan = self.settings["强化方案"][f"{enhance_level-1}-{enhance_level}"]
-            # 获取主卡信息
-            main_card_info = enhance_plan["主卡"]
+            # 获取主卡信息，信息要重复使用，所以要深拷贝
+            main_card_info = enhance_plan["主卡"].copy()
             # 给主卡信息加上星级
             main_card_info['星级'] = f'{enhance_level - 1}'
             # 获取副卡信息
             sub_card_infos = []
             for i in range(1, 4):
-                sub_card_info = enhance_plan[f"副卡{i}"]
+                sub_card_info = enhance_plan[f"副卡{i}"].copy()
                 # 如果副卡存在星级，则将其添加到数组内
                 if sub_card_info.get("星级", "无") != "无":
                     sub_card_infos.append(sub_card_info)
@@ -1407,17 +1417,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     QtCore.QThread.msleep(self.enhance_check_interval)
                     # 没空，就重复点击强化
                     self.click(285, 436)
-                # 统计强化所使用卡片
-                # self.edit_statistics(2, subcards)
+                # 统计强化所使用卡片，把主卡也加入卡片使用
+                card_infos = sub_card_infos + [main_card_info]
+                self.edit_statistics(2, card_infos)
                 # 强化之后截图强化区域，判定成功/失败，输出日志
-                # if self.check_enhance_result(j):
-                #     # 向日志输出强化信息
-                #     text = f'{self.settings["所选卡片"]["卡片名称"]}，{self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"]}四叶草，{j-1}星上{j}星强化成功'
-                #     self.log_signal.emit(text)
-                # else:
-                #     # 向日志输出强化信息
-                #     text = f'{self.settings["所选卡片"]["卡片名称"]}，{self.settings["强化方案"][f"{j-1}-{j}"]["四叶草"]}四叶草，{j-1}星上{j}星强化失败'
-                #     self.log_signal.emit(text)
+                self.enhance_log(main_card_info, sub_card_infos, enhance_plan["四叶草"]['种类'])
                 # 点掉强化区域的卡片后，才能再次进行强化
                 self.click(287, 343)
                 # 强化次数+1
@@ -1426,6 +1430,13 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 # 是否循环标识符
                 self.cards_enough = True
                 return
+        # 如果遍历了强化方案后，发现已经没有卡可以强化了，就把此时的强化字典保存起来，作为临时卡片字典（该方法不完美，可能导致可用卡片重复添加）
+        for card_info in self.card_dict.values():
+            # 创建一个包含卡片名称与星级的键
+            card_info_key = f"{card_info['卡片名称']}-{card_info['星级']}"
+            # 如果该键不存在于临时卡片字典中，向临时卡片字典中添加它,值为1就行
+            if card_info_key not in self.temp_card_level_dict:
+                self.temp_card_level_dict[card_info_key] = 1
         self.cards_enough = False
         return
 
@@ -1461,23 +1472,58 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 如果所有副卡信息都在self.card_dict中，返回True，还有它们的位置信息
         return True, positions
 
+    # 强化日志输出
+    def enhance_log(self, main_card_info: dict, sub_card_infos: list, clover: str):
+        # 先分离出各种信息
+        main_card_name = main_card_info["卡片名称"]
+        main_card_level = main_card_info["星级"]
+        success = self.check_enhance_result(int(main_card_level))
+        text = f"{main_card_level}星{main_card_name}强化"
+        if success:
+            text += "成功！"
+        else:
+            text += "失败！"
+        text += "所使用卡片："
+        for sub_card_info in sub_card_infos:
+            sub_card_name = sub_card_info["卡片名称"]
+            sub_card_level = sub_card_info["星级"]
+            text += f"[{sub_card_level}星{sub_card_name}]"
+        # 添加上四叶草种类
+        if clover != "无":
+            text += f"，使用[{clover}四叶草]"
+        # 给不同星级的强化成功日志加上不同颜色
+        if success:
+            if int(main_card_level) <= 4:
+                text = f"<font color='gray'>{text}</font>"
+            elif int(main_card_level) <= 6:
+                text = f"<font color='green'>{text}</font>"
+            elif int(main_card_level) <= 8:
+                text = f"<font color='blue'>{text}</font>"
+            elif int(main_card_level) <= 10:
+                text = f"<font color='purple'>{text}</font>"
+            else:
+                text = f"<font color='orange'>{text}</font>"
+        else:
+            text = f"<font color='red'>{text}</font>"
+        self.log_signal.emit(text)
+
     # 强化结果判定
     def check_enhance_result(self, level):
         # 截图强化区域
         result_img = self.get_image(267, 323, 40, 50)
         level_img = result_img[5:12, 5:12]
-        success_img = self.resources.level_images[level]
+        success_img = self.resources.level_images[level + 1]
         level_list = [] # 初始化数组。 数组内数分别为卡片星级，卡片强化后星级
         # 判定强化结果
         if np.array_equal(level_img, success_img):
-            level_list = [level - 1, level]
+            level_list = [level, level + 1]
             self.edit_statistics(3, level_list)
             return True
         else:
-            if level <= 6:
-                level_list = [level - 1, level - 1]
+            if level <= 5:
+                level_list = [level, level]
             else:
-                level_list = [level - 1, level - 2]
+                level_list = [level, level - 1]
             self.edit_statistics(3, level_list)
             return False 
     
@@ -1571,9 +1617,11 @@ class EnhancerThread(QtCore.QThread):
             if position == 1 and produce_mode != 2: # 如果是动态制卡模式，会跳过这个制作
                 # 遍历制卡方案，添加到队列
                 self.enhancer.create_produce_queue()
-            if position == 1 and produce_mode != 0: # 如果是静态制卡模式，会跳过这个制作
+            if position == 1 and produce_mode != 0: # 如果是固定制卡模式，会跳过这个制作
                 # 调用动态队列添加方法
-                return
+                self.enhancer.dynamic_card_producer()
+                # 重置临时字典
+                self.enhancer.temp_card_level_dict = {}
             # 执行队列
             self.enhancer.execute_produce_queue()
             # 如果停止标识，则停止
