@@ -12,9 +12,10 @@ class ClickableLabel(QLabel):
         # 设置默认样式
         self.setStyleSheet("""
             ClickableLabel {
-                background-color: rgba(240, 248, 255, 0.6);
-                border: 1px solid transparent;
+                background-color: #f8f8f8;  
+                border: 1px solid #dcdcdc; 
                 padding: 2px;
+                border-radius: 8px;  
             }
         """)  # 默认样式为空
 
@@ -30,16 +31,26 @@ class ClickableLabel(QLabel):
     
     def enterEvent(self, event):
         # 鼠标悬停时的样式
-        self.setStyleSheet("ClickableLabel { color: blue; text-decoration: underline; background-color: rgb(240, 248, 255); }")
+        self.setStyleSheet("""
+            ClickableLabel {
+                color: #0057b7;
+                text-decoration: underline; 
+                background-color: #e6e6e6; 
+                border: 1px solid #c3c3c3;
+                padding: 2px;
+                border-radius: 8px;
+            }
+        """)
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         # 鼠标不悬停时恢复默认样式
         self.setStyleSheet("""
             ClickableLabel {
-                background-color: rgba(240, 248, 255, 0.6);
-                border: 1px solid transparent;
+                background-color: #f8f8f8;
+                border: 1px solid #dcdcdc;
                 padding: 2px;
+                border-radius: 8px;
             }
         """)  # 恢复默认样式
         super().leaveEvent(event)

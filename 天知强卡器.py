@@ -1148,9 +1148,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 if not self.is_running:
                     return
                 # 合成屋卡片拖曳17个像素正好是一格,但是拖曳8次后会有2像素偏移，用新方法就无视偏移啦
-                for j in range(4):
-                    self.drag(908, 120 + i * 68 + j * 17, 0, 17)
-                    QtCore.QThread.msleep(125)
+                self.drag(908, 120 + i * 68, 0, 17)
+                QtCore.QThread.msleep(250)
                 # 七次拖曳截图都没有获取到卡片，退出循环
                 if i == 6:
                     return
