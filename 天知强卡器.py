@@ -1098,6 +1098,12 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     def get_spice_and_clover(self, type: int, level: str, bind: bool):
         # 先获取需要匹配的图片
         if type == 0:
+            if level == '不放香料':
+                # 把香料点掉
+                self.click(180, 397)
+                # 等待100毫秒
+                QtCore.QThread.msleep(100)
+                return
             target_img = self.resources.spice_images[level]
         elif type == 1:
             target_img = self.resources.clover_images[level]
@@ -1148,7 +1154,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 if not self.is_running:
                     return
                 # 合成屋卡片拖曳17个像素正好是一格,但是拖曳8次后会有2像素偏移，用新方法就无视偏移啦
-                self.drag(908, 120 + i * 68, 0, 17)
+                self.drag(908, 120 + i * 68, 0, 68)
                 QtCore.QThread.msleep(250)
                 # 七次拖曳截图都没有获取到卡片，退出循环
                 if i == 6:
