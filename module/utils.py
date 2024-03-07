@@ -14,7 +14,7 @@ def imread(filename):
         return image
         
 # 打包后绝对路径函数
-def resource_path(relative_path):
+def resource_path(relative_path: str):
     """获取项目根目录下的资源文件的绝对路径。"""
     # 如果打包，则使用 PyInstaller 的临时目录
     if getattr(sys, 'frozen', False):
@@ -23,7 +23,7 @@ def resource_path(relative_path):
         # 如果未打包，则使用当前文件的目录
         base_path = os.path.abspath(".")
 
-    return os.path.join(base_path, relative_path)
+    return os.path.join(base_path, relative_path).replace('\\', '/')
 
 # 隐藏布局内所有控件
 def hide_layout(layout):

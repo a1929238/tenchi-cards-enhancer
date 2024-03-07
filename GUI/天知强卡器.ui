@@ -33,10 +33,7 @@
     background-color: rgb(170, 255, 255);
     color: black;
     border: 3px dotted rgb(170, 255, 255);
-}
-QMainWindow {
-                border-image: url(items/icon/furina_background.jpg) 0 0 0 0 stretch stretch;
-            }</string>
+}</string>
   </property>
   <property name="tabShape">
    <enum>QTabWidget::Rounded</enum>

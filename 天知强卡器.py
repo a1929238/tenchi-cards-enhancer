@@ -55,9 +55,17 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         ui_path = resource_path('GUI/天知强卡器.ui')
         uic.loadUi(ui_path, self)
         # 设置窗口图标
-        self.setWindowIcon(QtGui.QIcon("items/icon/furina.ico"))
+        self.setWindowIcon(QtGui.QIcon(resource_path("items/icon/furina.ico")))
         # 固定大小
         self.setFixedSize(self.size())
+        # 设置窗口背景图
+        background_image_path = resource_path('items/icon/furina_background.jpg')
+        # 设置样式表，插入绝对路径
+        self.setStyleSheet(f"""
+            QMainWindow {{
+                border-image: url("{background_image_path}") 0 0 0 0 stretch stretch;
+            }}
+        """)
 
         # 初始化窗口dpi
         self.dpi = self.get_system_dpi()
@@ -108,7 +116,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.init_log_message()
         
         # 召唤动态芙芙！
-        self.furina_movie = QtGui.QMovie("items/icon/furina_shake.gif")
+        self.furina_movie = QtGui.QMovie(resource_path("items/icon/furina_shake.gif"))
         self.furina.setMovie(self.furina_movie)
         self.furina_movie.start()
         self.furina.handleChanged.connect(self.update_handle_display)
@@ -333,7 +341,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 创建一个新的编辑窗口
         self.edit_window = EditWindow(label_object_name, self)
         # 设置编辑窗口图标
-        self.edit_window.setWindowIcon(QtGui.QIcon("items\icon\hutao.ico"))
+        self.edit_window.setWindowIcon(QtGui.QIcon(resource_path("items\icon\hutao.ico")))
         # 初始化编辑窗口
         self.init_edit_window(label_object_name)
         self.edit_window.show()
@@ -413,7 +421,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
     # 初始化选卡菜单
     def init_recipe_box(self, comboBox):
-        recipe_dir = "items/recipe"
+        recipe_dir = resource_path("items/recipe")
         # 获取卡片属性字典
         with open(resource_path('GUI/card_dict/card_info_dict.json'), 'r', encoding='utf-8') as f:
             self.card_info_dict = json.load(f)
@@ -529,7 +537,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 清除现有的选项
             clover_box.clear()
             # 给每个四叶草菜单加上所有四叶草
-            clover_dir = "items/clover"
+            clover_dir = resource_path("items/clover")
             if os.path.exists(clover_dir):
                 for filename in os.listdir(clover_dir):
                     clover_name = filename.replace("四叶草.png", "")
@@ -1205,7 +1213,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 初始化卡片信息
             card_info = {}
             # 遍历当前页面的卡片,识图出设置中目标卡片
-            card_image = imread(f"items/card/{card_name}.png")
+            card_image = imread(resource_path(f"items/card/{card_name}.png"))
             card_info = self.match_image(img, card_image, 2, None, card_name)
             if card_info:
                 self.card_dict.update(card_info)
@@ -1237,7 +1245,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 生产卡片,2.0版本，由生产队列调用，可以获取卡片配方，并选择香料生产卡片，下一个改进的目标是制作绑定或不绑卡
     def card_producer(self, card_name, spice_index=None):
         # 获取目标配方图片
-        card_image = imread(f"items/recipe/{card_name}配方.png")
+        card_image = imread(resource_path(f"items/recipe/{card_name}配方.png"))
         # 点击目标配方
         self.get_recipe(card_image)
 
@@ -1707,7 +1715,7 @@ class enhanceonlyThread(QtCore.QThread):
 def main():
     app = QtWidgets.QApplication(sys.argv)
     # 设置默认字体
-    font_id = QtGui.QFontDatabase.addApplicationFont("items/font/font.ttf")
+    font_id = QtGui.QFontDatabase.addApplicationFont(resource_path("items/font/font.ttf"))
     if font_id != -1:
             font_family = QtGui.QFontDatabase.applicationFontFamilies(font_id)[0]
             font = QtGui.QFont(font_family, 10)
