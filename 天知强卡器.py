@@ -312,7 +312,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     def init_log_message(self):
         self.send_log_message(f"当当！天知强卡器启动成功！目前版本号为{self.version}")
         self.send_log_message("使用前请关闭二级密码")
-        self.send_log_message("目前仅支持360游戏大厅,但支持任何系统缩放")
+        self.send_log_message("目前仅支持360游戏大厅,但支持任何系统缩放，所以说我是高性能的呦")
         self.send_log_message("目前无法应对美食大赛任务，请注意自己的美食大赛完成进度")
         self.send_log_message("最新版本 [github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>https://github.com/a1929238/tenchi-cards-enhancer</a>")
         self.send_log_message("[QQ群 交流·反馈·催更] 786921130 ")
@@ -1068,7 +1068,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         for i in range(5):
             #点击五下上滑键，初始化配方窗口位置
             self.click(910, 97)
-            QtCore.QThread.msleep(200)
+            QtCore.QThread.msleep(250)
         # 第一次截图并识图
         img = self.get_image(559, 90, 343, 196)
 
