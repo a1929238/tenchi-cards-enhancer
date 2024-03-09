@@ -1,8 +1,8 @@
 # 天知强卡器，打算用pyqt5做GUI
 # setting字典的结构为:setting[type][name][count]
 # 统计数据字典的结构为:statistics[type][name][count]
-# 0.2.1更新计划：用金币变动图像识别制作是否成功；改进配方识别方法；用空格图像识别是否还需要往下滑动
-# 已完成计划：
+# 0.2.1更新计划：
+# 已完成计划：用金币变动图像识别制作是否成功；改进配方识别方法；用空格图像识别是否还需要往下滑动
 # -*- coding: utf-8 -*-
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import sys
@@ -1658,9 +1658,8 @@ class EnhancerThread(QtCore.QThread):
             if not self.enhancer.is_running:
                 break
             # 遍历完所有制作后，点击卡片强化
-            QtCore.QThread.msleep(500)
             self.enhancer.click(108, 320)
-            QtCore.QThread.msleep(500)
+            QtCore.QThread.msleep(200)
             # 先判定是否在卡片强化页面，如果在，开始强化
             position = self.enhancer.check_position()
             if position == 2:
@@ -1668,7 +1667,7 @@ class EnhancerThread(QtCore.QThread):
                 self.enhancer.main_enhancer()
             # 数组卡片全部强化完成后，点击卡片制作，再次循环
             self.enhancer.click(108, 258)
-            QtCore.QThread.msleep(800)
+            QtCore.QThread.msleep(300)
 
     # 初始化位置,使用截图与识图函数判断当前位置，一共有三次判断：1.判断窗口上是否有合成屋图标，如果有就点击 2.根据右上角的“XX说明”判断目前所处位置，分别执行不同操作 
     def init_position(self) -> bool:
@@ -1677,7 +1676,7 @@ class EnhancerThread(QtCore.QThread):
             # 先点击进入合成屋
             self.enhancer.click(685, 558)
             # 停顿久一些，加载图片
-            QtCore.QThread.msleep(1500)
+            QtCore.QThread.msleep(800)
             # 打开运行标志，进入主循环
             self.enhancer.is_running = True
             return True
@@ -1692,7 +1691,7 @@ class EnhancerThread(QtCore.QThread):
             self.enhancer.main_enhancer()
             # 点击卡片制作，进入主循环
             self.enhancer.click(108, 258)
-            QtCore.QThread.msleep(1500)
+            QtCore.QThread.msleep(500)
             return True
         else:
             # 未知位置，弹窗提示
@@ -1704,10 +1703,10 @@ class EnhancerThread(QtCore.QThread):
     def reload(self):
         # 点击右上角的红叉
                 self.enhancer.click(914, 38)
-                QtCore.QThread.msleep(1500)
+                QtCore.QThread.msleep(600)
                 # 重新点击合成屋
                 self.enhancer.click(685, 558)
-                QtCore.QThread.msleep(1000)
+                QtCore.QThread.msleep(600)
                 # 归零强化次数
                 self.enhancer.enhance_times = 0
 
