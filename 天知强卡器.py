@@ -1310,6 +1310,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                         if not np.array_equal(gold_img, current_gold_img):
                             break
                         QtCore.QThread.msleep(self.produce_check_interval)
+                        if i == 19:
+                            self.show_dialog_signal.emit("哎呀", "制卡检测次数超过了20轮，发生什么事了？")
+                            return
 
                 # 输出统计信息
                 spice_statistics = [spice_name, bind] # 将使用的香料名和是否绑定，作为统计信息
@@ -1440,6 +1443,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     QtCore.QThread.msleep(self.enhance_check_interval)
                     # 没空，就重复点击强化
                     self.click(285, 436)
+                    if i == 19:
+                        # 强化失败，弹窗
+                        self.show_dialog_signal.emit("哎呦", "强化检测超过20轮，看看发生什么了吧")
+                        return
                 # 统计强化所使用卡片，把主卡也加入卡片使用
                 card_infos = sub_card_infos + [main_card_info]
                 self.edit_statistics(2, card_infos)
