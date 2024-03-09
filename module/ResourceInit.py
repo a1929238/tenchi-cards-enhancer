@@ -22,6 +22,7 @@ class ResourceInit:
         self.compose_icon = imread(os.path.join(self.root_dir, "items/position/合成屋.png"))
         self.produce_help_icon = imread(os.path.join(self.root_dir, "items/position/制作说明.png"))
         self.enhance_help_icon = imread(os.path.join(self.root_dir, "items/position/强化说明.png"))
+        self.empty_card = imread(os.path.join(self.root_dir, "items/position/empty_card.png"))
 
     def load_clover_images(self):
         clover_images = {}

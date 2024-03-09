@@ -1,8 +1,8 @@
 # 天知强卡器，打算用pyqt5做GUI
 # setting字典的结构为:setting[type][name][count]
 # 统计数据字典的结构为:statistics[type][name][count]
-# 0.2.0更新计划：改进强化方法，现在以字典匹配的形式进行强化；改进统计页，将统计页更改为趣味数据，并增加一些简单处理后的数据；解耦合主类，把多个功能拆成多个类
-# 已完成计划：增加全局变量，将一些使用次数多的图像存储为全局变量，初始化时读取；改变强化方案页，使其在点击强化种类文本后，进入一个新的页面，细节定制强化时的种类；改变配方选择页，使其可以选择任意种配方，并单独调整制作;将制卡变为队列，以便处理不同配方的制作
+# 0.2.1更新计划：用金币变动图像识别制作是否成功；改进配方识别方法；用空格图像识别是否还需要往下滑动
+# 已完成计划：
 # -*- coding: utf-8 -*-
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import sys
@@ -65,13 +65,18 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             QMainWindow {{
                 border-image: url("{background_image_path}") 0 0 0 0 stretch stretch;
             }}
+            QToolTip {{
+                background-color: rgb(170, 255, 255);
+                color: black;
+                border: 3px dotted rgb(170, 255, 255);
+            }}
         """)
 
         # 初始化窗口dpi
         self.dpi = self.get_system_dpi()
         
         # 变量初始化
-        self.version = "0.2.0"
+        self.version = "0.2.1"
         self.handle = None
         self.card_dict = {}
         self.is_running = False
@@ -104,6 +109,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.max_level = int(self.settings["个人设置"]["最大星级"])
         self.reload_count = int(self.settings["个人设置"]["刷新次数"])
         self.produce_interval = int(self.settings["个人设置"]["制卡间隔"])
+        self.produce_check_interval = int(self.settings["个人设置"]["制卡检测间隔"])
         self.enhance_interval = int(self.settings["个人设置"]["强卡间隔"])
         self.enhance_check_interval = int(self.settings["个人设置"]["强卡检测间隔"])
 
@@ -627,6 +633,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.min_level_input.setValue(self.min_level)
         self.reload_count_input.setValue(self.reload_count)
         self.produce_interval_input.setValue(self.produce_interval)
+        self.produce_check_interval_input.setValue(self.produce_check_interval)
         self.enhance_interval_input.setValue(self.enhance_interval)
         self.enhance_check_interval_input.setValue(self.enhance_check_interval)
         self.produce_times_input.setValue(int(self.settings.get("个人设置", {}).get("制卡次数上限", 0)))
@@ -636,6 +643,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.min_level_input.valueChanged.connect(self.on_setting_changed)
         self.reload_count_input.valueChanged.connect(self.on_setting_changed)
         self.produce_interval_input.valueChanged.connect(self.on_setting_changed)
+        self.produce_check_interval_input.valueChanged.connect(self.on_setting_changed)
         self.enhance_interval_input.valueChanged.connect(self.on_setting_changed)
         self.enhance_check_interval_input.valueChanged.connect(self.on_setting_changed)
         self.produce_times_input.valueChanged.connect(self.on_setting_changed)
@@ -820,6 +828,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         elif sender_name == "produce_interval_input":
             self.settings["个人设置"]["制卡间隔"] = f"{value}"
             self.produce_interval = value
+        elif sender_name == "produce_check_interval_input":
+            self.settings["个人设置"]["制卡检测间隔"] = f"{value}"
+            self.produce_check_interval = value
         elif sender_name == "enhance_interval_input":
             self.settings["个人设置"]["强卡间隔"] = f"{value}"
             self.enhance_interval = value
@@ -928,7 +939,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         win32gui.PostMessage(self.handle, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, lParam1)
 
 
-    # 识图函数，分割图片并识别，分成3种分割规则——0:配方分割，1:香料/四叶草分割, 2:卡片分割
+    # 识图函数，分割图片并识别，分成3种分割规则——0:配方分割，1:香料/四叶草分割, 2:卡片分割, 3:特殊卡片分割，识图空格
     def match_image(self, image, target_image, type, bind=None, card_name=None):
         # 初始化bind参数
         if type == 0: # 配方分割
@@ -994,7 +1005,14 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                         temp_card_dict[f"{j}-{i}"] = card_info
             # 返回字典，有位置，是否绑定，星级，还有名称
             return temp_card_dict
-
+        elif type == 3: # 特殊的卡片分割，用来识图出空格
+            rows, columns = 7, 7
+            for i in range(rows):
+                for j in range(columns):
+                    block = image[i * 57:(i + 1) * 57, j * 49:(j + 1) * 49]
+                    card = block[22:37, 8:41]
+                    if np.array_equal(card, target_image):
+                        return False # 如果识别到了空格，就返回False，表明可以不用继续拖了
         return None, None
     
     # 保存设置到JSON文件
@@ -1072,31 +1090,27 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         return dict
     
     # 点击配方
+    # 预计更新方法，模板匹配第一处卡片上框架的位置，然后裁剪图片，再进行识别，失败，因为最上方框架与下方的所有卡片都不同。
+    # 尝试直接使用模板匹配，非常好使。
     def get_recipe(self, target_img):
-        for i in range(5):
-            #点击五下上滑键，初始化配方窗口位置
-            self.click(910, 97)
-            QtCore.QThread.msleep(250)
-        # 第一次截图并识图
-        img = self.get_image(559, 90, 343, 196)
-
-        # 读取截图中的配方，并与目标配方匹配
-        x, y = self.match_image(img, target_img, 0)
-        if x is not None:
-            # 匹配成功，点击配方位置
-            self.click(580+(x*49), 110+(y*49))
-            return
-        # 匹配失败，鼠标滑动22个像素，再次截图
-        for j in range(1):
-            self.drag(910, 120 + j * 2, 0, 22)
-            QtCore.QThread.msleep(500)
-        # 匹配配方，如果还不成功，就再下滑一次
-        img = self.get_image(559, 92, 343, 196)
-        x, y = self.match_image(img, target_img, 0)
-        if x is not None:
-            # 获取目标配方位置后，点击配方
-            self.click(580+(x*49), 110+(y*49))
-            return
+        # 截图三次，每次拖曳三格
+        for i in range(4):
+            # 截图
+            img = self.get_image(559, 90, 343, 196)
+            # 直接模板匹配图像
+            result = cv2.matchTemplate(img, target_img, cv2.TM_CCOEFF_NORMED)
+            min_value, max_value, min_loc, max_loc = cv2.minMaxLoc(result)
+            if max_value >= 0.95:
+                # 匹配成功，点击配方位置
+                x, y = max_loc
+                self.click(580 + x, 110 + y)
+                return
+            # 匹配失败，鼠标滑动15个像素，再次截图，如果是第一次尝试，就只点击滑块最上方
+            if i == 0:
+                self.click(910, 110)
+            else:
+                self.drag(910, 105 + i * 15, 0, 15)
+            QtCore.QThread.msleep(200)
         # 匹配失败，弹出弹窗
         self.show_dialog_signal.emit("危", "配方识别失败,请检查自己的配方")
         return
@@ -1141,7 +1155,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
     # 强化卡片主函数
     def main_enhancer(self):
-        # 还没有想好拖曳几次，悲
         # 尝试方案，拖曳7次，每次拖四格
         # 每次强化，卡片的顺序都会改变，只能强化一次截一次图，直到强卡器返回False，才停止循环
         while self.is_running:
@@ -1150,6 +1163,21 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 QtCore.QThread.msleep(100)
                 # 获取截图
                 img = self.get_image(559, 91, 343, 456)
+                # 处理并切割截图
+                # 初始化偏移值,切割传入图像
+                self.offset = 0
+                # 方法更新，用模板匹配图片中的第一行，然后把色块以上的图片全部切掉，再识别。这样无论滑块在哪里，都能确保找到七行道具
+                line_img = self.resources.line_img
+                if line_img.shape[0] <= img.shape[0] and line_img.shape[1] <= img.shape[1]:
+                    # 进行模板匹配
+                    result = cv2.matchTemplate(img, line_img, cv2.TM_CCOEFF_NORMED)
+                    # 遍历匹配结果
+                    for y in range(result.shape[0]):
+                        if result[y, 0] >= 0.30:
+                            self.offset = y # 保存偏移值
+                            # 裁剪图像，保留标记位置以下的七格像素
+                            img = img[y + 1:400 + y]
+                            break
                 # 尝试获取强化卡片字典
                 self.get_card_dict(img)
                 if self.card_dict:
@@ -1161,9 +1189,12 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 # 没有可以强化的卡了，拖曳截图一次，顺便检查一下停止标识
                 if not self.is_running:
                     return
+                # 如果在非第一次拖曳中，当前页面没有获取到强化字典，同时识别出了空格，表面再往下拉也没卡了，那么就退出循环
+                if i != 0 and not self.match_image(img, self.resources.empty_card, 3):
+                    return
                 # 合成屋卡片拖曳17个像素正好是一格,但是拖曳8次后会有2像素偏移，用新方法就无视偏移啦
                 self.drag(908, 120 + i * 68, 0, 68)
-                QtCore.QThread.msleep(250)
+                QtCore.QThread.msleep(200)
                 # 七次拖曳截图都没有获取到卡片，退出循环
                 if i == 6:
                     return
@@ -1194,20 +1225,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     card_name = self.settings["强化方案"][f"{i}-{i+1}"][f"副卡{j}"]["卡片名称"]
                 if card_name != "无" and card_name not in cards:
                     cards.append(card_name)
-        # 初始化偏移值,切割传入图像
-        self.offset = 0
-        # 方法更新，用模板匹配图片中的第一行，然后把色块以上的图片全部切掉，再识别。这样无论滑块在哪里，都能确保找到七行道具
-        line_img = self.resources.line_img
-        if line_img.shape[0] <= img.shape[0] and line_img.shape[1] <= img.shape[1]:
-            # 进行模板匹配
-            result = cv2.matchTemplate(img, line_img, cv2.TM_CCOEFF_NORMED)
-            # 遍历匹配结果
-            for y in range(result.shape[0]):
-                if result[y, 0] >= 0.30:
-                    self.offset = y # 保存偏移值
-                    # 裁剪图像，保留标记位置以下的七格像素
-                    img = img[y+1:400+y]
-                    break
         # 遍历卡片数组，分别识图，凑成一个完整的字典
         for card_name in cards:
             # 初始化卡片信息
@@ -1229,7 +1246,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     def add_to_produce_queue(self, card_name: str, spice_index: int = None):
         self.produce_queue.put((card_name, spice_index))
     
-    # 执行生产队列
+    # 执行生产队列 
     def execute_produce_queue(self):
         # 循环，直到队列为空
         while not self.produce_queue.empty():
@@ -1239,10 +1256,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.card_producer(card_name, spice_index)
             # 标记任务已完成
             self.produce_queue.task_done()
-            # 等待500毫秒，防止因卡顿而出错
-            QtCore.QThread.msleep(500)
+            # 等待200毫秒，防止因卡顿而出错
+            QtCore.QThread.msleep(200)
     
-    # 生产卡片,2.0版本，由生产队列调用，可以获取卡片配方，并选择香料生产卡片，下一个改进的目标是制作绑定或不绑卡
+    # 生产卡片,2.0版本，由生产队列调用，可以获取卡片配方，并选择香料生产卡片
+    # 预计更新3.0版本，通过识别金币变动图片，来判断制卡完成。
     def card_producer(self, card_name, spice_index=None):
         # 获取目标配方图片
         card_image = imread(resource_path(f"items/recipe/{card_name}配方.png"))
@@ -1280,9 +1298,18 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     # 如果检测到停止标识,就退出
                     if not self.is_running:
                         return
+                    # 截图现有金币的后几位
+                    gold_img = self.get_image(869, 555, 30, 15)
                     # 制作多少次~
                     self.click(285, 425)
+                    # 制作间隔
                     QtCore.QThread.msleep(self.produce_interval)
+                    # 截图判断金币是否发生变动，如果没有变动，说明制作还没有完成
+                    for i in range(20):
+                        current_gold_img = self.get_image(869, 555, 30, 15)
+                        if not np.array_equal(gold_img, current_gold_img):
+                            break
+                        QtCore.QThread.msleep(self.produce_check_interval)
 
                 # 输出统计信息
                 spice_statistics = [spice_name, bind] # 将使用的香料名和是否绑定，作为统计信息
@@ -1626,7 +1653,7 @@ class EnhancerThread(QtCore.QThread):
             # 遍历完所有制作后，点击卡片强化
             QtCore.QThread.msleep(500)
             self.enhancer.click(108, 320)
-            QtCore.QThread.msleep(1500)
+            QtCore.QThread.msleep(500)
             # 先判定是否在卡片强化页面，如果在，开始强化
             position = self.enhancer.check_position()
             if position == 2:
@@ -1634,7 +1661,7 @@ class EnhancerThread(QtCore.QThread):
                 self.enhancer.main_enhancer()
             # 数组卡片全部强化完成后，点击卡片制作，再次循环
             self.enhancer.click(108, 258)
-            QtCore.QThread.msleep(1500)
+            QtCore.QThread.msleep(800)
 
     # 初始化位置,使用截图与识图函数判断当前位置，一共有三次判断：1.判断窗口上是否有合成屋图标，如果有就点击 2.根据右上角的“XX说明”判断目前所处位置，分别执行不同操作 
     def init_position(self) -> bool:
