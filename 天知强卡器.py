@@ -99,8 +99,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.best_enhance_plan = default_constants['强化最优路径']
 
         self.spice_used = {}
-        for i in range(9):
-            self.spice_used[i] = 0
+        for spice_name in self.spice_dict.keys():
+            self.spice_used[spice_name] = 0
         # 初始化临时卡片星级字典，作用是判断此时已有的星级
         self.temp_card_level_dict = {}
         self.settings = self.load_settings()  # 读取设置作为全局变量
@@ -1289,7 +1289,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             spice_limit = int(self.settings["香料使用上限"][spice_name]) // 5
 
             # 如果本次制作次数超过了次数上限,就跳过该香料
-            if self.spice_used[index] >= spice_limit and spice_limit != 0:
+            if self.spice_used[spice_name] >= spice_limit and spice_limit != 0:
                 continue
             
             if count != 0:
@@ -1322,7 +1322,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 # 统计本次运行中制卡次数
                 self.produce_count += count
                 # 增加该种香料制作计数
-                self.spice_used[index] += count
+                self.spice_used[spice_name] += count
 
                 # 如果设置了制卡次数上限，并且达到上限，则显示对话框并返回
                 if produce_limit != 0 and self.produce_count >= produce_limit:
@@ -1386,7 +1386,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 count = int(self.settings["生产方案"][card_name][spice_name]['数量'])
                 spice_limit = int(self.settings["香料使用上限"][spice_name]) // 5
                 # 如果本种香料在该次运行时超过了次数上限,就跳过该香料
-                if self.spice_used[level] >= spice_limit and spice_limit != 0:
+                if self.spice_used[spice_name] >= spice_limit and spice_limit != 0:
                     continue
                 if count > 0:
                     self.add_to_produce_queue(card_name, level)
