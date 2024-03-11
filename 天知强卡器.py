@@ -1595,6 +1595,22 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     self.show_dialog_signal.emit("这……", f"{j-1}-{j}方案的副卡全是无，回去再设置设置吧……")
                     self.onStop()
                     return
+        # 生产方案里面，到底有没有卡？
+        if not self.settings["生产方案"].keys():
+            self.show_dialog_signal.emit("哎呀", "你的制卡方案里，一张卡都没有哦")
+            self.onStop()
+            return
+        # 生产方案的所有卡片里，有没有所有香料数都是0的？
+        for key in self.settings["生产方案"].keys():
+            zero_count = 0
+            for count in self.settings["生产方案"][key].values():
+                if int(count["数量"]) == 0:
+                    zero_count += 1
+            # 如果有9个零，就弹窗，并停止运行
+            if zero_count == 9:
+                self.show_dialog_signal.emit("嗯？", f"你的制卡方案里，{key}卡片的香料全是0，是不是该把这种卡片删了？")
+                self.onStop()
+                return
         # 通过防呆检测，就没事，正常开始
         return
 
