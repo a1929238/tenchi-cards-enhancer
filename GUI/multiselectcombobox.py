@@ -1,6 +1,8 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QPushButton, QHBoxLayout, QLabel, QComboBox
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QPushButton, QHBoxLayout, QLabel, QComboBox, QSizePolicy
 from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QIcon
+from module.utils import resource_path
 
 class MultiSelectComboBox(QWidget):
     recipeAdded = pyqtSignal(str)  # 添加配方时发出的信号
@@ -42,16 +44,31 @@ class MultiSelectComboBox(QWidget):
 
         # 创建标签和删除按钮
         label = QLabel(text)
-        btnDelete = QPushButton("X")
+        btnDelete = QPushButton()
+
+        # 给按钮设置图案
+        btnDelete.setIcon(QIcon(resource_path("items/icon/垃圾桶.png")))
+
+        # 设置按钮和标签的样式表
+        label.setStyleSheet("font-size: 14px;")
+        btnDelete.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                padding: 5px;
+            }
+            QPushButton:hover {
+                background-color: #E0E0E0;
+            }
+        """)  # 设置按钮样式表
+        btnDelete.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)  # 设置按钮大小策略
         btnDelete.clicked.connect(lambda: self.deleteItem(item))
 
         # 添加标签和按钮到布局
         hbox.addWidget(label)
-        hbox.addWidget(btnDelete)
-
-        # 设置布局和边距
         hbox.addStretch()
         hbox.setContentsMargins(0, 0, 0, 0)
+        hbox.addWidget(btnDelete)
+        hbox.setSpacing(10)  # 设置间距
 
         # 设置 QWidget 的布局
         widget.setLayout(hbox)

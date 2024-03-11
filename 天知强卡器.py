@@ -1,8 +1,9 @@
-# 天知强卡器，打算用pyqt5做GUI
+# 天知强卡器，打算用pyqt6做GUI
 # setting字典的结构为:setting[type][name][count]
 # 统计数据字典的结构为:statistics[type][name][count]
-# 0.2.1更新计划：
-# 已完成计划：用金币变动图像识别制作是否成功；改进配方识别方法；用空格图像识别是否还需要往下滑动
+# 0.3.0更新计划：卡包强卡（需要自己开包）
+# 0.3.0已完成：给日志加上时间戳；把香料上限做成个数;改进位置标志识别方法；将四叶草翻页间隔也做成设置;优化删除标签的按钮图标；自定义拖曳距离
+# BUG修复： 制卡时跳出检测超时；会错误点到永久保鲜袋；页面会来回切换；修复了四叶草标识没有在开始时被正确初始化的BUG
 # -*- coding: utf-8 -*-
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import sys
@@ -76,7 +77,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.dpi = self.get_system_dpi()
         
         # 变量初始化
-        self.version = "0.2.1"
+        self.version = "0.2.2"
         self.handle = None
         self.card_dict = {}
         self.is_running = False
@@ -86,7 +87,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.enhance_count = 0
         self.produce_count = 0
         self.card_name = '无'
-        self.found_clover = True
         self.card_info_dict = {}
         self.enhance_type = '无'
 
@@ -112,6 +112,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.produce_check_interval = int(self.settings["个人设置"]["制卡检测间隔"])
         self.enhance_interval = int(self.settings["个人设置"]["强卡间隔"])
         self.enhance_check_interval = int(self.settings["个人设置"]["强卡检测间隔"])
+        self.spice_and_clover_interval = int(self.settings["个人设置"]["材料翻页间隔"])
+        self.scroll_times = int(self.settings["个人设置"]["拖动次数"])
 
         # 背景遮盖层初始化
         self.frosted_layer.lower()  # 将半透明层放到底层
@@ -325,9 +327,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 初始化日志信息
     def init_log_message(self):
         self.send_log_message(f"当当！天知强卡器启动成功！目前版本号为{self.version}")
-        self.send_log_message("使用前请关闭二级密码")
+        self.send_log_message("使用前请关闭二级密码，同时确保自己按照不连续指南正确配置了设置")
         self.send_log_message("目前仅支持360游戏大厅,但支持任何系统缩放，所以说我是高性能的呦")
-        self.send_log_message("目前无法应对美食大赛任务，请注意自己的美食大赛完成进度")
         self.send_log_message("最新版本 [github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>https://github.com/a1929238/tenchi-cards-enhancer</a>")
         self.send_log_message("[QQ群 交流·反馈·催更] 786921130 ")
         self.send_log_message("如果觉得好用的话，把软件推荐给更多的人嘛，反正不要钱~")
@@ -627,8 +628,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 初始化个人设置菜单
     def init_setting(self):
         # 从个人设置字典中读取数据，初始化控件
-        bind_only = self.settings.get("个人设置", {}).get("只用绑定卡", False)
-        unbind_clover_replace = self.settings.get("个人设置", {}).get("不绑草替代", False)
         self.max_level_input.setValue(self.max_level)
         self.min_level_input.setValue(self.min_level)
         self.reload_count_input.setValue(self.reload_count)
@@ -637,6 +636,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.enhance_interval_input.setValue(self.enhance_interval)
         self.enhance_check_interval_input.setValue(self.enhance_check_interval)
         self.produce_times_input.setValue(int(self.settings.get("个人设置", {}).get("制卡次数上限", 0)))
+        self.spice_and_clover_interval_input.setValue(self.spice_and_clover_interval)
+        self.scroll_times_input.setValue(self.scroll_times)
 
         # 把控件都连接上字典
         self.max_level_input.valueChanged.connect(self.on_setting_changed)
@@ -647,6 +648,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.enhance_interval_input.valueChanged.connect(self.on_setting_changed)
         self.enhance_check_interval_input.valueChanged.connect(self.on_setting_changed)
         self.produce_times_input.valueChanged.connect(self.on_setting_changed)
+        self.spice_and_clover_interval_input.valueChanged.connect(self.on_setting_changed)
+        self.scroll_times_input.valueChanged.connect(self.on_setting_changed)
 
     # 初始化状态栏
     def init_statusbar(self):
@@ -839,15 +842,14 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.enhance_check_interval = value
         elif sender_name == "produce_times_input":
             self.settings["个人设置"]["制卡次数上限"] = f"{value}"
-            self.produce_count = value
+        elif sender_name == "spice_and_clover_interval_input":
+            self.settings["个人设置"]["材料翻页间隔"] = f"{value}"
+            self.spice_and_clover_interval = value
+        elif sender_name == "scroll_times_input":
+            self.settings["个人设置"]["拖动次数"] = f"{value}"
+            self.scroll_times = value
         # 保存设置
         self.save_settings(self.settings)
-
-    # 测试，截图函数调用
-    def capture(self):
-        image = self.get_image()
-        # 这里可以添加保存或显示图像的代码
-        image.save("test.png")
 
     # 更新显示窗口句柄和窗口名的标签
     def update_handle_display(self, handle):
@@ -1139,26 +1141,25 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 if type == 1:
                     clover_info = [level, bind]
                     self.edit_statistics(0, clover_info)
-                    self.found_clover = True
                 return
             # 没找到，点两下右滑键，重来
             for j in range(2):
-                self.click(532, 562)
-                QtCore.QThread.msleep(50)
+                self.click(535, 563)
+                QtCore.QThread.msleep(self.spice_and_clover_interval)
         # 如果最后还是没有找到，就弹窗
         if type == 0:
             self.show_dialog_signal.emit("什么！", "没有找到目标香料!")
         elif type == 1:
-            # 停止四叶草标识
-            self.found_clover = False
+            self.show_dialog_signal.emit("什么！", "没有找到目标四叶草!")
         return
 
     # 强化卡片主函数
     def main_enhancer(self):
-        # 尝试方案，拖曳7次，每次拖四格
+        # 最终方案，滚动条的长度是110-415，共计315个像素，根据设置的滚动次数来进行滚动
+        scroll_length = 315 / self.scroll_times
         # 每次强化，卡片的顺序都会改变，只能强化一次截一次图，直到强卡器返回False，才停止循环
         while self.is_running:
-            for i in range(7):
+            for i in range(self.scroll_times):
                 # 每次强化之后合成屋栏位都会动，所以在调用前要先等待100毫秒
                 QtCore.QThread.msleep(100)
                 # 获取截图
@@ -1181,6 +1182,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 # 尝试获取强化卡片字典
                 self.get_card_dict(img)
                 if self.card_dict:
+                    # 初始化四叶草标识
                     # 强化当前页面卡片
                     self.card_enhancer()
                     if self.cards_enough:
@@ -1192,8 +1194,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 # 如果在非第一次拖曳中，当前页面没有获取到强化字典，同时识别出了空格，表面再往下拉也没卡了，那么就退出循环
                 if i != 0 and not self.match_image(img, self.resources.empty_card, 3):
                     return
-                # 合成屋卡片拖曳17个像素正好是一格,但是拖曳8次后会有2像素偏移，用新方法就无视偏移啦
-                self.drag(908, 120 + i * 68, 0, 68)
+                # 拖曳长度取决于拖曳次数，每次拖曳长度为315/滚动次数
+                self.drag(908, 120 + i * scroll_length, 0, scroll_length)
                 QtCore.QThread.msleep(200)
                 # 七次拖曳截图都没有获取到卡片，退出循环
                 if i == 6:
@@ -1256,8 +1258,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.card_producer(card_name, spice_index)
             # 标记任务已完成
             self.produce_queue.task_done()
-            # 等待200毫秒，防止因卡顿而出错
-            QtCore.QThread.msleep(200)
+            # 等待300毫秒，防止因卡顿而出错
+            QtCore.QThread.msleep(300)
     
     # 生产卡片,2.0版本，由生产队列调用，可以获取卡片配方，并选择香料生产卡片
     # 预计更新3.0版本，通过识别金币变动图片，来判断制卡完成。
@@ -1270,7 +1272,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 提前计算并存储常用的设置值
         personal_settings = self.settings.get("个人设置", {})
         produce_limit = int(personal_settings.get("制卡次数上限", 0))
-        spice_limit_settings = self.settings["香料使用上限"]
 
         # 把生产方案字典内无序的内容改成列表,配上有序的索引
         spice_list = list(self.spice_dict.keys())
@@ -1285,7 +1286,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             spice_name = spice_list[index]
             count = int(self.settings["生产方案"][card_name][spice_name]['数量'])
             bind = self.settings["生产方案"][card_name][spice_name]['绑定']
-            spice_limit = int(spice_limit_settings[spice_name])
+            spice_limit = int(self.settings["香料使用上限"][spice_name]) // 5
 
             # 如果本次制作次数超过了次数上限,就跳过该香料
             if self.spice_used[index] >= spice_limit and spice_limit != 0:
@@ -1310,6 +1311,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                         if not np.array_equal(gold_img, current_gold_img):
                             break
                         QtCore.QThread.msleep(self.produce_check_interval)
+                        self.click(285, 425) # 重复点击制作键
                         if i == 19:
                             self.show_dialog_signal.emit("哎呀", "制卡检测次数超过了20轮，发生什么事了？")
                             return
@@ -1382,7 +1384,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             for level in missing_levels:
                 spice_name = spice_list[int(level)]
                 count = int(self.settings["生产方案"][card_name][spice_name]['数量'])
-                spice_limit = int(self.settings["香料使用上限"][spice_name])
+                spice_limit = int(self.settings["香料使用上限"][spice_name]) // 5
                 # 如果本种香料在该次运行时超过了次数上限,就跳过该香料
                 if self.spice_used[level] >= spice_limit and spice_limit != 0:
                     continue
@@ -1416,6 +1418,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 解耦合，检查是否可以强化
             can_enhance, positions = self.can_enhance(main_card_info, sub_card_infos)
             if can_enhance: # 如果可以强化，就点击所有传过来的位置
+                # 先点击主卡槽，确保上一张卡不会留存
+                self.click(284, 347)
                 for position in positions:
                     x, y = int(position.split("-")[0]), int(position.split("-")[1])
                     # 点击目标卡片，千万记得要加上偏移值
@@ -1423,11 +1427,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 # 根据设置，点击四叶草
                 if enhance_plan["四叶草"]['种类'] != "无":
                     self.get_spice_and_clover(1, enhance_plan["四叶草"]['种类'], enhance_plan["四叶草"]['绑定'])
-                # 如果没找到四叶草，就会关闭查找四叶草标识
-                if not self.found_clover:
-                    # 没有就停止，同时发出弹窗
-                    self.cards_enough = False
-                    self.show_dialog_signal.emit("什么！", "没有找到目标四叶草!")
+                # 如果没找到四叶草，就会关闭运行标识并返回
+                if not self.is_running:
                     return
                 # 点击强化！强化有延迟，最终解决方案是重复识图副卡栏位，如果副卡还在，就一直点强化，直到副卡不在，再点击主卡
                 self.click(285, 436)
@@ -1521,6 +1522,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 添加上四叶草种类
         if clover != "无":
             text += f"，使用[{clover}四叶草]"
+        # 在开头添加上时间戳，只要有小时跟秒数就行了
+        text = f"[{QtCore.QTime.currentTime().toString()}]{text}"
         # 给不同星级的强化成功日志加上不同颜色
         if success:
             if int(main_card_level) <= 4:
@@ -1632,7 +1635,7 @@ class EnhancerThread(QtCore.QThread):
         super().__init__()
         self.enhancer = tenchi_cards_enhancer
 
-    # 强卡器循环,分为3种模式，分别是：1.固定制卡 2.混合制卡 3.动态制卡
+    # 强卡器循环,分为3种模式，分别是：0.固定制卡 1.混合制卡 2.动态制卡
     def run(self):        
         # 读取制卡模式
         produce_mode = int(self.enhancer.settings["个人设置"]["制卡模式"])
@@ -1643,31 +1646,24 @@ class EnhancerThread(QtCore.QThread):
             # 如果强化到了一定次数，就退出重进一下合成屋，防止卡顿
             if self.enhancer.enhance_times >= self.enhancer.reload_count:
                 self.reload()
-            position = self.enhancer.check_position() # 获取位置标识
-            if position == 1 and produce_mode != 2: # 如果是动态制卡模式，会跳过这个制作
+            if produce_mode != 2: # 如果是动态制卡模式，会跳过这个制作
                 # 遍历制卡方案，添加到队列
                 self.enhancer.create_produce_queue()
-            if position == 1 and produce_mode != 0: # 如果是固定制卡模式，会跳过这个制作
+            if produce_mode != 0: # 如果是固定制卡模式，会跳过这个制作
                 # 调用动态队列添加方法
                 self.enhancer.dynamic_card_producer()
                 # 重置临时字典
                 self.enhancer.temp_card_level_dict = {}
             # 执行队列
             self.enhancer.execute_produce_queue()
-            # 如果停止标识，则停止
-            if not self.enhancer.is_running:
-                break
-            # 遍历完所有制作后，点击卡片强化
-            self.enhancer.click(108, 320)
+            # 遍历完所有制作后，点击卡片强化标签
             QtCore.QThread.msleep(200)
-            # 先判定是否在卡片强化页面，如果在，开始强化
-            position = self.enhancer.check_position()
-            if position == 2:
-                # 强化主函数
-                self.enhancer.main_enhancer()
-            # 数组卡片全部强化完成后，点击卡片制作，再次循环
-            self.enhancer.click(108, 258)
-            QtCore.QThread.msleep(300)
+            self.change_position(1)
+            # 强化主函数
+            self.enhancer.main_enhancer()
+            # 数组卡片全部强化完成后，点击卡片制作标签，再次循环
+            self.change_position(0)
+            QtCore.QThread.msleep(200)
 
     # 初始化位置,使用截图与识图函数判断当前位置，一共有三次判断：1.判断窗口上是否有合成屋图标，如果有就点击 2.根据右上角的“XX说明”判断目前所处位置，分别执行不同操作 
     def init_position(self) -> bool:
@@ -1699,7 +1695,44 @@ class EnhancerThread(QtCore.QThread):
             # 停止运行
             self.enhancer.is_running = False
             return False
-
+        
+    # 切换位置函数 0 == 制卡页面， 1 == 强化页面
+    def change_position(self, position):
+        if position == 0:
+            self.enhancer.click(108, 258) # 点击卡片制作标签
+            # 先判定是否在卡片制作页面，如果在就返回，开始制作，不在就继续点，判定三次，每次间隔200毫秒
+            for i in range(5):
+                # 如果停止标识，则停止
+                if not self.enhancer.is_running:
+                    return
+                position = self.enhancer.check_position()
+                if position == 1:
+                    return
+                else:
+                    # 点击卡片制作标签
+                    self.enhancer.click(108, 258)
+                    # 停顿200毫秒
+                    QtCore.QThread.msleep(200)
+            # 五次都没找到，就弹窗
+            self.showDialogSignal.emit("嗯？", "怎么点不到制作标签？")
+        elif position == 1:
+            self.enhancer.click(108, 320) # 点击强化标签
+            # 先判定是否在卡片强化页面，如果在就返回，开始强化，不在就继续点，判定三次，每次间隔200毫秒
+            for i in range(5):
+                # 如果停止标识，则停止
+                if not self.enhancer.is_running:
+                    return
+                position = self.enhancer.check_position()
+                if position == 2:
+                    return
+                else:
+                    # 点击卡片强化标签
+                    self.enhancer.click(108, 320)
+                    # 停顿200毫秒
+                    QtCore.QThread.msleep(200)
+            # 五次都没找到，就弹窗
+            self.showDialogSignal.emit("嗯？", "怎么点不到强化标签？")
+            
     def reload(self):
         # 点击右上角的红叉
                 self.enhancer.click(914, 38)

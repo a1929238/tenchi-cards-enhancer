@@ -78,7 +78,7 @@
     }</string>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="tab_1">
      <property name="toolTip">
@@ -934,7 +934,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
        </rect>
       </property>
       <property name="toolTip">
-       <string>该数据为完整一轮制卡时所制作的卡片数</string>
+       <string>点击左边列表内的配方名，即可选择配方</string>
       </property>
       <property name="styleSheet">
        <string notr="true">font-size:12pt; color:#0055ff;</string>
@@ -991,13 +991,16 @@ li.checked::marker { content: &quot;\2612&quot;; }
          <item>
           <widget class="QSpinBox" name="spice0_2">
            <property name="suffix">
-            <string>次</string>
+            <string>个</string>
            </property>
            <property name="minimum">
             <number>0</number>
            </property>
            <property name="maximum">
-            <number>9999</number>
+            <number>32762</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
            </property>
            <property name="value">
             <number>0</number>
@@ -1041,13 +1044,16 @@ li.checked::marker { content: &quot;\2612&quot;; }
          <item>
           <widget class="QSpinBox" name="spice1_2">
            <property name="suffix">
-            <string>次</string>
+            <string>个</string>
            </property>
            <property name="minimum">
             <number>0</number>
            </property>
            <property name="maximum">
-            <number>9999</number>
+            <number>32762</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
            </property>
            <property name="value">
             <number>0</number>
@@ -1091,13 +1097,16 @@ li.checked::marker { content: &quot;\2612&quot;; }
          <item>
           <widget class="QSpinBox" name="spice2_2">
            <property name="suffix">
-            <string>次</string>
+            <string>个</string>
            </property>
            <property name="minimum">
             <number>0</number>
            </property>
            <property name="maximum">
-            <number>9999</number>
+            <number>32762</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
            </property>
            <property name="value">
             <number>0</number>
@@ -1141,13 +1150,16 @@ li.checked::marker { content: &quot;\2612&quot;; }
          <item>
           <widget class="QSpinBox" name="spice3_2">
            <property name="suffix">
-            <string>次</string>
+            <string>个</string>
            </property>
            <property name="minimum">
             <number>0</number>
            </property>
            <property name="maximum">
-            <number>9999</number>
+            <number>32762</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
            </property>
            <property name="value">
             <number>0</number>
@@ -1191,13 +1203,16 @@ li.checked::marker { content: &quot;\2612&quot;; }
          <item>
           <widget class="QSpinBox" name="spice4_2">
            <property name="suffix">
-            <string>次</string>
+            <string>个</string>
            </property>
            <property name="minimum">
             <number>0</number>
            </property>
            <property name="maximum">
-            <number>9999</number>
+            <number>32762</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
            </property>
            <property name="value">
             <number>0</number>
@@ -1241,13 +1256,16 @@ li.checked::marker { content: &quot;\2612&quot;; }
          <item>
           <widget class="QSpinBox" name="spice5_2">
            <property name="suffix">
-            <string>次</string>
+            <string>个</string>
            </property>
            <property name="minimum">
             <number>0</number>
            </property>
            <property name="maximum">
-            <number>9999</number>
+            <number>32762</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
            </property>
            <property name="value">
             <number>0</number>
@@ -1291,13 +1309,16 @@ li.checked::marker { content: &quot;\2612&quot;; }
          <item>
           <widget class="QSpinBox" name="spice6_2">
            <property name="suffix">
-            <string>次</string>
+            <string>个</string>
            </property>
            <property name="minimum">
             <number>0</number>
            </property>
            <property name="maximum">
-            <number>9999</number>
+            <number>32762</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
            </property>
            <property name="value">
             <number>0</number>
@@ -1341,13 +1362,16 @@ li.checked::marker { content: &quot;\2612&quot;; }
          <item>
           <widget class="QSpinBox" name="spice7_2">
            <property name="suffix">
-            <string>次</string>
+            <string>个</string>
            </property>
            <property name="minimum">
             <number>0</number>
            </property>
            <property name="maximum">
-            <number>9999</number>
+            <number>32762</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
            </property>
            <property name="value">
             <number>0</number>
@@ -1391,13 +1415,16 @@ li.checked::marker { content: &quot;\2612&quot;; }
          <item>
           <widget class="QSpinBox" name="spice8_2">
            <property name="suffix">
-            <string>次</string>
+            <string>个</string>
            </property>
            <property name="minimum">
             <number>0</number>
            </property>
            <property name="maximum">
-            <number>9999</number>
+            <number>32762</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
            </property>
            <property name="value">
             <number>0</number>
@@ -1457,8 +1484,8 @@ li.checked::marker { content: &quot;\2612&quot;; }
      <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
-        <x>1</x>
-        <y>2</y>
+        <x>0</x>
+        <y>20</y>
         <width>142</width>
         <height>50</height>
        </rect>
@@ -1507,7 +1534,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>160</y>
+        <y>180</y>
         <width>221</width>
         <height>31</height>
        </rect>
@@ -1541,13 +1568,13 @@ li.checked::marker { content: &quot;\2612&quot;; }
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
-        <x>1</x>
-        <y>51</y>
-        <width>161</width>
-        <height>104</height>
+        <x>0</x>
+        <y>70</y>
+        <width>181</width>
+        <height>107</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -1599,7 +1626,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
          <item>
           <widget class="QSpinBox" name="produce_check_interval_input">
            <property name="toolTip">
-            <string>推荐设置:100毫秒，用来检测制卡是否完成</string>
+            <string>推荐设置:150毫秒，用来检测制卡是否完成</string>
            </property>
            <property name="suffix">
             <string>毫秒</string>
@@ -1676,6 +1703,109 @@ li.checked::marker { content: &quot;\2612&quot;; }
           </widget>
          </item>
         </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_35">
+         <item>
+          <widget class="QLabel" name="label_45">
+           <property name="text">
+            <string>材料翻页间隔：</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="spice_and_clover_interval_input">
+           <property name="toolTip">
+            <string>推荐设置:100毫秒,该项设置减小会让寻找四叶草与香料更加丝滑，但也会增加cpu负担</string>
+           </property>
+           <property name="suffix">
+            <string>毫秒</string>
+           </property>
+           <property name="minimum">
+            <number>30</number>
+           </property>
+           <property name="maximum">
+            <number>250</number>
+           </property>
+           <property name="singleStep">
+            <number>10</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QLabel" name="label_13">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>221</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color: rgb(0, 0, 255);</string>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;————普通设置区————&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_14">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>210</y>
+        <width>221</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color: rgb(0, 0, 255);</string>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;————高级设置区————&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;请确保详细阅读指南后再进行设置&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
+     <widget class="QWidget" name="">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>260</y>
+        <width>181</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_36">
+       <item>
+        <widget class="QLabel" name="label_15">
+         <property name="text">
+          <string>卡片滚动条拖动次数：</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="scroll_times_input">
+         <property name="toolTip">
+          <string>该值代表滚动条一次拖动的行数与次数，设置前请注意自己的背包大小，将其拖动行数限制在五行以内以获得最优体验</string>
+         </property>
+         <property name="suffix">
+          <string>次</string>
+         </property>
+         <property name="minimum">
+          <number>5</number>
+         </property>
+         <property name="maximum">
+          <number>14</number>
+         </property>
+         <property name="value">
+          <number>5</number>
+         </property>
+         <property name="displayIntegerBase">
+          <number>10</number>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
