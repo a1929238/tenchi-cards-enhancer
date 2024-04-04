@@ -1768,7 +1768,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;————高级设置区————&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;请确保详细阅读指南后再进行设置&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>0</x>
@@ -1976,7 +1976,7 @@ border-radius: 20px;</string>
         </sizepolicy>
        </property>
        <property name="toolTip">
-        <string>共有三种模式:固定制卡会还原你的制卡方案，缺点是制卡方案设计不合理时会导致卡片堆积；混合制卡会用动态与固定方案轮流制卡，稍微变更制卡方案，但是卡片减少堆积；动态制卡会在一轮固定制卡后，只动态制卡，会破坏原有的制卡方案，但不会导致卡片堆积</string>
+        <string>共有三种模式:固定制卡会还原你的制卡方案，缺点是制卡方案设计不合理时会导致卡片堆积；混合制卡会用动态与固定方案轮流制卡，稍微变更制卡方案，但是卡片减少堆积；动态制卡只会动态制卡，优先消耗高星香料，破坏原有的制卡方案，但不会导致卡片堆积</string>
        </property>
        <property name="editable">
         <bool>false</bool>

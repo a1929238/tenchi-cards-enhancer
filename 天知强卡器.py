@@ -77,7 +77,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.dpi = self.get_system_dpi()
         
         # 变量初始化
-        self.version = "0.2.2"
+        self.version = "0.2.3"
         self.handle = None
         self.card_dict = {}
         self.is_running = False
@@ -327,7 +327,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 初始化日志信息
     def init_log_message(self):
         self.send_log_message(f"当当！天知强卡器启动成功！目前版本号为{self.version}")
-        self.send_log_message("使用前请关闭二级密码，同时确保自己按照不连续指南正确配置了设置")
+        self.send_log_message("使用前请关闭二级密码，遇到问题请查看目录下'天知的不连续指南.pdf'文件！")
         self.send_log_message("目前仅支持360游戏大厅,但支持任何系统缩放，所以说我是高性能的呦")
         self.send_log_message("最新版本 [github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>https://github.com/a1929238/tenchi-cards-enhancer</a>")
         self.send_log_message("[QQ群 交流·反馈·催更] 786921130 ")
@@ -1097,6 +1097,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     def get_recipe(self, target_img):
         # 截图三次，每次拖曳三格
         for i in range(4):
+            # 等待50毫秒
+            QtCore.QThread.msleep(50)
             # 截图
             img = self.get_image(559, 90, 343, 196)
             # 直接模板匹配图像
@@ -1111,8 +1113,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             if i == 0:
                 self.click(910, 110)
             else:
-                self.drag(910, 105 + i * 15, 0, 15)
-            QtCore.QThread.msleep(200)
+                self.drag(910, 95 + i * 15, 0, 15)
+            QtCore.QThread.msleep(250)
         # 匹配失败，弹出弹窗
         self.show_dialog_signal.emit("危", "配方识别失败,请检查自己的配方")
         return
@@ -1138,25 +1140,29 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             x = self.match_image(img, target_img, 1, bind)
             if x is not None:
                 self.click(55 + 49 * x, 550)
+                # 预计增加一个方法，即检测是否成功把四叶草/香料放上去了，如果没有成功，就点掉四叶草，并弹窗
                 if type == 1:
                     clover_info = [level, bind]
                     self.edit_statistics(0, clover_info)
                 return
             # 没找到，点两下右滑键，重来
-            for j in range(2):
-                self.click(535, 563)
-                QtCore.QThread.msleep(self.spice_and_clover_interval)
+            self.click(535, 563)
+            QtCore.QThread.msleep(50)
+            self.click(535, 563)
+            QtCore.QThread.msleep(self.spice_and_clover_interval * 2)
         # 如果最后还是没有找到，就弹窗
+        self.is_running = False
+        bind_text = '绑定' if bind else '不绑'
         if type == 0:
-            self.show_dialog_signal.emit("什么！", "没有找到目标香料!")
+            self.show_dialog_signal.emit("什么！", f"没有找到{bind_text}的{level}!")
         elif type == 1:
-            self.show_dialog_signal.emit("什么！", "没有找到目标四叶草!")
+            self.show_dialog_signal.emit("什么！", f"没有找到{bind_text}的{level}四叶草!")
         return
 
     # 强化卡片主函数
     def main_enhancer(self):
         # 最终方案，滚动条的长度是110-415，共计315个像素，根据设置的滚动次数来进行滚动
-        scroll_length = 315 / self.scroll_times
+        scroll_length = 315 // self.scroll_times
         # 每次强化，卡片的顺序都会改变，只能强化一次截一次图，直到强卡器返回False，才停止循环
         while self.is_running:
             for i in range(self.scroll_times):
