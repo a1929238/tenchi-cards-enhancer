@@ -78,7 +78,7 @@
     }</string>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>5</number>
     </property>
     <widget class="QWidget" name="tab_1">
      <property name="toolTip">
@@ -1768,44 +1768,115 @@ li.checked::marker { content: &quot;\2612&quot;; }
        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;————高级设置区————&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;请确保详细阅读指南后再进行设置&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
-     <widget class="QWidget" name="layoutWidget">
+     <widget class="QWidget" name="">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>260</y>
-        <width>181</width>
-        <height>21</height>
+        <width>201</width>
+        <height>129</height>
        </rect>
       </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_36">
+      <layout class="QVBoxLayout" name="verticalLayout_5">
        <item>
-        <widget class="QLabel" name="label_15">
+        <layout class="QHBoxLayout" name="horizontalLayout_36">
+         <item>
+          <widget class="QLabel" name="label_15">
+           <property name="text">
+            <string>卡片滚动条拖动次数：</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="scroll_times_input">
+           <property name="toolTip">
+            <string>该值代表滚动条一次拖动的行数与次数，设置前请注意自己的背包大小，将其拖动行数限制在五行以内以获得最优体验</string>
+           </property>
+           <property name="suffix">
+            <string>次</string>
+           </property>
+           <property name="minimum">
+            <number>5</number>
+           </property>
+           <property name="maximum">
+            <number>14</number>
+           </property>
+           <property name="value">
+            <number>5</number>
+           </property>
+           <property name="displayIntegerBase">
+            <number>10</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="is_reload_game_input">
          <property name="text">
-          <string>卡片滚动条拖动次数：</string>
+          <string>是否需要刷新游戏？</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QSpinBox" name="scroll_times_input">
+        <layout class="QHBoxLayout" name="horizontalLayout_37">
+         <item>
+          <widget class="QLabel" name="label_16">
+           <property name="text">
+            <string>刷新游戏时间:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="reload_time_input">
+           <property name="toolTip">
+            <string>推荐设置:60分钟</string>
+           </property>
+           <property name="suffix">
+            <string>分钟</string>
+           </property>
+           <property name="minimum">
+            <number>10</number>
+           </property>
+           <property name="maximum">
+            <number>120</number>
+           </property>
+           <property name="singleStep">
+            <number>1</number>
+           </property>
+           <property name="value">
+            <number>60</number>
+           </property>
+           <property name="displayIntegerBase">
+            <number>10</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="is_secondary_password_input">
          <property name="toolTip">
-          <string>该值代表滚动条一次拖动的行数与次数，设置前请注意自己的背包大小，将其拖动行数限制在五行以内以获得最优体验</string>
+          <string>勾选后，会在强化前解除二级密码</string>
          </property>
-         <property name="suffix">
-          <string>次</string>
-         </property>
-         <property name="minimum">
-          <number>5</number>
-         </property>
-         <property name="maximum">
-          <number>14</number>
-         </property>
-         <property name="value">
-          <number>5</number>
-         </property>
-         <property name="displayIntegerBase">
-          <number>10</number>
+         <property name="text">
+          <string>是否需要代输入二级密码？</string>
          </property>
         </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_38">
+         <item>
+          <widget class="QLabel" name="label_17">
+           <property name="text">
+            <string>二级密码:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="secondary_password_input"/>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>

@@ -6,7 +6,6 @@
 # BUG修复： 制卡时跳出检测超时；会错误点到永久保鲜袋；页面会来回切换；修复了四叶草标识没有在开始时被正确初始化的BUG
 # -*- coding: utf-8 -*-
 import time
-
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
 import sys
 import win32gui
@@ -96,7 +95,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.card_name = '无'
         self.card_info_dict = {}
         self.enhance_type = '无'
-        self.time_last_reload_game = 0
+        self.time_last_reload_game = time.time()
+        
 
         # 初始化香料列表
         # 从default_constants中获取香料列表
@@ -116,12 +116,17 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.min_level = int(self.settings["个人设置"]["最小星级"])
         self.max_level = int(self.settings["个人设置"]["最大星级"])
         self.reload_count = int(self.settings["个人设置"]["刷新次数"])
+        self.is_reload_game = bool(self.settings["个人设置"]["是否刷新游戏"])
+        self.reload_time = int(self.settings["个人设置"]["刷新游戏时间"]) # 该变量单位为分钟
+        self.is_secondary_password = bool(self.settings["个人设置"]["是否输入二级密码"])
+        self.secondary_password = self.settings["个人设置"]["二级密码"]
         self.produce_interval = int(self.settings["个人设置"]["制卡间隔"])
         self.produce_check_interval = int(self.settings["个人设置"]["制卡检测间隔"])
         self.enhance_interval = int(self.settings["个人设置"]["强卡间隔"])
         self.enhance_check_interval = int(self.settings["个人设置"]["强卡检测间隔"])
         self.spice_and_clover_interval = int(self.settings["个人设置"]["材料翻页间隔"])
         self.scroll_times = int(self.settings["个人设置"]["拖动次数"])
+        
 
         # 背景遮盖层初始化
         self.frosted_layer.lower()  # 将半透明层放到底层
@@ -640,6 +645,12 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.max_level_input.setValue(self.max_level)
         self.min_level_input.setValue(self.min_level)
         self.reload_count_input.setValue(self.reload_count)
+
+        self.is_reload_game_input.setChecked(self.is_reload_game)
+        self.reload_time_input.setValue(self.reload_time)
+        self.is_secondary_password_input.setChecked(self.is_secondary_password)
+        self.secondary_password_input.setText(self.secondary_password)
+
         self.produce_interval_input.setValue(self.produce_interval)
         self.produce_check_interval_input.setValue(self.produce_check_interval)
         self.enhance_interval_input.setValue(self.enhance_interval)
@@ -652,6 +663,12 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.max_level_input.valueChanged.connect(self.on_setting_changed)
         self.min_level_input.valueChanged.connect(self.on_setting_changed)
         self.reload_count_input.valueChanged.connect(self.on_setting_changed)
+
+        self.is_reload_game_input.stateChanged.connect(self.on_setting_changed)
+        self.reload_time_input.valueChanged.connect(self.on_setting_changed)
+        self.is_secondary_password_input.stateChanged.connect(self.on_setting_changed)
+        self.secondary_password_input.textChanged.connect(self.on_setting_changed)
+
         self.produce_interval_input.valueChanged.connect(self.on_setting_changed)
         self.produce_check_interval_input.valueChanged.connect(self.on_setting_changed)
         self.enhance_interval_input.valueChanged.connect(self.on_setting_changed)
@@ -835,6 +852,18 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         elif sender_name == "reload_count_input":
             self.settings["个人设置"]["刷新次数"] = f"{value}"
             self.reload_count = value
+        elif sender_name == "is_reload_game_input":
+            self.settings["个人设置"]["是否刷新游戏"] = sender.isChecked()
+            self.is_reload_game = sender.isChecked()
+        elif sender_name == "reload_time_input":
+            self.settings["个人设置"]["刷新游戏时间"] = f"{value}"
+            self.reload_time = value
+        elif sender_name == "is_secondary_password_input":
+            self.settings["个人设置"]["是否输入二级密码"] = sender.isChecked()
+            self.is_secondary_password = sender.isChecked()
+        elif sender_name == "secondary_password_input":
+            self.settings["个人设置"]["二级密码"] = value
+            self.secondary_password = value
         elif sender_name == "produce_interval_input":
             self.settings["个人设置"]["制卡间隔"] = f"{value}"
             self.produce_interval = value
@@ -887,6 +916,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     handle = win32gui.GetParent(handle)
                 self.handle_360 = handle
                 self.window_name_360 = win32gui.GetWindowText(self.handle_360)
+                # 获取供刷新用的网页句柄
+                self.handle_web = self.find_sibling_window_by_class(win32gui.GetParent(self.handle), "Chrome_RenderWidgetHostHWND")
+                print(self.handle_web)
+                
             else:
                 self.window_name_360 = None
             print(self.window_name_360)
@@ -899,12 +932,25 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     |- Type: WrapperNativeWindowClass
                         |- Type: NativeWindowClass # Flash游戏层级
     """
+    def find_sibling_window_by_class(self, hwnd, sibling_class_name):
+        parent = win32gui.GetParent(hwnd)
+        if not parent:
+            return None
+
+        hwnd_sibling = None
+        def enum_sibling_windows(hwnd, param):
+            nonlocal hwnd_sibling
+            if win32gui.GetClassName(hwnd) == sibling_class_name:
+                hwnd_sibling = hwnd
+                return False  # 停止枚举
+            return True  # 继续枚举
+
+        win32gui.EnumChildWindows(parent, enum_sibling_windows, None)
+        return hwnd_sibling
 
     def get_handle_cus(self, mode="flash"):
         """
         解析频道名称 获取句柄, 仅支持360游戏大厅,
-        号1：输入你为游戏命名 例如'锑食‘
-        号2：输入你命名的角色名 + 空格 + | + 空格 游戏命名。例如：'深渊之下 | 锑食'
         :param channel: 频道名称
         :param mode: "360" -> "browser" -> "flash"
         :return: handel
@@ -1713,6 +1759,42 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.output_log.verticalScrollBar().setValue(
             self.output_log.verticalScrollBar().maximum()
         )
+    
+    # 输入二级密码
+    def check_second_password(self) -> None:
+        # 先检查二级密码设置
+        if self.settings["个人设置"]["二级密码"] == "":
+            # 弹窗提示
+            self.show_dialog_signal.emit("啊哇哇哇哇", "你没有填二级密码开什么二级密码输入功能呀")
+            return
+        # 确保当前位置处于能看见合成屋的地方
+        if not self.check_position() == 0:
+            self.send_log_message("找不到跳转按钮，不输入二级密码")
+            return
+        # 跳转到暗晶商店，尝试兑换星座卡随机礼包
+        self.click(870, 556)
+        QtCore.QThread.msleep(500)
+        self.click(880, 225)
+        QtCore.QThread.msleep(500)
+        self.click(795, 488)
+        QtCore.QThread.msleep(500)
+        self.click(177, 65)
+        QtCore.QThread.msleep(500)
+        self.click(407, 449)
+        QtCore.QThread.msleep(500)
+        # 循环输入二级密码
+        for char in self.settings["个人设置"]["二级密码"]:
+            win32gui.PostMessage(self.handle, win32con.WM_CHAR, ord(char), 0)
+            QtCore.QThread.msleep(100)
+        # 输入完成后点击完成
+        self.click(438, 386)
+        QtCore.QThread.msleep(500)
+        # 退出暗晶商店和公会副本，归位到主界面
+        self.click(917, 38)
+        QtCore.QThread.msleep(500)
+        self.click(912, 78)
+        QtCore.QThread.msleep(500)
+
 
     def reload_game(self):
 
@@ -1754,6 +1836,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
                     if not find:
                         print("未找到360大厅刷新游戏按钮, 可能导致一系列问题...")
+        
+        def reflash_web_page():
+            # 对网页句柄发送F5键
+            win32gui.PostMessage(self.handle_web, win32con.WM_KEYDOWN, win32con.VK_F5, 0)
+            win32gui.PostMessage(self.handle_web, win32con.WM_KEYUP, win32con.VK_F5, 0)
 
         def try_enter_server_4399():
             # 4399 进入服务器
@@ -1806,6 +1893,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 # 点击刷新按钮 该按钮在360窗口上
                 print("[刷新游戏] 点击刷新按钮...")
                 click_refresh_btn()
+
+                # 对网页发送F5
+                # print("[刷新游戏] 发送F5刷新网页...")
+                # reflash_web_page()
+
 
                 # 是否在 选择服务器界面 - 判断是否存在 最近玩过的服务器ui(4399 or qq空间) 或 开始游戏(qq游戏大厅) 并进入
                 result = False
@@ -1917,13 +2009,19 @@ class EnhancerThread(QtCore.QThread):
     def run(self):
         # 读取制卡模式
         produce_mode = int(self.enhancer.settings["个人设置"]["制卡模式"])
+        # 如果打开了输入二级密码，且处于能看到合成屋的位置，则代替输入二级密码
+        if self.enhancer.settings["个人设置"]["是否输入二级密码"]:
+            self.enhancer.check_second_password()
         # 初始化位置，保证位置在合成屋或强化页面
         if not self.init_position():
             return
         while self.enhancer.is_running:
-            # 如果强化到达一定时间，就刷新游戏重进一下游戏, 防止卡顿
-            if time.time() - self.enhancer.time_last_reload_game >= 3600:
+            # 如果强化到达一定时间，且打开刷新游戏设置，就刷新游戏重进一下游戏, 防止卡顿
+            if self.enhancer.is_reload_game and time.time() - self.enhancer.time_last_reload_game >= self.enhancer.reload_time * 60:
                 self.reload_game()
+            # 检查停止标识
+            if not self.enhancer.is_running:
+                break
             # 如果强化到了一定次数，就退出重进一下合成屋，防止卡顿
             if self.enhancer.enhance_times >= self.enhancer.reload_count:
                 self.reload_house()
@@ -2014,6 +2112,8 @@ class EnhancerThread(QtCore.QThread):
             # 五次都没找到，就弹窗
             self.showDialogSignal.emit("嗯？", "怎么点不到强化标签？")
 
+        
+
     def reload_house(self):
         # 点击右上角的红叉
         self.enhancer.click(914, 38)
@@ -2029,6 +2129,9 @@ class EnhancerThread(QtCore.QThread):
         if self.enhancer.window_name_360:
             print("到一小时了, 360游戏大厅刷新")
             self.enhancer.reload_game()
+            # 刷新后检查二级密码
+            if self.enhancer.settings["个人设置"]["是否输入二级密码"]:
+                self.enhancer.check_second_password()
             # 重新点击合成屋
             self.enhancer.click(685, 558)
             QtCore.QThread.msleep(600)
