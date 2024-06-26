@@ -1,8 +1,8 @@
 # 天知强卡器，打算用pyqt6做GUI
 # setting字典的结构为:setting[type][name][count]
 # 统计数据字典的结构为:statistics[type][name][count]
-# 0.3.0更新计划：卡包强卡（需要自己开包）
-# 0.3.0已完成：给日志加上时间戳；把香料上限做成个数;改进位置标志识别方法；将四叶草翻页间隔也做成设置;优化删除标签的按钮图标；自定义拖曳距离
+# 0.3.0更新计划：自动垫卡；强化期望
+# 0.3.0已完成：给日志加上时间戳；把香料上限做成个数;改进位置标志识别方法；将四叶草翻页间隔也做成设置;优化删除标签的按钮图标；自定义拖曳距离; 间隔一段时间自动刷新；自动输入二级密码；卡包强卡；自动分解宝石；强化模拟器；单卡强卡时，查找第一张卡方法；加入不绑卡加绑定草/绑定卡时，自动点击确定按钮；统计数据可视化
 # BUG修复： 制卡时跳出检测超时；会错误点到永久保鲜袋；页面会来回切换；修复了四叶草标识没有在开始时被正确初始化的BUG
 # -*- coding: utf-8 -*-
 import time
@@ -22,8 +22,13 @@ import queue
 import copy
 from module.ResourceInit import ResourceInit
 from module.bg_img_match import match_p_in_w, loop_match_ps_in_w, loop_match_p_in_w
-from module.utils import imread, resource_path, hide_layout
+from module.utils import imread, resource_path, hide_layout, template_match_with_mask
 from GUI.editwindow import EditWindow
+from GUI.priceeditor import PriceEditor
+from GUI.webstatistics import WebStatistics
+from module.CardPackEditor import CardPackEditor
+from module.EnhanceSimulator import EnhanceSimulator
+from module.AutoCushion import AutoCushion
 
 
 class tenchi_cards_enhancer(QtWidgets.QMainWindow):
@@ -80,7 +85,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.dpi = self.get_system_dpi()
 
         # 变量初始化
-        self.version = "0.2.3"
+        self.version = "0.3.0"
         self.handle = None
         self.handle_browser = None
         self.handle_360 = None
@@ -94,8 +99,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.produce_count = 0
         self.card_name = '无'
         self.card_info_dict = {}
+        self.gold_cost_map = {}
         self.enhance_type = '无'
         self.time_last_reload_game = time.time()
+        self.single_max_card_position = 0
         
 
         # 初始化香料列表
@@ -113,6 +120,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.temp_card_level_dict = {}
         self.settings = self.load_settings()  # 读取设置作为全局变量
         self.statistics = self.load_statistics()  # 读取统计数据作为全局变量
+        self.pack_names = self.settings["卡包配置"].keys() # 提取所有卡包名
         self.min_level = int(self.settings["个人设置"]["最小星级"])
         self.max_level = int(self.settings["个人设置"]["最大星级"])
         self.reload_count = int(self.settings["个人设置"]["刷新次数"])
@@ -127,6 +135,13 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.spice_and_clover_interval = int(self.settings["个人设置"]["材料翻页间隔"])
         self.scroll_times = int(self.settings["个人设置"]["拖动次数"])
         
+        # 获取卡片属性字典
+        with open(resource_path('GUI/card_dict/card_info_dict.json'), 'r', encoding='utf-8') as f:
+            self.card_info_dict = json.load(f)
+
+        # 获取金币消耗映射
+        with open(resource_path('GUI/card_dict/gold_cost.json'), 'r', encoding='utf-8') as f:
+            self.gold_cost_map = json.load(f)
 
         # 背景遮盖层初始化
         self.frosted_layer.lower()  # 将半透明层放到底层
@@ -146,16 +161,21 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.init_furina_helper()
 
         # 配置开始和停止按钮，将开始与停止连接上槽
-        self.startbtn.setEnabled(False)  # 没有句柄时，开始与仅强化都不可用
+        self.startbtn.setEnabled(False)  # 没有句柄时，开始与仅强化与宝石分解都不可用
         self.enhanceronlybtn.setEnabled(False)
+        self.gem_decompose_btn.setEnabled(False)
         self.stopbtn.setEnabled(False)  # 初始时停止按钮不可用
         self.startbtn.clicked.connect(self.onStart)
         self.stopbtn.clicked.connect(self.onStop)
         self.enhanceronlybtn.clicked.connect(self.enhanceronly)
 
+        # 连接宝石分解按钮
+        self.gem_decompose_btn.clicked.connect(self.start_gem_decomposition)
+
         # 连上工作线程
         self.EnhancerThread = EnhancerThread(self)
         self.enhanceonlyThread = enhanceonlyThread(self)
+        self.decomposeThread = decomposeThread(self)
 
         # 连接上工作线程的信号
         self.EnhancerThread.showDialogSignal.connect(self.show_dialog)
@@ -165,7 +185,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
         # 配置，初始化配方选择菜单
         self.select_list = self.recipe_select
-        self.init_recipe_box(self.recipe_select.recipeSelectBox)
+        self.init_recipe_box(self.recipe_select.recipeSelectBox, include_pack=False)
         self.init_recipe_select_list()
         # 连接配方选择窗口信号
         self.select_list.recipeAdded.connect(self.on_recipe_added)
@@ -182,8 +202,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.init_spice_limit()
         # 初始化个人设置页
         self.init_setting()
-        # 初始化统计数据页
-        self.init_statistics()
         # 初始化状态栏
         self.init_statusbar()
 
@@ -196,40 +214,39 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 创建生产队列实例
         self.produce_queue = queue.Queue()
 
+        # 创建卡包编辑器实例
+        self.card_pack_editor = CardPackEditor(self.settings["卡包配置"])
+        # 把卡包编辑器加入到self.tabWidget
+        self.tabWidget.insertTab(3, self.card_pack_editor, '卡包配置')
+        # 加入提示
+        self.tabWidget.setTabToolTip(3, '在这里编辑你的卡包！默认开包能开出来的卡片都已经设置好啦，卡包被同时视为多张卡片哦')
+        # 初始化卡包编辑器选卡菜单
+        self.init_recipe_box(self.card_pack_editor.card_select_box)
+        # 连接卡包编辑器保存卡包信号
+        self.card_pack_editor.save_signal.connect(self.save_card_pack)
+
+        # 创建强化模拟器实例
+        self.enhance_simulator = EnhanceSimulator(resource_path('GUI/card_dict/compose.json'), self)
+        # 初始化强化模拟器
+        self.init_simulator()
+        # 初始化物价编辑器
+        self.price_editor = None
+        # 将物价编辑器连接上按钮
+        self.price_editor_btn.clicked.connect(self.show_price_editor)
+
+        # 创建自动垫卡实例
+        self.auto_cushion = AutoCushion(self)
+        # 初始化自动垫卡
+        self.init_cushion()
+
+        # 创建统计数据页实例
+        self.web_statistics = WebStatistics(self)
+
         # 在主窗口中创建一个编辑窗口的属性
         self.edit_window = None
         # 追踪目前窗口的对象名
         self.current_label_object_name = None
-
-    # 统计数据页GUI
-    def init_statistics(self):
-        # 创建一个新实例
-        stats_tab_widget = QtWidgets.QTabWidget(self.tab_3)
-        # 为每个统计数据类别创建一个标签页和表格视图
-        for category, data in self.statistics.items():
-            # 创建一个新的QWidget作为标签页
-            tab_statistics = QtWidgets.QWidget()
-            stats_tab_widget.addTab(tab_statistics, category)
-
-            # 创建表格视图
-            table = QtWidgets.QTableWidget()
-            table.setColumnCount(2)
-            table.setHorizontalHeaderLabels(['项目', '数量'])
-
-            # 填充数据
-            table.setRowCount(len(data))
-            for i, (key, value) in enumerate(data.items()):
-                table.setItem(i, 0, QtWidgets.QTableWidgetItem(key))
-                table.setItem(i, 1, QtWidgets.QTableWidgetItem(str(value)))
-
-            # 创建布局并添加表格到新标签页
-            layout = QtWidgets.QVBoxLayout(self.tab_3)
-            layout.addWidget(table)
-            tab_statistics.setLayout(layout)
-        # 创建布局并添加新的 QTabWidget 到 tab_3
-        layout = QtWidgets.QVBoxLayout(self.tab_3)
-        layout.addWidget(stats_tab_widget)
-
+        
     # 获取系统dpi
     def get_system_dpi(self):
         # 创建一个设备上下文（DC）用于屏幕
@@ -245,8 +262,13 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.enhanceronlybtn.setEnabled(False)
         self.startbtn.setEnabled(False)
         self.stopbtn.setEnabled(True)
+        # 打开运行标识
+        self.is_running = True
         # 正式开始前先防呆
         self.dull_detection()
+        # 如果没通过防呆检测，就直接返回
+        if self.is_running == False:
+            return
         self.EnhancerThread.start_loop()
 
     # 停止按钮
@@ -260,18 +282,22 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 仅强卡按钮
     def enhanceronly(self):
         # 初始化按钮
-        self.is_running = True
         self.stopbtn.setEnabled(True)
         self.startbtn.setEnabled(False)
+        # 打开运行标识
+        self.is_running = True
         # 正式开始前先防呆
         self.dull_detection()
+        # 如果没通过防呆检测，就直接返回
+        if self.is_running == False:
+            return
         self.enhanceonlyThread.start_enhance()
 
     # 芙芙助手，功能强大
     def init_furina_helper(self):
         # 乌瑟勋爵，一键统一所有强化方案用卡
         # 初始化配方选择框
-        self.init_recipe_box(self.GentilhommeUsher_box)
+        self.init_recipe_box(self.GentilhommeUsher_box, include_pack=True)
         # 将按钮连接上一键统一功能
         self.GentilhommeUsher_btn.clicked.connect(self.gentilhomme_usher)
         # 海薇玛夫人，一键将副卡星级设置为最优路径
@@ -330,6 +356,18 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 保存强化方案！
         self.save_settings(self.settings)
 
+    # 保存并刷新卡包配置
+    def save_card_pack(self, card_pack):
+        # 保存卡包配置
+        self.settings["卡包配置"] = card_pack
+        # 保存设置
+        self.save_settings(self.settings)
+        # 刷新卡包名
+        self.pack_names = self.settings["卡包配置"].keys()
+        # 刷新卡包配置，只有乌瑟勋爵需要在这里刷新
+        self.GentilhommeUsher_box.clear()
+        self.init_recipe_box(self.GentilhommeUsher_box, include_pack=True)
+
     # 保存当前设置
     def save_current_settings(self):
         # 调用保存设置函数
@@ -381,7 +419,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 初始化配方选择框
         for i in range(4):
             recipe_box = getattr(self.edit_window, f'card_box{i}')
-            self.init_recipe_box(recipe_box)
+            self.init_recipe_box(recipe_box, include_pack=True)
             # 将配方选择框更改的信号连接上字典的编辑和保存
             recipe_box.currentIndexChanged.connect(self.on_recipe_box_changed)
 
@@ -439,11 +477,12 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.current_card_name.setText(f'当前选择配方：{self.card_name}')
 
     # 初始化选卡菜单
-    def init_recipe_box(self, comboBox):
+    def init_recipe_box(self, comboBox, include_pack=False, filter_word=None, need_suffix=True):
         recipe_dir = resource_path("items/recipe")
-        # 获取卡片属性字典
-        with open(resource_path('GUI/card_dict/card_info_dict.json'), 'r', encoding='utf-8') as f:
-            self.card_info_dict = json.load(f)
+        # 在开头加入卡包名
+        if include_pack:
+            for pack_name in self.pack_names:
+                comboBox.addItem(pack_name)
         if os.path.exists(recipe_dir):
             # 获取卡片名列表
             filenames = os.listdir(recipe_dir)
@@ -452,8 +491,14 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             for filename in sorted_filenames:
                 # 获取卡片名
                 recipe_name = filename.replace("配方.png", "")
-                # 在卡片名后面加上卡片的属性
-                card_text = f"{recipe_name}-{self.card_info_dict.get(recipe_name, '未知')}"
+                recipe_quality = self.card_info_dict.get(recipe_name, '未知')
+                # 如果有筛选词，则只显示包含筛选词的卡片
+                if filter_word and filter_word != recipe_quality:
+                    continue
+                card_text = recipe_name
+                # 如果需要后缀，则在卡片名后面加上卡片的属性
+                if need_suffix:
+                    card_text += f"-{recipe_quality}"
                 comboBox.addItem(card_text)
 
     def on_recipe_added(self, text):
@@ -517,7 +562,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         for i in range(3):
             for j in range(16):
                 subcard_box_name = f"subcard{i + 1}_{j}"
-                subcard_box = getattr(self, subcard_box_name) \
+                subcard_box = getattr(self, subcard_box_name)
                     # 阻止信号发射
                 subcard_box.blockSignals(True)
                 # 清除现有的选项
@@ -724,6 +769,90 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
         # 更新运行期间强化次数
         self.enhance_count_label.setText(f'本次运行期间共强化: {self.enhance_count}次')
+    
+    # 初始化强化模拟器
+    def init_simulator(self):
+        # 绑定添加主卡/副卡按钮
+        self.add_main_card_btn.clicked.connect(self.add_virtual_card)
+        self.add_sub_card_btn_1.clicked.connect(self.add_virtual_card)
+        self.add_sub_card_btn_2.clicked.connect(self.add_virtual_card)
+        self.add_sub_card_btn_3.clicked.connect(self.add_virtual_card)
+        # 绑定四叶草按钮
+        self.clover_select_box.currentIndexChanged.connect(self.enhance_simulator.clover_changed)
+        # 绑定强化按钮
+        self.enhance_btn.clicked.connect(self.enhance_simulator.cyber_enhance)
+        # 绑定获得方案期望按钮
+        self.get_expectation_btn.clicked.connect(self.enhance_simulator.get_enhancement_expectation)
+        # 初始化选择框数值
+        self.guild_compose_level_input.setValue(self.settings["强化模拟器"]["公会合成屋等级"])
+        self.VIP_level_input.setValue(self.settings["强化模拟器"]["VIP等级"])
+        # 绑定VIP等级和合成屋等级选择框，将它们的数据修改后保存
+        self.guild_compose_level_input.valueChanged.connect(self.save_bonus_rate)
+        self.VIP_level_input.valueChanged.connect(self.save_bonus_rate)
+
+    # 等级保存和强化成功率修改
+    def save_bonus_rate(self):
+        sender = self.sender()
+        sender_name = sender.objectName()
+        if sender_name == "guild_compose_level_input":
+            self.settings["强化模拟器"]["公会合成屋等级"] = sender.value()
+        elif sender_name == "VIP_level_input":
+            self.settings["强化模拟器"]["VIP等级"] = sender.value()
+        # 保存设置
+        self.save_settings(self.settings)
+        # 刷新显示
+        self.enhance_simulator.get_bonus()
+    
+    # 强化模拟器卡片添加
+    def add_virtual_card(self):
+        # 获取对象名
+        sender = self.sender()
+        # 分离出对象数字
+        id = sender.objectName().split('_')[1]
+        # 创建质量映射
+        quality_map = {
+                "好卡": "2",
+                "中卡": "0",
+                "差卡": "1",
+            }
+        if id == "main":
+            # 主卡
+            level = self.main_card_level_box.currentText()
+            quality = self.main_card_quality_box.currentText()
+            self.enhance_simulator.simulator_cards["0"] = {
+                "星级": level,
+                "质量": quality_map[quality],
+            }
+        elif id == "sub":
+            id = sender.objectName().split('_')[4]
+            sub_card_level_box = getattr(self, f"sub_card_level_box_{id}")
+            sub_card_quality_box = getattr(self, f"sub_card_quality_box_{id}")
+            level = sub_card_level_box.currentText()
+            quality = sub_card_quality_box.currentText()
+            self.enhance_simulator.simulator_cards[id] = {
+                "星级": level,
+                "质量": quality_map[quality],
+            }
+        # 刷新强化模拟器UI
+        self.enhance_simulator.refresh_ui()
+    
+    # 打开物价编辑器
+    def show_price_editor(self):
+        # 创建物价编辑器实例
+        price_editor = PriceEditor(self.settings["物价"])
+        if price_editor.exec():  # 如果用户点击了保存
+            data = price_editor.get_data()
+            self.settings["物价"] = data  # 保存到设置中
+            self.save_settings(self.settings)
+
+    # 初始化自动垫卡
+    def init_cushion(self):
+        # 将按钮连接上添加规律
+        self.add_rule_btn.clicked.connect(self.auto_cushion.add_rules)
+        # 连接上删除规律
+        self.delete_rule_btn.clicked.connect(self.auto_cushion.delete_rule)
+        # 连接上开始寻找方案
+        self.find_combination_btn.clicked.connect(self.auto_cushion.find_combination)
 
     # 编辑正在选择配方的制卡方案
     def on_recipe_selected(self, text):
@@ -903,9 +1032,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             window_text = win32gui.GetWindowText(self.handle)
             self.handle_label.setText(f"窗口句柄: {self.handle}")
             self.window_label.setText(f"窗口名: {window_text}")
-            # 允许点击开始与仅强化
+            # 允许点击开始与仅强化与宝石分解
             self.startbtn.setEnabled(True)
             self.enhanceronlybtn.setEnabled(True)
+            self.gem_decompose_btn.setEnabled(True)
             if win32gui.GetClassName(handle) == "NativeWindowClass":
                 print("360游戏大厅模式, 允许刷新, 可用 window_name_360 是否 None 判断")
                 # 获取上级句柄
@@ -1132,7 +1262,15 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     def load_settings(self, filename='setting.json'):
         try:
             with open(filename, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                # 与默认字典比对，如果缺少了默认字典的键，则把默认字典的键添加进去
+                settings = json.load(f)
+            filename = resource_path('GUI/default/setting.json')
+            with open(filename, 'r', encoding='utf-8') as f:
+                default = json.load(f)
+            for key, value in default.items():
+                if key not in settings:
+                    settings[key] = value
+            return settings  # 返回设置字典
         except FileNotFoundError:
             filename = resource_path('GUI/default/setting.json')
             with open(filename, 'r', encoding='utf-8') as f:
@@ -1158,19 +1296,18 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         if type == 0:  # 四叶草
             # name是列表，包含四叶草名[0]与绑定信息[1]
             if name[1]:
-                self.statistics["使用四叶草总和"]['绑定'] = self.update_dict(self.statistics["使用四叶草总和"]['绑定'],
-                                                                             f"{name[0]}四叶草", value)
+                self.statistics["使用四叶草总和"]['绑定'] = self.update_dict(self.statistics["使用四叶草总和"]['绑定'],f"{name[0]}四叶草", value)
             else:
-                self.statistics["使用四叶草总和"]['不绑'] = self.update_dict(self.statistics["使用四叶草总和"]['不绑'],
-                                                                             f"{name[0]}四叶草", value)
+                self.statistics["使用四叶草总和"]['不绑'] = self.update_dict(self.statistics["使用四叶草总和"]['不绑'],f"{name[0]}四叶草", value)
         elif type == 1:  # 香料
             # name也是列表，包含香料名[0]与绑定信息[1]
             if name[1]:
-                self.statistics["使用香料总和"]['绑定'] = self.update_dict(self.statistics["使用香料总和"]['绑定'],
-                                                                           name[0], value * 5)
+                self.statistics["使用香料总和"]['绑定'] = self.update_dict(self.statistics["使用香料总和"]['绑定'],name[0], value * 5)
             else:
-                self.statistics["使用香料总和"]['不绑'] = self.update_dict(self.statistics["使用香料总和"]['不绑'],
-                                                                           name[0], value * 5)
+                self.statistics["使用香料总和"]['不绑'] = self.update_dict(self.statistics["使用香料总和"]['不绑'],name[0], value * 5)
+            # 统计金币消耗
+            gold_cost = self.gold_cost_map["香料"][name[0]] * value
+            self.statistics = self.update_dict(self.statistics ,"使用金币总额", gold_cost)
         elif type == 2:  # 使用卡片
             # name还是一个包含主卡与副卡信息的列表，需要摘出列表信息后，再进行统计
             for i in range(len(name)):
@@ -1178,21 +1315,24 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 level = sub_card_info["星级"]
                 bind = sub_card_info["绑定"]
                 if bind:
-                    self.statistics["使用卡片总和"]['绑定'] = self.update_dict(self.statistics["使用卡片总和"]["绑定"],
-                                                                               level, value)
+                    self.statistics["使用卡片总和"]['绑定'] = self.update_dict(self.statistics["使用卡片总和"]["绑定"],level, value)
                 else:
-                    self.statistics["使用卡片总和"]['不绑'] = self.update_dict(self.statistics["使用卡片总和"]["不绑"],
-                                                                               level, value)
+                    self.statistics["使用卡片总和"]['不绑'] = self.update_dict(self.statistics["使用卡片总和"]["不绑"],level, value)
         elif type == 3:  # 强化出卡片，强化次数，成功次数
-            # 强化出卡片也是一个列表，有两个值，分别是强化卡片的星级和强化前的星级，以此统计对应星级的强化次数，还能搞出成功次数
+            # 强化出卡片也是一个列表，有三个值，分别是强化卡片的星级和强化前的星级和强化出卡片的绑定状况，以此统计对应星级的强化次数，还能搞出成功次数
             level = name[0]
             after_level = name[1]
-            self.statistics["强化次数总和"] = self.update_dict(self.statistics["强化次数总和"], f'{level}-{level + 1}',
-                                                               value)
-            self.statistics["强化出卡片总和"] = self.update_dict(self.statistics["强化出卡片总和"], after_level, value)
+            bind = name[2]
+            self.statistics["强化次数总和"] = self.update_dict(self.statistics["强化次数总和"], f'{level}-{level + 1}',value)
+            if bind:
+                self.statistics["强化出卡片总和"] = self.update_dict(self.statistics["强化出卡片总和"]["绑定"], after_level, value)
+            else:
+                self.statistics["强化出卡片总和"] = self.update_dict(self.statistics["强化出卡片总和"]["不绑"], after_level, value)
             if after_level > level:
-                self.statistics["成功次数总和"] = self.update_dict(self.statistics["成功次数总和"],
-                                                                   f'{level}-{level + 1}', value)
+                self.statistics["成功次数总和"] = self.update_dict(self.statistics["成功次数总和"],f'{level}-{level + 1}', value)
+            # 统计金币消耗
+            gold_cost = self.gold_cost_map["主卡等级"][level]
+            self.statistics = self.update_dict(self.statistics ,"使用金币总额", gold_cost)
         # 最后保存统计次数
         self.save_statistics(self.statistics)
 
@@ -1210,24 +1350,29 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     def get_recipe(self, target_img):
         # 截图三次，每次拖曳三格
         for i in range(4):
-            # 等待50毫秒
-            QtCore.QThread.msleep(50)
+            # 等待100毫秒
+            QtCore.QThread.msleep(150)
             # 截图
             img = self.get_image(559, 90, 343, 196)
             # 直接模板匹配图像
             result = cv2.matchTemplate(img, target_img, cv2.TM_CCOEFF_NORMED)
             min_value, max_value, min_loc, max_loc = cv2.minMaxLoc(result)
-            if max_value >= 0.95:
+            if max_value >= 0.97:
                 # 匹配成功，点击配方位置
                 x, y = max_loc
-                self.click(580 + x, 110 + y)
+                # 计算模板图像的中心位置
+                center_x = x + target_img.shape[1] // 2
+                center_y = y + target_img.shape[0] // 2
+
+                # 然后点击中心位置
+                self.click(580 + center_x, 110 + center_y)
                 return
             # 匹配失败，鼠标滑动15个像素，再次截图，如果是第一次尝试，就只点击滑块最上方
             if i == 0:
                 self.click(910, 110)
             else:
                 self.drag(910, 95 + i * 15, 0, 15)
-            QtCore.QThread.msleep(250)
+            QtCore.QThread.msleep(200)
         # 匹配失败，弹出弹窗
         self.show_dialog_signal.emit("危", "配方识别失败,请检查自己的配方")
         return
@@ -1273,55 +1418,116 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         return
 
     # 强化卡片主函数
-    def main_enhancer(self):
+    def main_enhancer(self, enhance_only: bool=False, single_plan:dict=None):
+        if not self.is_running:
+            return
+        # 初始化当前位置
+        current_position = 0
         # 最终方案，滚动条的长度是110-415，共计315个像素，根据设置的滚动次数来进行滚动
         scroll_length = 315 // self.scroll_times
+        # 确认当前生产方案中卡片数量
+        if enhance_only:
+            card_num = 2
+        elif single_plan:
+            card_num = 2
+        else:
+            card_num = len(self.settings["生产方案"])
+        # 单卡强卡特殊方案，寻找比强化最高星级低一级的卡片位置
+        if card_num == 1 and self.single_max_card_position == 0:
+            self.find_max_card_position()
         # 每次强化，卡片的顺序都会改变，只能强化一次截一次图，直到强卡器返回False，才停止循环
         while self.is_running:
-            for i in range(self.scroll_times):
-                # 每次强化之后合成屋栏位都会动，所以在调用前要先等待100毫秒
+            # 每次强化之后合成屋栏位都会动，所以在截图前要先等待150毫秒
+            QtCore.QThread.msleep(150)
+            # 初始化偏移值,切割传入图像
+            self.offset = 0
+            # 截图并切割图片，方法更新，用模板匹配图片中的第一行，然后把色块以上的图片全部切掉，再识别。这样无论滑块在哪里，都能确保找到七行卡片
+            img = self.get_cut_cards_img(need_offset=True) # 单卡强卡时可优化
+            # 尝试获取强化卡片字典
+            self.card_dict = {}
+            self.card_dict = self.get_card_dict(img, single_plan)
+            if self.card_dict:
+                # 强化当前页面卡片
+                self.card_enhancer(single_plan=single_plan)
+                if self.cards_enough:
+                    # 强化后打破拖曳，在循环一次
+                    continue
+            # 检查停止标识
+            if not self.is_running:
+                return
+            # 如果卡片数量大于1，则启用第一种拖曳方式
+            if card_num > 1:
+                # 如果在非第一次拖曳中，当前页面没有获取到强化字典，同时识别出了空格，表明再往下拉也没卡了，那么就退出循环
+                if current_position != 0 and not self.match_image(img, self.resources.empty_card, 3):
+                    return
+                # 拖曳长度取决于拖曳次数，每次拖曳长度为315/滚动次数，当前位置为0时，点击一次滑块最顶端
+                if current_position == 0:
+                    current_position += 5
+                    self.click(908, 120)
+                else:
+                    self.drag(908, 120 + current_position, 0, scroll_length)
+                    current_position += scroll_length
                 QtCore.QThread.msleep(100)
-                # 获取截图
-                img = self.get_image(559, 91, 343, 456)
-                # 处理并切割截图
-                # 初始化偏移值,切割传入图像
-                self.offset = 0
-                # 方法更新，用模板匹配图片中的第一行，然后把色块以上的图片全部切掉，再识别。这样无论滑块在哪里，都能确保找到七行道具
-                line_img = self.resources.line_img
-                if line_img.shape[0] <= img.shape[0] and line_img.shape[1] <= img.shape[1]:
-                    # 进行模板匹配
-                    result = cv2.matchTemplate(img, line_img, cv2.TM_CCOEFF_NORMED)
-                    # 遍历匹配结果
-                    for y in range(result.shape[0]):
-                        if result[y, 0] >= 0.30:
-                            self.offset = y  # 保存偏移值
-                            # 裁剪图像，保留标记位置以下的七格像素
-                            img = img[y + 1:400 + y]
-                            break
-                # 尝试获取强化卡片字典
-                self.get_card_dict(img)
-                if self.card_dict:
-                    # 初始化四叶草标识
-                    # 强化当前页面卡片
-                    self.card_enhancer()
-                    if self.cards_enough:
-                        # 强化后打破拖曳，再循环一次
-                        break
-                # 没有可以强化的卡了，拖曳截图一次，顺便检查一下停止标识
-                if not self.is_running:
+                # 当前位置超过315，退出循环
+                if current_position >= 315:
                     return
-                # 如果在非第一次拖曳中，当前页面没有获取到强化字典，同时识别出了空格，表面再往下拉也没卡了，那么就退出循环
-                if i != 0 and not self.match_image(img, self.resources.empty_card, 3):
+            else:
+                # 单卡拖曳方式，固定在等级最高卡片位置
+                self.click(908, 120 + self.single_max_card_position)
+                return
+    
+    # 寻找等级最高卡片位置
+    def find_max_card_position(self):
+        # 初始化目标等级
+        target_level = self.max_level - 1
+        current_max_level = 0
+        full_card_dict = {}
+        # 分8次获取卡片字典，获得目前最高卡片等级
+        scroll_length = 315 // 8
+        for i in range(8):
+            QtCore.QThread.msleep(200)
+            img = self.get_cut_cards_img()
+            full_card_dict.update(self.get_card_dict(img))
+            self.drag(908, 120 + i * scroll_length, 0, scroll_length)
+        if not full_card_dict:
+            return
+        for card in full_card_dict.values():
+            card_level = int(card["星级"])
+            if card_level <= target_level:
+                current_max_level = max(current_max_level, card_level)
+        # 寻找到目标等级后，从开始慢慢拖曳滑块，直到那张等级最高的卡片出现在第一行
+        for i in range(30):
+            if not self.is_running:
+                return
+            QtCore.QThread.msleep(200)
+            img = self.get_cut_cards_img()
+            card_dict = self.get_card_dict(img)
+            # 如果字典里的位置第一行里存在目标等级的卡，就停止拖曳，并修改位置设置
+            for j in range(0, 7):
+                if card_dict.get(f"{j}-0") and int(card_dict.get(f"{j}-0")["星级"]) == current_max_level:
+                    self.single_max_card_position = i * 10
                     return
-                # 拖曳长度取决于拖曳次数，每次拖曳长度为315/滚动次数
-                self.drag(908, 120 + i * scroll_length, 0, scroll_length)
-                QtCore.QThread.msleep(200)
-                # 七次拖曳截图都没有获取到卡片，退出循环
-                if i == 6:
-                    return
+            self.drag(908, 120 + i * 10, 0, 10)
+    
+    # 获取裁剪过的合成屋卡片图像
+    def get_cut_cards_img(self, need_offset=False) -> list:
+        img = self.get_image(559, 91, 343, 456)
+        line_img = self.resources.line_img
+        if line_img.shape[0] <= img.shape[0] and line_img.shape[1] <= img.shape[1]:
+            # 进行模板匹配
+            result = cv2.matchTemplate(img, line_img, cv2.TM_CCOEFF_NORMED)
+            # 遍历匹配结果
+            for y in range(result.shape[0]):
+                if result[y, 0] >= 0.30:
+                    # 裁剪图像，保留标记位置以下的七格像素
+                    img = img[y + 1:400 + y]
+                    if need_offset:
+                        self.offset = y
+                    break
+        return img
 
     # 获取强化卡片字典
-    def get_card_dict(self, img):
+    def get_card_dict(self, img, single_plan:dict=None) -> dict:
         """
         遍历识图当前页面的卡片，然后返回对应格式的字典。迭代副卡卡片列表，然后对同一张图片多次识图，凑成一个完整字典。
         字典格式如下:{
@@ -1333,18 +1539,32 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         }
         """
         # 初始化卡片字典
-        self.card_dict = {}
+        card_dict = {}
         # 初始化所有卡片数组
         cards = []
         # 从选定星级上下限的强化方案中，迭代出所有副卡的名字，作为数组
-        for i in range(self.min_level, self.max_level):
-            for j in range(4):
-                if j == 0:
-                    card_name = self.settings["强化方案"][f"{i}-{i + 1}"]["主卡"]["卡片名称"]
-                else:
-                    card_name = self.settings["强化方案"][f"{i}-{i + 1}"][f"副卡{j}"]["卡片名称"]
+        if single_plan: # 如果有单独方案，则按照单独的方案录入卡片
+            for card, info in single_plan.items():
+                if card == "四叶草":
+                    continue
+                card_name = info["卡片名称"]
                 if card_name != "无" and card_name not in cards:
-                    cards.append(card_name)
+                    cards.append(name)
+        else:
+            for i in range(self.min_level, self.max_level):
+                for j in range(4):
+                    if j == 0:
+                        card_name = self.settings["强化方案"][f"{i}-{i + 1}"]["主卡"]["卡片名称"]
+                    else:
+                        card_name = self.settings["强化方案"][f"{i}-{i + 1}"][f"副卡{j}"]["卡片名称"]
+                    if card_name in self.pack_names:
+                        for name in self.settings["卡包配置"][card_name]:
+                            if name in cards:
+                                break
+                            cards.append(name)
+                        continue
+                    if card_name != "无" and card_name not in cards:
+                        cards.append(card_name)
         # 遍历卡片数组，分别识图，凑成一个完整的字典
         for card_name in cards:
             # 初始化卡片信息
@@ -1353,7 +1573,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             card_image = imread(resource_path(f"items/card/{card_name}.png"))
             card_info = self.match_image(img, card_image, 2, None, card_name)
             if card_info:
-                self.card_dict.update(card_info)
+                card_dict.update(card_info)
+        return card_dict
 
     # 固定制卡，创建生产队列
     def create_produce_queue(self):
@@ -1363,25 +1584,25 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.add_to_produce_queue(card_name)
 
     # 把内容添加到生产队列
-    def add_to_produce_queue(self, card_name: str, spice_index: int = None):
-        self.produce_queue.put((card_name, spice_index))
+    def add_to_produce_queue(self, card_name: str, spice_index: int = None, extra_plan:dict=None):
+        self.produce_queue.put((card_name, spice_index, extra_plan))
 
     # 执行生产队列 
     def execute_produce_queue(self):
         # 循环，直到队列为空
         while not self.produce_queue.empty():
             # 从队列中获取任务
-            card_name, spice_index = self.produce_queue.get()
+            card_name, spice_index, extra_plan = self.produce_queue.get()
             # 执行任务
-            self.card_producer(card_name, spice_index)
+            self.card_producer(card_name, spice_index, extra_plan)
             # 标记任务已完成
             self.produce_queue.task_done()
             # 等待300毫秒，防止因卡顿而出错
             QtCore.QThread.msleep(300)
 
-    # 生产卡片,2.0版本，由生产队列调用，可以获取卡片配方，并选择香料生产卡片
-    # 预计更新3.0版本，通过识别金币变动图片，来判断制卡完成。
-    def card_producer(self, card_name, spice_index=None):
+    # 生产卡片,3.0版本，由生产队列调用，可以获取卡片配方，并选择香料生产卡片
+    # 通过识别金币变动图片，来判断制卡完成。
+    def card_producer(self, card_name, spice_index=None, extra_plan:dict=None):
         # 获取目标配方图片
         card_image = imread(resource_path(f"items/recipe/{card_name}配方.png"))
         # 点击目标配方
@@ -1402,9 +1623,14 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
         for index in range(spice_count - 1, -1, -1):
             spice_name = spice_list[index]
-            count = int(self.settings["生产方案"][card_name][spice_name]['数量'])
-            bind = self.settings["生产方案"][card_name][spice_name]['绑定']
-            spice_limit = int(self.settings["香料使用上限"][spice_name]) // 5
+            if extra_plan:
+                count = 7
+                bind = extra_plan["绑定"]
+                spice_limit = 0
+            else:
+                count = int(self.settings["生产方案"][card_name][spice_name]['数量'])
+                bind = self.settings["生产方案"][card_name][spice_name]['绑定']
+                spice_limit = int(self.settings["香料使用上限"][spice_name]) // 5
 
             # 如果本次制作次数超过了次数上限,就跳过该香料
             if self.spice_used[spice_name] >= spice_limit and spice_limit != 0:
@@ -1417,7 +1643,12 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     # 如果检测到停止标识,就退出
                     if not self.is_running:
                         return
-                    # 截图现有金币的后几位
+                    # 如果本次制作次数超过了次数上限,就跳过该香料
+                    if self.spice_used[spice_name] >= spice_limit and spice_limit != 0:
+                        count = i + 1
+                        break
+                    # 等待50毫秒，截图现有金币的后几位
+                    QtCore.QThread.msleep(50)
                     gold_img = self.get_image(869, 555, 30, 15)
                     # 制作多少次~
                     self.click(285, 425)
@@ -1428,19 +1659,19 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                         current_gold_img = self.get_image(869, 555, 30, 15)
                         if not np.array_equal(gold_img, current_gold_img):
                             break
-                        QtCore.QThread.msleep(self.produce_check_interval)
                         self.click(285, 425)  # 重复点击制作键
+                        QtCore.QThread.msleep(self.produce_check_interval)
                         if i == 19:
                             self.show_dialog_signal.emit("哎呀", "制卡检测次数超过了20轮，发生什么事了？")
                             return
+                    # 增加该种香料制作计数
+                    self.spice_used[spice_name] += 1
 
                 # 输出统计信息
                 spice_statistics = [spice_name, bind]  # 将使用的香料名和是否绑定，作为统计信息
                 self.edit_statistics(1, spice_statistics, count)
                 # 统计本次运行中制卡次数
                 self.produce_count += count
-                # 增加该种香料制作计数
-                self.spice_used[spice_name] += count
 
                 # 如果设置了制卡次数上限，并且达到上限，则显示对话框并返回
                 if produce_limit != 0 and self.produce_count >= produce_limit:
@@ -1510,7 +1741,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     break  # 生产完成后，动态生产另一种卡片
 
     # 强化卡片，由高到低，强化当前页所有符合条件的卡片
-    def card_enhancer(self):
+    def card_enhancer(self, single_plan=None):
         """
         强化方案中，卡片信息统一为字典，字典内包含以下内容：
         星级：星级
@@ -1519,12 +1750,16 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         """
         # 按照最高强化卡片，从高到低，遍历设置里的强化方案，获取所需副卡，如果卡片总量大于等于方案所需卡片，就遍历card字典的位置，点击卡片，强化一次
         for enhance_level in range(self.max_level, self.min_level, -1):
-            # 获取当前星级强化方案
-            enhance_plan = self.settings["强化方案"][f"{enhance_level - 1}-{enhance_level}"]
+            if single_plan:
+                enhance_plan = single_plan
+            else:
+                # 获取当前星级强化方案
+                enhance_plan = self.settings["强化方案"][f"{enhance_level - 1}-{enhance_level}"]
             # 获取主卡信息，信息要重复使用，所以要深拷贝
             main_card_info = enhance_plan["主卡"].copy()
-            # 给主卡信息加上星级
-            main_card_info['星级'] = f'{enhance_level - 1}'
+            if not single_plan:
+                # 给主卡信息加上星级
+                main_card_info['星级'] = f'{enhance_level - 1}'
             # 获取副卡信息
             sub_card_infos = []
             for i in range(1, 4):
@@ -1551,25 +1786,41 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 self.click(285, 436)
                 # 初始等待时间，这个等待没法规避
                 QtCore.QThread.msleep(self.enhance_interval)
+                # 主卡为不绑时，使用绑定材料强卡会导致弹窗，此为弹窗检测和点击
+                if main_card_info['绑定'] == False:
+                    for sub_card_info in sub_card_infos:
+                        if sub_card_info['绑定'] == True or enhance_plan["四叶草"]['绑定'] == True:
+                            # 检测绑定弹窗，并点掉
+                            self.click_warning_dialog()
+                            print("已点掉绑定弹窗")
+                            break
                 for i in range(20):
                     # 获得副卡槽图片
                     sub_card_image = self.get_image(267, 253, 40, 50)
                     # 判定副卡槽图片是否和副卡空卡槽图片一样
                     if np.array_equal(sub_card_image, self.resources.sub_card_icon):
                         break  # 卡槽空了就点掉主卡，进行下一次强化
-                    # 检测等待时间
-                    QtCore.QThread.msleep(self.enhance_check_interval)
                     # 没空，就重复点击强化
                     self.click(285, 436)
-                    if i == 19:
-                        # 强化失败，弹窗
-                        self.show_dialog_signal.emit("哎呦", "强化检测超过20轮，看看发生什么了吧")
-                        return
+                    # 检测等待时间
+                    QtCore.QThread.msleep(self.enhance_check_interval)
+                else:
+                    # 强化失败，弹窗
+                    self.show_dialog_signal.emit("哎呦", "强化检测超过20轮，看看发生什么了吧")
+                    return
+                # 检查运行标识
+                if not self.is_running:
+                    return
                 # 统计强化所使用卡片，把主卡也加入卡片使用
                 card_infos = sub_card_infos + [main_card_info]
                 self.edit_statistics(2, card_infos)
+                # 判定结果的绑定情况，只要材料中出现任意绑定，则强化出卡片为绑定
+                result_bind = any(main_card_info['绑定'], (sub_card_info['绑定'] for sub_card_info in sub_card_infos), enhance_plan["四叶草"]['绑定'])
                 # 强化之后截图强化区域，判定成功/失败，输出日志
-                self.enhance_log(main_card_info, sub_card_infos, enhance_plan["四叶草"]['种类'])
+                if single_plan: # 如果是单独方案，就使用自动垫卡的检测方法再多检测一轮
+                    self.auto_cushion.get_result(main_card_info["星级"])
+                    QtCore.QThread.msleep(100)
+                self.enhance_log(main_card_info, sub_card_infos, enhance_plan["四叶草"]['种类'], result_bind)
                 # 点掉强化区域的卡片后，才能再次进行强化
                 self.click(287, 343)
                 # 强化次数+1
@@ -1577,6 +1828,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 self.enhance_count += 1
                 # 是否循环标识符
                 self.cards_enough = True
+                return
+            if single_plan: # 如果是单计划强化，就直接返回
                 return
         # 如果遍历了强化方案后，发现已经没有卡可以强化了，就把此时的强化字典保存起来，作为临时卡片字典（该方法不完美，可能导致可用卡片重复添加）
         for card_info in self.card_dict.values():
@@ -1592,8 +1845,22 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     def can_enhance(self, main_card_info: dict, sub_card_infos: list) -> tuple[bool, list]:
         # 初始化点击位置列表
         positions = []
+        pack_mode = False
         # 检查是否存在主卡
+        if main_card_info['卡片名称'] in self.pack_names: # 先检查主卡名是不是卡包名
+            # 如果是，开启卡包强卡模式
+            pack_mode = True
         for position, card_info in list(self.card_dict.items()):
+            if pack_mode == True:    
+                card_names = self.settings["卡包配置"][main_card_info['卡片名称']]
+                if card_info['卡片名称'] not in card_names:
+                    continue
+                # 如果卡片除名字外的信息都相同，就添加主卡位置
+                if card_info["绑定"] == main_card_info["绑定"] and card_info["星级"] == main_card_info["星级"]:
+                    positions.append(position)
+                    # 从字典中删除找到的主卡
+                    del self.card_dict[position]
+                    break
             if card_info == main_card_info:
                 # 向列表添加主卡位置
                 positions.append(position)
@@ -1603,10 +1870,26 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         if not positions:
             return False, None
         # 遍历副卡信息列表
+        
         for sub_card_info in sub_card_infos:
+            sub_pack_mode = False
+            # 先检查副卡名是不是卡包名
+            if sub_card_info['卡片名称'] in self.pack_names:
+                sub_pack_mode = True
             # 查找副卡信息是否在self.card_dict中
             found = False
             for position, card_info in list(self.card_dict.items()):  # 使用list来避免在遍历时修改字典
+                if sub_pack_mode == True:
+                    card_names = self.settings["卡包配置"][sub_card_info['卡片名称']]
+                    if card_info['卡片名称'] not in card_names:
+                        continue
+                    # 如果卡片除名字外的信息都相同，就添加副卡位置
+                    if card_info["绑定"] == sub_card_info["绑定"] and card_info["星级"] == sub_card_info["星级"]:
+                        found = True
+                        positions.append(position)
+                        # 从字典中删除找到的副卡
+                        del self.card_dict[position]
+                        break
                 if card_info == sub_card_info:
                     found = True
                     # 向列表添加副卡位置
@@ -1619,13 +1902,118 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 return False, None
         # 如果所有副卡信息都在self.card_dict中，返回True，还有它们的位置信息
         return True, positions
+    
+    # 点掉绑定弹窗
+    def click_warning_dialog(self):
+        # 弹窗出现有延迟，需要循环检测
+        for i in range(10):
+            img = self.get_image(440, 260, 40, 40)
+            # 还没出现就等一等
+            if not np.array_equal(img, self.resources.bind_dialog):
+                # 点击强化按钮
+                self.click(285, 436)
+                QtCore.QThread.msleep(100)
+            else:
+                break
+        # 反复检测弹窗有没有被点掉，跟检测卡槽是一样的
+        for i in range(20):
+            img = self.get_image(440, 260, 40, 40)
+            if np.array_equal(img, self.resources.bind_dialog):
+                self.click(425, 353) # 弹窗还在就继续点确定
+                QtCore.QThread.msleep(100)
+            else:
+                return
+        else:
+            self.show_dialog_signal.emit("怎么这样", "你这绑定弹窗怎么点不掉呀")
+            return
+    
+    def start_gem_decomposition(self):
+        self.decomposeThread.start_decompose()
+
+    # 宝石分解
+    def gem_decomposition(self):
+        # 先检查是否在宝石分解页面
+        img = self.get_image(816, 28, 69, 22)
+        if not np.array_equal(img, self.resources.decompose_help_icon):
+            self.show_dialog_signal.emit("呜呜", "请切换到宝石分解页面再点我！")
+        self.is_running = True
+        # 允许点击停止键
+        self.stopbtn.setEnabled(True)
+        # 禁止重复点击宝石分解按钮
+        self.gem_decompose_btn.setEnabled(False)
+        while self.is_running:
+            # 点一下滑块顶端，进行宝石分解
+            self.click(908, 109)
+            if self.decompose_once():
+                # 宝石分解一次成功，就继续循环
+                QtCore.QThread.msleep(200)
+            else:
+                # 宝石分解失败，就退出循环
+                self.is_running = False
+                self.gem_decompose_btn.setEnabled(True)
+                return
+
+    def decompose_once(self):
+        # 截图宝石分解页面
+        img = self.get_image(559, 139, 343, 392)
+        # 分割宝石分解页面的格子，以49x49分割，再取44x44部分
+        for i in range(8):
+            for j in range(7):
+                if self.is_running == False:
+                    return False
+                block = img[i * 49: (i + 1) * 49, j * 49: (j + 1) * 49]
+                block = block[1:45, 1:45]
+                bind_icon = block[37:44, 2:8]
+                # 如果是绑定的，就无视这格
+                if np.array_equal(bind_icon, self.resources.spice_bind_img):
+                    continue
+                for gem_name, gem_img in self.resources.gem_images.items():
+                    # 用掩码模板匹配
+                    if template_match_with_mask(block, gem_img):
+                        # 找到了，就点击该宝石
+                        self.click(570 + j * 49, 150 + i * 49)
+                        # 点击一次后，等待200毫秒，防止卡顿
+                        QtCore.QThread.msleep(200)
+                        for i in range(20): # 循环等待宝石是否成功被点击
+                            gem_slot_img = self.get_image(269, 315, 30, 30)
+                            if not np.array_equal(gem_slot_img, self.resources.gem_slot):
+                                break
+                            QtCore.QThread.msleep(100)
+                            if i == 19:
+                                # 点击失败，弹窗
+                                self.show_dialog_signal.emit("哎呦", "宝石怎么点不上去")
+                                return False
+                        # 截一张当前金币的图
+                        gold_img = self.get_image(869, 555, 30, 15)
+                        # 点击分解
+                        self.click(284, 377)
+                        # 点击一次后，等待200毫秒，防止卡顿
+                        QtCore.QThread.msleep(200)
+                        for i in range(20): # 循环检测金币，宝石是否成功被分解
+                            current_gold_img = self.get_image(869, 555, 30, 15)
+                            if not np.array_equal(gold_img, current_gold_img):
+                                break
+                            QtCore.QThread.msleep(100)
+                            if i == 19:
+                                # 强化失败，弹窗
+                                self.show_dialog_signal.emit("哎呦", "这宝石分解不了啊")
+                                return False
+                        # 输出分解日志
+                        text = f"{gem_name}分解成功!"
+                        self.log_signal.emit(text)
+                        return True # 成功分解，返回True
+        # 分解完成后弹窗提醒
+        self.show_dialog_signal.emit("真棒","宝石分解完成！")
+        return False
+    
+
 
     # 强化日志输出
-    def enhance_log(self, main_card_info: dict, sub_card_infos: list, clover: str):
+    def enhance_log(self, main_card_info: dict, sub_card_infos: list, clover: str, result_bind:bool):
         # 先分离出各种信息
         main_card_name = main_card_info["卡片名称"]
         main_card_level = main_card_info["星级"]
-        success = self.check_enhance_result(int(main_card_level))
+        success = self.check_enhance_result(int(main_card_level), result_bind)
         text = f"{main_card_level}星{main_card_name}强化"
         if success:
             text += "成功！"
@@ -1658,7 +2046,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.log_signal.emit(text)
 
     # 强化结果判定
-    def check_enhance_result(self, level):
+    def check_enhance_result(self, level, result_bind, need_record=True):
         # 截图强化区域
         result_img = self.get_image(267, 323, 40, 50)
         level_img = result_img[5:12, 5:12]
@@ -1666,12 +2054,15 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         level_list = []  # 初始化数组。 数组内数分别为卡片星级，卡片强化后星级
         # 判定强化结果
         if np.array_equal(level_img, success_img):
-            level_list = [level, level + 1]
-            self.edit_statistics(3, level_list)
+            if need_record:
+                level_list = [level, level + 1, result_bind]
+                self.edit_statistics(3, level_list)
             return True
         else:
+            if not need_record:
+                return False
             if level <= 5:
-                level_list = [level, level]
+                level_list = [level, level, result_bind]
             else:
                 level_list = [level, level - 1]
             self.edit_statistics(3, level_list)
@@ -1695,6 +2086,45 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             position = 2
             return position
         return None
+    
+    # 切换位置函数 0 == 制卡页面， 1 == 强化页面
+    def change_position(self, position):
+        if position == 0:
+            self.click(108, 258)  # 点击卡片制作标签
+            # 先判定是否在卡片制作页面，如果在就返回，开始制作，不在就继续点，判定五次，每次间隔200毫秒
+            for i in range(5):
+                # 如果停止标识，则停止
+                if not self.is_running:
+                    return
+                position = self.check_position()
+                if position == 1:
+                    return
+                else:
+                    # 点击卡片制作标签
+                    self.click(108, 258)
+                    # 停顿200毫秒
+                    QtCore.QThread.msleep(200)
+            # 五次都没找到，就弹窗
+            print(f"[切换位置] 未找到制作标签,最后找到的标签为{position}")
+            self.show_dialog_signal.emit("嗯？", "怎么点不到制作标签？")
+        elif position == 1:
+            self.click(108, 320)  # 点击强化标签
+            # 先判定是否在卡片强化页面，如果在就返回，开始强化，不在就继续点，判定五次，每次间隔200毫秒
+            for i in range(5):
+                # 如果停止标识，则停止
+                if not self.is_running:
+                    return
+                position = self.check_position()
+                if position == 2:
+                    return
+                else:
+                    # 点击卡片强化标签
+                    self.click(108, 320)
+                    # 停顿200毫秒
+                    QtCore.QThread.msleep(200)
+            # 五次都没找到，就弹窗
+            print(f"[切换位置] 未找到制作标签,最后找到的标签为{position}")
+            self.show_dialog_signal.emit("嗯？", "怎么点不到强化标签？")
 
     # 防呆检测，避免一些奇怪的问题
     def dull_detection(self):
@@ -1782,6 +2212,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         QtCore.QThread.msleep(500)
         self.click(407, 449)
         QtCore.QThread.msleep(500)
+        # 检查停止标识
+        if not self.is_running:
+            return
         # 循环输入二级密码
         for char in self.settings["个人设置"]["二级密码"]:
             win32gui.PostMessage(self.handle, win32con.WM_CHAR, ord(char), 0)
@@ -1836,11 +2269,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
                     if not find:
                         print("未找到360大厅刷新游戏按钮, 可能导致一系列问题...")
-        
-        def reflash_web_page():
-            # 对网页句柄发送F5键
-            win32gui.PostMessage(self.handle_web, win32con.WM_KEYDOWN, win32con.VK_F5, 0)
-            win32gui.PostMessage(self.handle_web, win32con.WM_KEYUP, win32con.VK_F5, 0)
 
         def try_enter_server_4399():
             # 4399 进入服务器
@@ -2012,6 +2440,8 @@ class EnhancerThread(QtCore.QThread):
         # 如果打开了输入二级密码，且处于能看到合成屋的位置，则代替输入二级密码
         if self.enhancer.settings["个人设置"]["是否输入二级密码"]:
             self.enhancer.check_second_password()
+        if not self.enhancer.is_running:
+            return
         # 初始化位置，保证位置在合成屋或强化页面
         if not self.init_position():
             return
@@ -2019,9 +2449,10 @@ class EnhancerThread(QtCore.QThread):
             # 如果强化到达一定时间，且打开刷新游戏设置，就刷新游戏重进一下游戏, 防止卡顿
             if self.enhancer.is_reload_game and time.time() - self.enhancer.time_last_reload_game >= self.enhancer.reload_time * 60:
                 self.reload_game()
+                self.enhancer.single_max_card_position = 0 # 刷新后要初始化卡片位置
             # 检查停止标识
             if not self.enhancer.is_running:
-                break
+                return
             # 如果强化到了一定次数，就退出重进一下合成屋，防止卡顿
             if self.enhancer.enhance_times >= self.enhancer.reload_count:
                 self.reload_house()
@@ -2037,11 +2468,13 @@ class EnhancerThread(QtCore.QThread):
             self.enhancer.execute_produce_queue()
             # 遍历完所有制作后，点击卡片强化标签
             QtCore.QThread.msleep(200)
-            self.change_position(1)
+            self.enhancer.change_position(1)
+            QtCore.QThread.msleep(100)
             # 强化主函数
             self.enhancer.main_enhancer()
+            QtCore.QThread.msleep(100)
             # 数组卡片全部强化完成后，点击卡片制作标签，再次循环
-            self.change_position(0)
+            self.enhancer.change_position(0)
             QtCore.QThread.msleep(200)
 
     # 初始化位置,使用截图与识图函数判断当前位置，一共有三次判断：1.判断窗口上是否有合成屋图标，如果有就点击 2.根据右上角的“XX说明”判断目前所处位置，分别执行不同操作 
@@ -2052,18 +2485,13 @@ class EnhancerThread(QtCore.QThread):
             self.enhancer.click(685, 558)
             # 停顿久一些，加载图片
             QtCore.QThread.msleep(800)
-            # 打开运行标志，进入主循环
-            self.enhancer.is_running = True
             return True
         elif position == 1:
-            # 打开运行标志 直接进入主循环
-            self.enhancer.is_running = True
             return True
         elif position == 2:
-            # 打开运行标志
-            self.enhancer.is_running = True
             # 强化主函数
             self.enhancer.main_enhancer()
+            QtCore.QThread.msleep(200)
             # 点击卡片制作，进入主循环
             self.enhancer.click(108, 258)
             QtCore.QThread.msleep(500)
@@ -2074,45 +2502,6 @@ class EnhancerThread(QtCore.QThread):
             # 停止运行
             self.enhancer.is_running = False
             return False
-
-    # 切换位置函数 0 == 制卡页面， 1 == 强化页面
-    def change_position(self, position):
-        if position == 0:
-            self.enhancer.click(108, 258)  # 点击卡片制作标签
-            # 先判定是否在卡片制作页面，如果在就返回，开始制作，不在就继续点，判定三次，每次间隔200毫秒
-            for i in range(5):
-                # 如果停止标识，则停止
-                if not self.enhancer.is_running:
-                    return
-                position = self.enhancer.check_position()
-                if position == 1:
-                    return
-                else:
-                    # 点击卡片制作标签
-                    self.enhancer.click(108, 258)
-                    # 停顿200毫秒
-                    QtCore.QThread.msleep(200)
-            # 五次都没找到，就弹窗
-            self.showDialogSignal.emit("嗯？", "怎么点不到制作标签？")
-        elif position == 1:
-            self.enhancer.click(108, 320)  # 点击强化标签
-            # 先判定是否在卡片强化页面，如果在就返回，开始强化，不在就继续点，判定三次，每次间隔200毫秒
-            for i in range(5):
-                # 如果停止标识，则停止
-                if not self.enhancer.is_running:
-                    return
-                position = self.enhancer.check_position()
-                if position == 2:
-                    return
-                else:
-                    # 点击卡片强化标签
-                    self.enhancer.click(108, 320)
-                    # 停顿200毫秒
-                    QtCore.QThread.msleep(200)
-            # 五次都没找到，就弹窗
-            self.showDialogSignal.emit("嗯？", "怎么点不到强化标签？")
-
-        
 
     def reload_house(self):
         # 点击右上角的红叉
@@ -2165,7 +2554,7 @@ class enhanceonlyThread(QtCore.QThread):
             self.showDialogSignal.emit("等等", "先把页面调到卡片强化后再点我啊！")
             return
         # 截图后强化
-        self.enhancer.main_enhancer()
+        self.enhancer.main_enhancer(True)
         # 强化完成后弹窗
         self.showDialogSignal.emit("哇哦", "强化完成！没有可强化的卡片了")
         return
@@ -2178,6 +2567,19 @@ class enhanceonlyThread(QtCore.QThread):
         else:
             self.showDialogSignal.emit("喂！", "你还没获取句柄呢！")
 
+# 宝石分解线程
+class decomposeThread(QtCore.QThread):
+
+    def __init__(self, tenchi_cards_enhancer):
+        super().__init__()
+        self.enhancer = tenchi_cards_enhancer
+    
+    def run(self):
+        # 开始宝石分解
+        self.enhancer.gem_decomposition()
+
+    def start_decompose(self):
+        self.start()
 
 # 主函数    
 def main():
@@ -2193,7 +2595,7 @@ def main():
     sys.exit(app.exec())
 
 
-# 设置进程为每个显示器DPI感知V2
+# 设置进程为每个显示器DPI感知V2,Qt6默认就是这个
 DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = c_void_p(-4)
 windll.user32.SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
 

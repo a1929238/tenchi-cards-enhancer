@@ -13,6 +13,8 @@ class ResourceInit:
         self.line_img = imread(os.path.join(self.root_dir, "items/position/line.png"))
         # 卡片星级以字典形式存储
         self.level_images = {k: imread(os.path.join(self.root_dir, f"items/level/{k}.png")) for k in range(0, 13)}
+        # 以字典形式存储宝石
+        self.gem_images = self.load_gem_images()
         # 四叶草也以字典形式存储
         self.clover_images = self.load_clover_images()
         # 香料也一样
@@ -22,7 +24,10 @@ class ResourceInit:
         self.compose_icon = imread(os.path.join(self.root_dir, "items/position/合成屋.png"))
         self.produce_help_icon = imread(os.path.join(self.root_dir, "items/position/制作说明.png"))
         self.enhance_help_icon = imread(os.path.join(self.root_dir, "items/position/强化说明.png"))
+        self.decompose_help_icon = imread(os.path.join(self.root_dir, "items/position/分解说明.png"))
         self.empty_card = imread(os.path.join(self.root_dir, "items/position/empty_card.png"))
+        self.gem_slot = imread(os.path.join(self.root_dir, "items/position/gem_slot.png"))
+        self.bind_dialog = imread(os.path.join(self.root_dir, "items/position/bind_dialog.png"))
 
     def load_clover_images(self):
         clover_images = {}
@@ -46,3 +51,14 @@ class ResourceInit:
             # 读取香料图像并存储到字典中
             spice_images[spice_name] = imread(os.path.join(spice_dir, spice_file))
         return spice_images
+    
+    def load_gem_images(self):
+        gem_images = {}
+        gem_dir = os.path.join(self.root_dir, "items/gem/")
+        # 获得宝石文件夹内所有文件名
+        for gem_file in os.listdir(gem_dir):
+            # 去掉文件扩展名
+            gem_name = os.path.splitext(gem_file)[0]
+            # 读取宝石图像并存储到字典中
+            gem_images[gem_name] = imread(os.path.join(gem_dir, gem_file), with_alpha=True)
+        return gem_images

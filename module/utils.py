@@ -6,11 +6,14 @@ import sys
 import os
 
 # 读取图片
-def imread(filename):
+def imread(filename, with_alpha=False):
         # 使用 np.fromfile 读取数据
         data = np.fromfile(filename, dtype=np.uint8)
         # 使用 cv2.imdecode() 解码图像数据
-        image = cv2.imdecode(data, cv2.IMREAD_COLOR)
+        if with_alpha:
+            image = cv2.imdecode(data, cv2.IMREAD_UNCHANGED)
+        else:
+            image = cv2.imdecode(data, cv2.IMREAD_COLOR)
         return image
         
 # 打包后绝对路径函数
@@ -32,3 +35,17 @@ def hide_layout(layout):
         widget = item.widget()
         if widget is not None:
             widget.hide()
+
+def template_match_with_mask(img, tar_img):
+    # 宝石的目标图片只有8位深度，先转化为32位的
+    # 图片带有透明度通道，先将透明度部分转化为掩码
+    mask = tar_img[:, :, 3]
+    # 再只取前三个通道
+    img = img[:, :, :3]
+    tar_img = tar_img[:, :, :3]
+    result = cv2.matchTemplate(img, tar_img, cv2.TM_CCORR_NORMED, mask=mask)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+    if max_val >= 0.99:
+        return True
+    else:
+        return False
