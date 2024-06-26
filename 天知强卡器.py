@@ -853,6 +853,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.delete_rule_btn.clicked.connect(self.auto_cushion.delete_rule)
         # 连接上开始寻找方案
         self.find_combination_btn.clicked.connect(self.auto_cushion.find_combination)
+        # 连接上开始垫卡
+        self.start_cushion_btn.clicked.connect(self.auto_cushion.auto_cushion)
 
     # 编辑正在选择配方的制卡方案
     def on_recipe_selected(self, text):
@@ -1032,10 +1034,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             window_text = win32gui.GetWindowText(self.handle)
             self.handle_label.setText(f"窗口句柄: {self.handle}")
             self.window_label.setText(f"窗口名: {window_text}")
-            # 允许点击开始与仅强化与宝石分解
+            # 允许点击开始与仅强化与宝石分解与垫卡按钮
             self.startbtn.setEnabled(True)
             self.enhanceronlybtn.setEnabled(True)
             self.gem_decompose_btn.setEnabled(True)
+            self.start_cushion_btn.setEnabled(True)
             if win32gui.GetClassName(handle) == "NativeWindowClass":
                 print("360游戏大厅模式, 允许刷新, 可用 window_name_360 是否 None 判断")
                 # 获取上级句柄
@@ -1325,13 +1328,13 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             bind = name[2]
             self.statistics["强化次数总和"] = self.update_dict(self.statistics["强化次数总和"], f'{level}-{level + 1}',value)
             if bind:
-                self.statistics["强化出卡片总和"] = self.update_dict(self.statistics["强化出卡片总和"]["绑定"], after_level, value)
+                self.statistics["强化出卡片总和"]["绑定"] = self.update_dict(self.statistics["强化出卡片总和"]["绑定"], after_level, value)
             else:
-                self.statistics["强化出卡片总和"] = self.update_dict(self.statistics["强化出卡片总和"]["不绑"], after_level, value)
+                self.statistics["强化出卡片总和"]["不绑"] = self.update_dict(self.statistics["强化出卡片总和"]["不绑"], after_level, value)
             if after_level > level:
                 self.statistics["成功次数总和"] = self.update_dict(self.statistics["成功次数总和"],f'{level}-{level + 1}', value)
             # 统计金币消耗
-            gold_cost = self.gold_cost_map["主卡等级"][level]
+            gold_cost = self.gold_cost_map["主卡等级"][str(level)]
             self.statistics = self.update_dict(self.statistics ,"使用金币总额", gold_cost)
         # 最后保存统计次数
         self.save_statistics(self.statistics)
@@ -1549,7 +1552,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     continue
                 card_name = info["卡片名称"]
                 if card_name != "无" and card_name not in cards:
-                    cards.append(name)
+                    cards.append(card_name)
         else:
             for i in range(self.min_level, self.max_level):
                 for j in range(4):
@@ -1815,11 +1818,14 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 card_infos = sub_card_infos + [main_card_info]
                 self.edit_statistics(2, card_infos)
                 # 判定结果的绑定情况，只要材料中出现任意绑定，则强化出卡片为绑定
-                result_bind = any(main_card_info['绑定'], (sub_card_info['绑定'] for sub_card_info in sub_card_infos), enhance_plan["四叶草"]['绑定'])
+                result_bind = any([main_card_info['绑定'], (sub_card_info['绑定'] for sub_card_info in sub_card_infos), enhance_plan["四叶草"]['绑定']])
                 # 强化之后截图强化区域，判定成功/失败，输出日志
                 if single_plan: # 如果是单独方案，就使用自动垫卡的检测方法再多检测一轮
                     self.auto_cushion.get_result(main_card_info["星级"])
                     QtCore.QThread.msleep(100)
+                    if not self.is_running:
+                        self.cards_enough = False
+                        return
                 self.enhance_log(main_card_info, sub_card_infos, enhance_plan["四叶草"]['种类'], result_bind)
                 # 点掉强化区域的卡片后，才能再次进行强化
                 self.click(287, 343)
@@ -1828,8 +1834,6 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 self.enhance_count += 1
                 # 是否循环标识符
                 self.cards_enough = True
-                return
-            if single_plan: # 如果是单计划强化，就直接返回
                 return
         # 如果遍历了强化方案后，发现已经没有卡可以强化了，就把此时的强化字典保存起来，作为临时卡片字典（该方法不完美，可能导致可用卡片重复添加）
         for card_info in self.card_dict.values():
@@ -2493,7 +2497,7 @@ class EnhancerThread(QtCore.QThread):
             self.enhancer.main_enhancer()
             QtCore.QThread.msleep(200)
             # 点击卡片制作，进入主循环
-            self.enhancer.click(108, 258)
+            self.enhancer.change_position(0)
             QtCore.QThread.msleep(500)
             return True
         else:

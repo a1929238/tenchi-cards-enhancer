@@ -2885,64 +2885,37 @@ border-radius: 20px;</string>
        <rect>
         <x>0</x>
         <y>310</y>
-        <width>281</width>
-        <height>150</height>
+        <width>282</width>
+        <height>151</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout_3">
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_60">
+       <item row="6" column="0">
+        <widget class="QLabel" name="label_63">
          <property name="text">
-          <string>副卡1:</string>
+          <string>四叶草:</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="1">
-        <widget class="QLabel" name="cushion_sub_card_level_2">
-         <property name="text">
-          <string>无</string>
-         </property>
-        </widget>
+       <item row="5" column="2">
+        <widget class="QComboBox" name="cushion_sub_card_box_3"/>
        </item>
-       <item row="2" column="1">
-        <widget class="QLabel" name="cushion_sub_card_level_1">
-         <property name="text">
-          <string>无</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="1">
-        <widget class="QLabel" name="cushion_clover_level">
-         <property name="text">
-          <string>无四叶草</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="2">
-        <widget class="QComboBox" name="cushion_sub_card_box_2"/>
-       </item>
-       <item row="3" column="0">
+       <item row="4" column="0">
         <widget class="QLabel" name="label_61">
          <property name="text">
           <string>副卡2:</string>
          </property>
         </widget>
        </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="label_62">
+       <item row="5" column="1">
+        <widget class="QLabel" name="cushion_sub_card_level_3">
          <property name="text">
-          <string>副卡3:</string>
+          <string>无</string>
          </property>
         </widget>
        </item>
-       <item row="4" column="2">
-        <widget class="QComboBox" name="cushion_sub_card_box_3"/>
-       </item>
-       <item row="2" column="2">
-        <widget class="QComboBox" name="cushion_sub_card_box_1"/>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_59">
+       <item row="3" column="1">
+        <widget class="QLabel" name="cushion_sub_card_level_1">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -2950,18 +2923,21 @@ border-radius: 20px;</string>
           </sizepolicy>
          </property>
          <property name="text">
-          <string>主卡1:</string>
+          <string>无</string>
          </property>
         </widget>
        </item>
-       <item row="5" column="2">
-        <widget class="QCheckBox" name="cushion_clover_bind_check">
+       <item row="3" column="2">
+        <widget class="QComboBox" name="cushion_sub_card_box_1"/>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_62">
          <property name="text">
-          <string>绑定</string>
+          <string>副卡3:</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="2">
+       <item row="2" column="2">
         <widget class="QComboBox" name="cushion_main_card_box">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -2971,34 +2947,14 @@ border-radius: 20px;</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
-        <widget class="QLabel" name="cushion_main_card_level">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
+       <item row="3" column="3">
+        <widget class="QCheckBox" name="cushion_sub_card_bind_check_1">
          <property name="text">
-          <string>0星</string>
+          <string>绑定</string>
          </property>
         </widget>
        </item>
-       <item row="5" column="0">
-        <widget class="QLabel" name="label_63">
-         <property name="text">
-          <string>四叶草:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1">
-        <widget class="QLabel" name="cushion_sub_card_level_3">
-         <property name="text">
-          <string>无</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="3">
+       <item row="2" column="3">
         <widget class="QCheckBox" name="cushion_main_card_bind_check">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -3011,31 +2967,88 @@ border-radius: 20px;</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="3">
-        <widget class="QCheckBox" name="cushion_sub_card_bind_check_1">
-         <property name="text">
-          <string>绑定</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="3">
-        <widget class="QCheckBox" name="cushion_sub_card_bind_check_2">
-         <property name="text">
-          <string>绑定</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="3">
+       <item row="5" column="3">
         <widget class="QCheckBox" name="cushion_sub_card_bind_check_3">
          <property name="text">
           <string>绑定</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="0" colspan="4">
+       <item row="4" column="2">
+        <widget class="QComboBox" name="cushion_sub_card_box_2"/>
+       </item>
+       <item row="4" column="1">
+        <widget class="QLabel" name="cushion_sub_card_level_2">
+         <property name="text">
+          <string>无</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLabel" name="cushion_main_card_level">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>0星</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_60">
+         <property name="text">
+          <string>副卡1:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="3">
+        <widget class="QCheckBox" name="cushion_sub_card_bind_check_2">
+         <property name="text">
+          <string>绑定</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_59">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>主卡1:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0" rowspan="2" colspan="2">
         <widget class="QLabel" name="label_58">
          <property name="text">
           <string>垫卡方案:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2" rowspan="2" colspan="2" alignment="Qt::AlignLeft">
+        <widget class="QLabel" name="success_rate_label">
+         <property name="text">
+          <string>成功率:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="3">
+        <widget class="QCheckBox" name="cushion_clover_bind_check">
+         <property name="text">
+          <string>绑定</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1" colspan="2">
+        <widget class="QLabel" name="cushion_clover_level">
+         <property name="text">
+          <string>无四叶草</string>
          </property>
         </widget>
        </item>
