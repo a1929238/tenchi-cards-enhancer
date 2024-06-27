@@ -45,7 +45,7 @@ def template_match_with_mask(img, tar_img):
     tar_img = tar_img[:, :, :3]
     result = cv2.matchTemplate(img, tar_img, cv2.TM_CCORR_NORMED, mask=mask)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-    if max_val >= 0.99:
+    if max_val >= 0.95:
         return True
     else:
         return False

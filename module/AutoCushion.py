@@ -96,6 +96,7 @@ class AutoCushion():
         current_row = rule_list.currentRow()
         rule_list.takeItem(current_row)
         # 删掉变量里的规律
+        self.cushion_rules.pop(current_row)
         self.cushion_list_rules.pop(current_row)
         # 保存规律
         self.save_cushion_rules()
@@ -182,6 +183,7 @@ class AutoCushion():
             if result:
                 # 增加成数
                 new_text = f"{numbers[0]}败{numbers[1]+1}成"
+                result_list.takeItem(result_list.count() - 1)
             else:
                 # 添加新item
                 new_text = f"1连败"
@@ -200,6 +202,8 @@ class AutoCushion():
         results = self.results[-50:]
         results = np.array(results)
         for rule in self.cushion_rules:
+            if rule[0] == False and True in results:
+                rule.insert(0, True)
             rule = np.array(rule)
             len1 = results.size
             len2 = rule.size

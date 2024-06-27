@@ -1,8 +1,8 @@
 # 天知强卡器，打算用pyqt6做GUI
 # setting字典的结构为:setting[type][name][count]
 # 统计数据字典的结构为:statistics[type][name][count]
-# 0.3.0更新计划：自动垫卡；强化期望
-# 0.3.0已完成：给日志加上时间戳；把香料上限做成个数;改进位置标志识别方法；将四叶草翻页间隔也做成设置;优化删除标签的按钮图标；自定义拖曳距离; 间隔一段时间自动刷新；自动输入二级密码；卡包强卡；自动分解宝石；强化模拟器；单卡强卡时，查找第一张卡方法；加入不绑卡加绑定草/绑定卡时，自动点击确定按钮；统计数据可视化
+# 0.3.0更新计划：强化期望；修改因为qt6.7导致的一系列问题
+# 0.3.0已完成：给日志加上时间戳；把香料上限做成个数;改进位置标志识别方法；将四叶草翻页间隔也做成设置;优化删除标签的按钮图标；自定义拖曳距离; 间隔一段时间自动刷新；自动输入二级密码；卡包强卡；自动分解宝石；强化模拟器；单卡强卡时，查找第一张卡方法；加入不绑卡加绑定草/绑定卡时，自动点击确定按钮；统计数据可视化; 自动垫卡；优化截图函数
 # BUG修复： 制卡时跳出检测超时；会错误点到永久保鲜袋；页面会来回切换；修复了四叶草标识没有在开始时被正确初始化的BUG
 # -*- coding: utf-8 -*-
 import time
@@ -11,9 +11,9 @@ import sys
 import win32gui
 import win32api
 import win32con
-import win32ui
 import json
-from ctypes import windll, c_void_p
+from ctypes import windll, c_void_p, byref, create_string_buffer
+from ctypes.wintypes import RECT
 import numpy as np
 import os
 import cv2
@@ -145,6 +145,12 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
         # 背景遮盖层初始化
         self.frosted_layer.lower()  # 将半透明层放到底层
+        # 检测GUI的主题，如果是深色模式，就把蒙版变成黑色
+        palette = self.palette()
+        if palette.color(QtGui.QPalette.ColorRole.Window).lightness() < 128:
+            self.frosted_layer.setStyleSheet("background-color: rgba(0, 0, 0, 180);")
+        
+
 
         # 将GUI控件与脚本连接
         # 初始化日志信息
@@ -287,7 +293,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 打开运行标识
         self.is_running = True
         # 正式开始前先防呆
-        self.dull_detection()
+        self.dull_detection("仅强卡")
         # 如果没通过防呆检测，就直接返回
         if self.is_running == False:
             return
@@ -1101,48 +1107,39 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
 
     # 截图函数
     def get_image(self, x, y, width, height):
-
         handle = self.handle
-        # 获取窗口客户区大小
-        rect = win32gui.GetClientRect(self.handle)
-        client_width, client_height = rect[2], rect[3]
-
-        # 获取窗口的设备上下文(DC)
-        hwndDC = win32gui.GetWindowDC(handle)
-        # 创建设备上下文对象
-        mfcDC = win32ui.CreateDCFromHandle(hwndDC)
-        # 创建内存设备上下文，用于复制位图
-        saveDC = mfcDC.CreateCompatibleDC()
-        # 创建位图对象准备保存截图
-        saveBitMap = win32ui.CreateBitmap()
-        saveBitMap.CreateCompatibleBitmap(mfcDC, client_width, client_height)
-        # 将截图保存到saveBitMap中
-        saveDC.SelectObject(saveBitMap)
-        # 从窗口的设备上下文中拷贝新的位图，这里是整个窗口的客户区
-        result = windll.user32.PrintWindow(handle, saveDC.GetSafeHdc(), 1)
-        # 如果成功，则处理位图
-        if result == 1:
-            # 获取位图信息
-            bmpinfo = saveBitMap.GetInfo()
-            bmpstr = saveBitMap.GetBitmapBits(True)
-            # 根据位图信息创建NumPy数组
-            im = np.frombuffer(bmpstr, dtype='uint8')
-            im.shape = (bmpinfo['bmHeight'], bmpinfo['bmWidth'], 4)
-            # 裁剪图像到指定区域
-            im = im[y:y + height, x:x + width, :]
-            # 删除最后一个alpha通道
-            im = im[:, :, :3]
-        else:
-            print("截图失败")
-            im = None
-        # 清理设备上下文和位图资源
-        win32gui.DeleteObject(saveBitMap.GetHandle())
-        saveDC.DeleteDC()
-        mfcDC.DeleteDC()
-        win32gui.ReleaseDC(handle, hwndDC)
-
-        # 返回图像对象
-        return im
+    
+        # 获取窗口客户区的大小
+        r = RECT()
+        windll.user32.GetClientRect(handle, byref(r))
+        client_width, client_height = r.right, r.bottom
+    
+        # 创建设备上下文
+        dc = windll.user32.GetDC(handle)
+        cdc = windll.gdi32.CreateCompatibleDC(dc)
+        bitmap = windll.gdi32.CreateCompatibleBitmap(dc, client_width, client_height)
+        windll.gdi32.SelectObject(cdc, bitmap)
+    
+        # 执行位块传输
+        windll.gdi32.BitBlt(cdc, 0, 0, client_width, client_height, dc, 0, 0, 0x00CC0020)
+    
+        # 准备缓冲区
+        total_bytes = client_width * client_height * 4
+        buffer = create_string_buffer(total_bytes)
+        windll.gdi32.GetBitmapBits(bitmap, total_bytes, buffer)
+    
+        # 清理资源
+        windll.gdi32.DeleteObject(bitmap)
+        windll.gdi32.DeleteObject(cdc)
+        windll.user32.ReleaseDC(handle, dc)
+    
+        # 转换缓冲区数据为numpy数组
+        image = np.frombuffer(buffer, dtype=np.uint8).reshape(client_height, client_width, 4)
+    
+        # 裁剪图像到指定区域
+        image = image[y:y + height, x:x + width, :3]
+    
+        return image
 
     # 点击函数
 
@@ -1482,13 +1479,13 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 寻找等级最高卡片位置
     def find_max_card_position(self):
         # 初始化目标等级
-        target_level = self.max_level - 1
+        target_level = min(self.max_level - 1, 9)
         current_max_level = 0
         full_card_dict = {}
         # 分8次获取卡片字典，获得目前最高卡片等级
         scroll_length = 315 // 8
         for i in range(8):
-            QtCore.QThread.msleep(200)
+            QtCore.QThread.msleep(150)
             img = self.get_cut_cards_img()
             full_card_dict.update(self.get_card_dict(img))
             self.drag(908, 120 + i * scroll_length, 0, scroll_length)
@@ -1502,7 +1499,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         for i in range(30):
             if not self.is_running:
                 return
-            QtCore.QThread.msleep(200)
+            QtCore.QThread.msleep(150)
             img = self.get_cut_cards_img()
             card_dict = self.get_card_dict(img)
             # 如果字典里的位置第一行里存在目标等级的卡，就停止拖曳，并修改位置设置
@@ -2068,7 +2065,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             if level <= 5:
                 level_list = [level, level, result_bind]
             else:
-                level_list = [level, level - 1]
+                level_list = [level, level - 1, result_bind]
             self.edit_statistics(3, level_list)
             return False
 
@@ -2131,7 +2128,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.show_dialog_signal.emit("嗯？", "怎么点不到强化标签？")
 
     # 防呆检测，避免一些奇怪的问题
-    def dull_detection(self):
+    def dull_detection(self, mode:str=None):
         # 能使用的强卡方案里，有没有副卡全是无的？
         for j in range(self.max_level, self.min_level, -1):
             # 初始化无计数
@@ -2147,6 +2144,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     self.show_dialog_signal.emit("这……", f"{j - 1}-{j}方案的副卡全是无，回去再设置设置吧……")
                     self.onStop()
                     return
+        if mode == "仅强卡":
+            return
         # 生产方案里面，到底有没有卡？
         if not self.settings["生产方案"].keys():
             self.show_dialog_signal.emit("哎呀", "你的制卡方案里，一张卡都没有哦")
@@ -2588,6 +2587,11 @@ class decomposeThread(QtCore.QThread):
 # 主函数    
 def main():
     app = QtWidgets.QApplication(sys.argv)
+    # 设置禁用状态下的按钮文本颜色
+    palette = QtGui.QPalette()
+    palette.setColor(QtGui.QPalette.ColorGroup.Disabled, QtGui.QPalette.ColorRole.ButtonText, QtGui.QColor("#888888"))
+    palette.setColor(QtGui.QPalette.ColorGroup.Active, QtGui.QPalette.ColorRole.Button, QtGui.QColor(255, 255, 255, 190))
+    app.setPalette(palette)
     # 设置默认字体
     font_id = QtGui.QFontDatabase.addApplicationFont(resource_path("items/font/font.ttf"))
     if font_id != -1:

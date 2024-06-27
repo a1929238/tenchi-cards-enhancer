@@ -350,6 +350,12 @@ class EnhanceSimulator:
             if card["数量"] > 0:
                 cost_dict[level] = card["数量"]
         return 
+    
+    def earning_rate_message(self, cost_dict: dict, card_dict: dict):
+        """
+        显示成本与最终收益，并计算总收益率和收益期望
+        """
+        pass
 
     def delete_slot(self, name: str):
         """

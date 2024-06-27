@@ -12,7 +12,7 @@ class ClickableLabel(QLabel):
         # 设置默认样式
         self.setStyleSheet("""
             ClickableLabel {
-                background-color: #f8f8f8;  
+                background-color: rgb(170, 255, 255);  
                 border: 1px solid #dcdcdc; 
                 padding: 2px;
                 border-radius: 8px;  
@@ -47,7 +47,7 @@ class ClickableLabel(QLabel):
         # 鼠标不悬停时恢复默认样式
         self.setStyleSheet("""
             ClickableLabel {
-                background-color: #f8f8f8;
+                background-color: rgb(170, 255, 255);
                 border: 1px solid #dcdcdc;
                 padding: 2px;
                 border-radius: 8px;
