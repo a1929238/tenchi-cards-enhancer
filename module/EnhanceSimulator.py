@@ -2,15 +2,21 @@
 import random
 import json
 import itertools
+import copy
 from PyQt6.QtWidgets import QMessageBox
+
+from GUI.qwidgetwebexpectation import QWidgetWebExpectation
+
 
 class EnhanceSimulator:
     """
     强化的概率区间如下:
     ((基于主卡最高概率副卡) + (基于主卡次高概率副卡)/3 + (基于主卡次高概率副卡)/3) * 四叶草加成 + (前方所有概率 * 总概率加成)
     """
+
     def __init__(self, file_path, main_window):
         # 实例化主窗口
+        self.widget = None
         self.main_window = main_window
 
         # 初始化模拟器卡片配置
@@ -67,12 +73,12 @@ class EnhanceSimulator:
 
         # 读取强化概率配置文件
         with open(file_path, 'r', encoding='utf-8') as f:
-            self.probability = json.load(f) 
-        
+            self.probability = json.load(f)
+
         self.all_bonus = 0
         # 初始化总概率加成
         self.get_bonus()
-        
+
         # 刷新窗口
         self.refresh_ui()
 
@@ -101,7 +107,7 @@ class EnhanceSimulator:
         # 找到最高概率
         highest_rate = max(base_rates)
         base_rates.remove(highest_rate)
-        if base_rates: # 如果基础概率不是空列表,就把它们/3,并加到最高概率上
+        if base_rates:  # 如果基础概率不是空列表,就把它们/3,并加到最高概率上
             for rate in base_rates:
                 highest_rate += rate / 3
         # 四叶草加成
@@ -122,7 +128,7 @@ class EnhanceSimulator:
         :return: 是否成功
         """
         return success_rate > random.random()
-    
+
     def get_bonus(self):
         """
         获取总加成
@@ -133,8 +139,9 @@ class EnhanceSimulator:
         self.all_bonus = self.guild_bonus[str(guild_compose_level)] + self.VIP_bonus[str(VIP_level)]
         # 修改文本
         self.main_window.all_bonus_label.setText(f"总强化成功率加成: {self.all_bonus * 100:.0f}%")
-    
-    def success_rate_finder(self, target_success_rate: float, max_cards: int=1, with_bonus_rate: bool=False) -> dict:
+
+    def success_rate_finder(self, target_success_rate: float, max_cards: int = 1,
+                            with_bonus_rate: bool = False) -> dict:
         """
         成功率查找器，给出成功率，返回最接近该成功率的主副卡配置/四叶草等级
         :param target_success_rate: 目标成功率
@@ -143,12 +150,12 @@ class EnhanceSimulator:
         """
         closest_config = None
         closest_diff = float('inf')
-        
+
         # 获取所有可能的主卡、副卡、四叶草等级组合
         main_card_levels = ["3", "4", "5", "6"]
         qualities = ['2', '0', '1']
-        clover_levels = ['0','1','2','3']
-        
+        clover_levels = ['0', '1', '2', '3']
+
         # 遍历所有组合
         for main_level in main_card_levels:
             main_card = {"星级": main_level}
@@ -159,7 +166,8 @@ class EnhanceSimulator:
             for i in range(1, 1 + max_cards):
                 sub_combinations.extend(itertools.product(sub_card_levels, qualities, repeat=i))
                 for sub_combination in sub_combinations:
-                    sub_cards = [{"星级": sub_combination[j], "质量": sub_combination[j+1]} for j in range(0, len(sub_combination), 2)]
+                    sub_cards = [{"星级": sub_combination[j], "质量": sub_combination[j + 1]} for j in
+                                 range(0, len(sub_combination), 2)]
                     for clover_level in clover_levels:
                         success_rate, bonus_rate = self.success_rate_calculate(main_card, sub_cards, clover_level)
                         if success_rate >= 1:
@@ -173,10 +181,10 @@ class EnhanceSimulator:
                                 "main_card": main_card,
                                 "sub_cards": sub_cards,
                                 "clover_level": clover_level,
-                                "success_rate": success_rate 
+                                "success_rate": success_rate
                             }
         return closest_config
-    
+
     def get_enhancement_expectation(self) -> dict:
         """
         调用强化模拟器，使用当前强化方案，实现大量卡片的强化模拟，最终获得强化结果，消耗金币，消耗四叶草数，强化总次数，强化耗时
@@ -187,7 +195,7 @@ class EnhanceSimulator:
         min_level = self.main_window.min_level
         max_level = self.main_window.max_level
         # 初始化统计数据
-        stastic = {
+        statistic = {
             "强化次数": 0,
             "消耗金币": 0,
             "消耗额外副卡": 0,
@@ -217,25 +225,25 @@ class EnhanceSimulator:
             "数量": 0
         }
         temp_dict = {}
-        for i in range(max_level-1, min_level-1, -1):
+        for i in range(max_level - 1, min_level - 1, -1):
             # 处理存储所需星级和成功率的临时字典时，也初始化卡片字典
             card_dict[f"{i}"] = {
                 "名称": card_name,
                 "数量": 0
             }
             need_cards = []
-            cards = plan[f"{i}-{i+1}"]
+            cards = plan[f"{i}-{i + 1}"]
             sub_cards = []
             other_sub_card = 0
             main_card = {
                 "星级": str(i)
-                }
+            }
             need_cards.append(str(i))
             for j in range(3):
-                sub_card_level = cards[f"副卡{j+1}"]["星级"]
+                sub_card_level = cards[f"副卡{j + 1}"]["星级"]
                 if sub_card_level == "无":
                     continue
-                sub_name = cards[f"副卡{j+1}"]["卡片名称"]
+                sub_name = cards[f"副卡{j + 1}"]["卡片名称"]
                 quality = self.main_window.card_info_dict[sub_name]
                 for id, word in self.card_quality_map.items():
                     if word == quality:
@@ -247,7 +255,7 @@ class EnhanceSimulator:
                 }
                 sub_cards.append(sub_card)
                 # 如果副卡和主卡不是一种卡，对其特殊标记，在结算时单独计数
-                if sub_name!= card_name:
+                if sub_name != card_name:
                     other_sub_card += 1
                 need_cards.append((sub_card_level))
             # 处理所需卡牌，将同级的合并
@@ -262,7 +270,7 @@ class EnhanceSimulator:
                 clover_level = "0"
             success_rate, bonus_rate = self.success_rate_calculate(main_card, sub_cards, clover_level)
             # 设置到新字典当中
-            temp_dict[f"{i}-{i+1}"] = {
+            temp_dict[f"{i}-{i + 1}"] = {
                 "所需星级": need_levels,
                 "成功率": success_rate,
                 "额外副卡": other_sub_card,
@@ -275,10 +283,10 @@ class EnhanceSimulator:
             if count == "0":
                 i += 1
                 continue
-            card_dict[f"{i}"]["数量"] = int(count)//5
+            card_dict[f"{i}"]["数量"] = int(count) // 5
             i += 1
         # 存储原始card_dict
-        origin_card_dict = card_dict.copy()
+        origin_card_dict = copy.deepcopy(card_dict)
         # 初始化临时等级，用来存储有用的副卡
         temp_level = {}
         # 根据强化方案，用成功率逐次强化所有卡片
@@ -315,17 +323,19 @@ class EnhanceSimulator:
                     continue
                 # 统计四叶草消耗
                 if info["四叶草"] != "0":
-                    stastic["消耗四叶草"][info["四叶草"]] += 1
+                    statistic["消耗四叶草"][info["四叶草"]] += 1
                 # 强化一次卡片
                 if self.success_check(success_rate):
                     # 强化成功，主卡+1星
-                    card_dict[str(int(main_level)+1)]["数量"] += 1
+                    card_dict[str(int(main_level) + 1)]["数量"] += 1
                 else:
                     # 强化失败，根据主卡等级判断，>=6星时主卡-1星，其余不变
                     if int(main_level) >= 6:
-                        card_dict[str(int(main_level)-1)]["数量"] += 1
+                        card_dict[str(int(main_level) - 1)]["数量"] += 1
                     else:
                         card_dict[main_level]["数量"] += 1
+                # 统计金币消耗
+                statistic["消耗金币"] += self.main_window.gold_cost_map["主卡等级"][main_level]
                 # 单次强化完成，抛去所有副卡，进行下一次强化(不抛去额外副卡，单独计数)
                 for level, count in need_levels.items():
                     if other_sub_card > 0:
@@ -341,21 +351,97 @@ class EnhanceSimulator:
         for level, count in temp_level.items():
             card_dict[level]["数量"] += count
         print(card_dict)
-        stastic["强化次数"] += enhance_time
-        stastic["消耗额外副卡"] += other_card
-        # 根据价格，输出总收益率和收益期望
+        statistic["强化次数"] += enhance_time
+        statistic["消耗额外副卡"] += other_card
+
         # 先获取这次强化的成本
         cost_dict = {}
         for level, card in origin_card_dict.items():
             if card["数量"] > 0:
-                cost_dict[level] = card["数量"]
-        return 
-    
-    def earning_rate_message(self, cost_dict: dict, card_dict: dict):
+                cost_dict[level] = {
+                    "数量": card["数量"],
+                    "名称": card["名称"]
+                                    }
+        print(cost_dict)
+        cost_total,net_profit,gold_cost,time_spend = self.earning_rate_message(
+            cost_dict=cost_dict, card_dict=card_dict, statistic=statistic)
+
+        # 根据价格，输出总收益率和收益期望
+        self.widget = QWidgetWebExpectation(
+            cost_total=cost_total,net_profit=net_profit, gold_cost=gold_cost,time_spend=time_spend)
+        self.widget.show()
+
+    def earning_rate_message(self, cost_dict: dict, card_dict: dict, statistic: dict):
         """
         显示成本与最终收益，并计算总收益率和收益期望
+        cost_dict = {
+            "level": {"名称": str, "数量": int},
+        }
         """
-        pass
+        price_dict = self.main_window.settings["物价"]
+        cost_total = 0
+        profit_total = 0
+
+        # 计算成本 - 来自合成前
+        for level, cards in cost_dict.items():
+            card_quality = self.main_window.card_info_dict[cards["名称"]]
+            if int(level) <= 5:
+                cost_total += price_dict[f"{card_quality}卡套"] * cards["数量"]
+                match int(level):
+                    case 1:
+                        cost_total += price_dict[f"天然香料"] * 5 * cards["数量"]
+                    case 2:
+                        cost_total += price_dict[f"上等香料"] * 5 * cards["数量"]
+                    case 3:
+                        cost_total += price_dict[f"秘制香料"] * 5 * cards["数量"]
+                    case 4:
+                        cost_total += price_dict[f"极品香料"] * 5 * cards["数量"]
+                    case 5:
+                        cost_total += price_dict[f"皇室香料"] * 5 * cards["数量"]
+            else:
+                cost_total += price_dict[f'{level}星卡'] * cards["数量"]
+
+        # 计算成本 - 四叶草
+        for level, num in statistic["消耗四叶草"].items():
+            if num == 0:
+                continue
+            if level in ["超能", "SS", "SSS", "SSR"]:
+                clover = f"{level}四叶草"
+            else:
+                clover = f"{level}级四叶草"
+            cost_total += price_dict[clover] * num
+
+        cost_total += price_dict["好卡卡套"] * statistic["消耗额外副卡"]
+
+        # 计算收益
+        for level, cards in card_dict.items():
+            card_quality = self.main_window.card_info_dict[cards["名称"]]
+            if int(level) <= 5:
+                profit_total += price_dict[f"{card_quality}卡套"] * cards["数量"]
+                match int(level):
+                    case 1:
+                        profit_total += price_dict[f"天然香料"] * 5 * cards["数量"]
+                    case 2:
+                        profit_total += price_dict[f"上等香料"] * 5 * cards["数量"]
+                    case 3:
+                        profit_total += price_dict[f"秘制香料"] * 5 * cards["数量"]
+                    case 4:
+                        profit_total += price_dict[f"极品香料"] * 5 * cards["数量"]
+                    case 5:
+                        profit_total += price_dict[f"皇室香料"] * 5 * cards["数量"]
+            else:
+                profit_total += price_dict[f'{level}星卡'] * cards["数量"]
+
+        # 净利润
+        net_profit = profit_total - cost_total
+
+        # 消耗金币
+        gold_cost = statistic['消耗金币']
+
+        # 强化时间 秒 估算
+        time_spend = f'{statistic["强化次数"] * 2.5 / 3600:.2f}h'
+
+        return cost_total,net_profit,gold_cost,time_spend
 
     def delete_slot(self, name: str):
         """
@@ -374,7 +460,7 @@ class EnhanceSimulator:
             self.simulator_clover_level = "0"
         # 删完后刷新UI
         self.refresh_ui()
-    
+
     def clover_changed(self):
         """
         四叶草等级改变
@@ -389,7 +475,7 @@ class EnhanceSimulator:
         self.simulator_clover_level = clover_level
         # 刷新UI
         self.refresh_ui()
-    
+
     def refresh_ui(self):
         """
         根据模拟器卡片配置，刷新模拟器的GUI
@@ -407,8 +493,8 @@ class EnhanceSimulator:
                     self.main_window.main_card_level.setText("")
                     self.main_window.main_card_quality.setText("")
                 else:
-                    sub_card_level = getattr(self.main_window, "sub_card_level_"+str(id))
-                    sub_card_quality = getattr(self.main_window, "sub_card_quality_"+str(id))
+                    sub_card_level = getattr(self.main_window, "sub_card_level_" + str(id))
+                    sub_card_quality = getattr(self.main_window, "sub_card_quality_" + str(id))
                     sub_card_level.setText("")
                     sub_card_quality.setText("")
             return
@@ -419,8 +505,8 @@ class EnhanceSimulator:
                 self.main_window.main_card_quality.setText(self.card_quality_map[card["质量"]])
             else:
                 # 创建对象名
-                sub_card_level = getattr(self.main_window, "sub_card_level_"+str(id))
-                sub_card_quality = getattr(self.main_window, "sub_card_quality_"+str(id))
+                sub_card_level = getattr(self.main_window, "sub_card_level_" + str(id))
+                sub_card_quality = getattr(self.main_window, "sub_card_quality_" + str(id))
                 # 设置对象值
                 sub_card_level.setText(" " + card["星级"] + "☆")
                 sub_card_quality.setText(self.card_quality_map[card["质量"]])
@@ -432,8 +518,8 @@ class EnhanceSimulator:
                 self.main_window.main_card_level.setText("")
                 self.main_window.main_card_quality.setText("")
             else:
-                sub_card_level = getattr(self.main_window, "sub_card_level_"+str(id))
-                sub_card_quality = getattr(self.main_window, "sub_card_quality_"+str(id))
+                sub_card_level = getattr(self.main_window, "sub_card_level_" + str(id))
+                sub_card_quality = getattr(self.main_window, "sub_card_quality_" + str(id))
                 sub_card_level.setText("")
                 sub_card_quality.setText("")
         # 更新四叶草显示
@@ -448,7 +534,7 @@ class EnhanceSimulator:
             # 刷新副卡星级选框
             sub_card_levels = list(self.probability[main_card_level]["rate"]["0"].keys())
             for i in range(1, 4):
-                sub_card_level_box = getattr(self.main_window, "sub_card_level_box_"+str(i))
+                sub_card_level_box = getattr(self.main_window, "sub_card_level_box_" + str(i))
                 sub_card_level_box.clear()
                 for level in sub_card_levels:
                     sub_card_level_box.addItem(level)
@@ -457,7 +543,7 @@ class EnhanceSimulator:
             self.main_window.gold_need.setText("需金币:")
         # 同时存在主卡和至少一张副卡时，刷新成功率显示
         if self.simulator_cards.get("0", None) and len(self.simulator_cards.keys()) >= 2:
-            sub_cards = [self.simulator_cards[id] for id in self.simulator_cards.keys() if id!= "0"]
+            sub_cards = [self.simulator_cards[id] for id in self.simulator_cards.keys() if id != "0"]
             main_card = self.simulator_cards["0"]
             success_rate, bonus_rate = self.success_rate_calculate(main_card, sub_cards, self.simulator_clover_level)
             if success_rate == 1:
@@ -473,7 +559,7 @@ class EnhanceSimulator:
             self.main_window.enhance_btn.setEnabled(False)
             self.main_window.success_rate.setText("成功率:")
             self.cyber_success_rate = 0
-    
+
     def cyber_enhance(self):
         """
         赛博强化，虚拟上卡
