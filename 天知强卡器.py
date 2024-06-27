@@ -1,8 +1,8 @@
 # 天知强卡器，打算用pyqt6做GUI
 # setting字典的结构为:setting[type][name][count]
 # 统计数据字典的结构为:statistics[type][name][count]
-# 0.3.0更新计划：强化期望；修改因为qt6.7导致的一系列问题
-# 0.3.0已完成：给日志加上时间戳；把香料上限做成个数;改进位置标志识别方法；将四叶草翻页间隔也做成设置;优化删除标签的按钮图标；自定义拖曳距离; 间隔一段时间自动刷新；自动输入二级密码；卡包强卡；自动分解宝石；强化模拟器；单卡强卡时，查找第一张卡方法；加入不绑卡加绑定草/绑定卡时，自动点击确定按钮；统计数据可视化; 自动垫卡；优化截图函数
+# 0.3.0更新计划：强化期望
+# 0.3.0已完成：给日志加上时间戳；把香料上限做成个数;改进位置标志识别方法；将四叶草翻页间隔也做成设置;优化删除标签的按钮图标；自定义拖曳距离; 间隔一段时间自动刷新；自动输入二级密码；卡包强卡；自动分解宝石；强化模拟器；单卡强卡时，查找第一张卡方法；加入不绑卡加绑定草/绑定卡时，自动点击确定按钮；统计数据可视化; 自动垫卡；优化截图函数；修改因为qt6.7导致的一系列问题
 # BUG修复： 制卡时跳出检测超时；会错误点到永久保鲜袋；页面会来回切换；修复了四叶草标识没有在开始时被正确初始化的BUG
 # -*- coding: utf-8 -*-
 import time
@@ -1655,15 +1655,15 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     # 制作间隔
                     QtCore.QThread.msleep(self.produce_interval)
                     # 截图判断金币是否发生变动，如果没有变动，说明制作还没有完成
-                    for i in range(20):
+                    for i in range(40):
                         current_gold_img = self.get_image(869, 555, 30, 15)
                         if not np.array_equal(gold_img, current_gold_img):
                             break
                         self.click(285, 425)  # 重复点击制作键
                         QtCore.QThread.msleep(self.produce_check_interval)
-                        if i == 19:
-                            self.show_dialog_signal.emit("哎呀", "制卡检测次数超过了20轮，发生什么事了？")
-                            return
+                    else:
+                        self.show_dialog_signal.emit("哎呀", "制卡检测次数超过了40轮，发生什么事了？")
+                        return
                     # 增加该种香料制作计数
                     self.spice_used[spice_name] += 1
 
@@ -1794,7 +1794,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                             self.click_warning_dialog()
                             print("已点掉绑定弹窗")
                             break
-                for i in range(20):
+                for i in range(40):
                     # 获得副卡槽图片
                     sub_card_image = self.get_image(267, 253, 40, 50)
                     # 判定副卡槽图片是否和副卡空卡槽图片一样
@@ -1806,7 +1806,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     QtCore.QThread.msleep(self.enhance_check_interval)
                 else:
                     # 强化失败，弹窗
-                    self.show_dialog_signal.emit("哎呦", "强化检测超过20轮，看看发生什么了吧")
+                    self.show_dialog_signal.emit("哎呦", "强化检测超过40轮，看看发生什么了吧")
                     return
                 # 检查运行标识
                 if not self.is_running:
@@ -1917,7 +1917,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             else:
                 break
         # 反复检测弹窗有没有被点掉，跟检测卡槽是一样的
-        for i in range(20):
+        for i in range(30):
             img = self.get_image(440, 260, 40, 40)
             if np.array_equal(img, self.resources.bind_dialog):
                 self.click(425, 353) # 弹窗还在就继续点确定
@@ -1975,30 +1975,30 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                         self.click(570 + j * 49, 150 + i * 49)
                         # 点击一次后，等待200毫秒，防止卡顿
                         QtCore.QThread.msleep(200)
-                        for i in range(20): # 循环等待宝石是否成功被点击
+                        for i in range(40): # 循环等待宝石是否成功被点击
                             gem_slot_img = self.get_image(269, 315, 30, 30)
                             if not np.array_equal(gem_slot_img, self.resources.gem_slot):
                                 break
                             QtCore.QThread.msleep(100)
-                            if i == 19:
-                                # 点击失败，弹窗
-                                self.show_dialog_signal.emit("哎呦", "宝石怎么点不上去")
-                                return False
+                        else:
+                            # 点击失败，弹窗
+                            self.show_dialog_signal.emit("哎呦", "宝石怎么点不上去")
+                            return False
                         # 截一张当前金币的图
                         gold_img = self.get_image(869, 555, 30, 15)
                         # 点击分解
                         self.click(284, 377)
                         # 点击一次后，等待200毫秒，防止卡顿
                         QtCore.QThread.msleep(200)
-                        for i in range(20): # 循环检测金币，宝石是否成功被分解
+                        for i in range(40): # 循环检测金币，宝石是否成功被分解
                             current_gold_img = self.get_image(869, 555, 30, 15)
                             if not np.array_equal(gold_img, current_gold_img):
                                 break
                             QtCore.QThread.msleep(100)
-                            if i == 19:
-                                # 强化失败，弹窗
-                                self.show_dialog_signal.emit("哎呦", "这宝石分解不了啊")
-                                return False
+                        else:
+                            # 强化失败，弹窗
+                            self.show_dialog_signal.emit("哎呦", "这宝石分解不了啊")
+                            return False
                         # 输出分解日志
                         text = f"{gem_name}分解成功!"
                         self.log_signal.emit(text)
@@ -2092,8 +2092,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     def change_position(self, position):
         if position == 0:
             self.click(108, 258)  # 点击卡片制作标签
-            # 先判定是否在卡片制作页面，如果在就返回，开始制作，不在就继续点，判定五次，每次间隔200毫秒
-            for i in range(5):
+            # 先判定是否在卡片制作页面，如果在就返回，开始制作，不在就继续点，判定十次，每次间隔200毫秒
+            for i in range(10):
                 # 如果停止标识，则停止
                 if not self.is_running:
                     return
@@ -2110,8 +2110,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.show_dialog_signal.emit("嗯？", "怎么点不到制作标签？")
         elif position == 1:
             self.click(108, 320)  # 点击强化标签
-            # 先判定是否在卡片强化页面，如果在就返回，开始强化，不在就继续点，判定五次，每次间隔200毫秒
-            for i in range(5):
+            # 先判定是否在卡片强化页面，如果在就返回，开始强化，不在就继续点，判定十次，每次间隔200毫秒
+            for i in range(10):
                 # 如果停止标识，则停止
                 if not self.is_running:
                     return
