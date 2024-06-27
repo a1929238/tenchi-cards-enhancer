@@ -1,3 +1,5 @@
 __pycache__/
 test/
 .gitignore
+test/index.html
+.gitignore

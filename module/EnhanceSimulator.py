@@ -439,7 +439,7 @@ class EnhanceSimulator:
         gold_cost = statistic['消耗金币']
 
         # 强化时间 秒 估算
-        time_spend = f'{statistic["强化次数"] * 2.5 / 3600:.2f}h'
+        time_spend = f'{statistic["强化次数"] * 2 / 3600:.2f}h'
 
         return cost_total,net_profit,gold_cost,time_spend
 

@@ -1,8 +1,8 @@
 # 天知强卡器，打算用pyqt6做GUI
 # setting字典的结构为:setting[type][name][count]
 # 统计数据字典的结构为:statistics[type][name][count]
-# 0.3.0更新计划：强化期望
-# 0.3.0已完成：给日志加上时间戳；把香料上限做成个数;改进位置标志识别方法；将四叶草翻页间隔也做成设置;优化删除标签的按钮图标；自定义拖曳距离; 间隔一段时间自动刷新；自动输入二级密码；卡包强卡；自动分解宝石；强化模拟器；单卡强卡时，查找第一张卡方法；加入不绑卡加绑定草/绑定卡时，自动点击确定按钮；统计数据可视化; 自动垫卡；优化截图函数；修改因为qt6.7导致的一系列问题
+# 0.3.0更新计划：
+# 0.3.0已完成：给日志加上时间戳；把香料上限做成个数;改进位置标志识别方法；将四叶草翻页间隔也做成设置;优化删除标签的按钮图标；自定义拖曳距离; 间隔一段时间自动刷新；自动输入二级密码；卡包强卡；自动分解宝石；强化模拟器；单卡强卡时，查找第一张卡方法；加入不绑卡加绑定草/绑定卡时，自动点击确定按钮；统计数据可视化; 自动垫卡；优化截图函数；修改因为qt6.7导致的一系列问题；强化期望
 # BUG修复： 制卡时跳出检测超时；会错误点到永久保鲜袋；页面会来回切换；修复了四叶草标识没有在开始时被正确初始化的BUG
 # -*- coding: utf-8 -*-
 import time
@@ -861,6 +861,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.find_combination_btn.clicked.connect(self.auto_cushion.find_combination)
         # 连接上开始垫卡
         self.start_cushion_btn.clicked.connect(self.auto_cushion.auto_cushion)
+        # 连接清空现有规律结果按钮
+        self.clear_cushion_btn.clicked.connect(self.auto_cushion.clear_result)
 
     # 编辑正在选择配方的制卡方案
     def on_recipe_selected(self, text):
@@ -1348,7 +1350,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 预计更新方法，模板匹配第一处卡片上框架的位置，然后裁剪图片，再进行识别，失败，因为最上方框架与下方的所有卡片都不同。
     # 尝试直接使用模板匹配，非常好使。
     def get_recipe(self, target_img):
-        # 截图三次，每次拖曳三格
+        # 截图四次，每次拖曳四格
         for i in range(4):
             # 等待100毫秒
             QtCore.QThread.msleep(150)
@@ -1357,7 +1359,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 直接模板匹配图像
             result = cv2.matchTemplate(img, target_img, cv2.TM_CCOEFF_NORMED)
             min_value, max_value, min_loc, max_loc = cv2.minMaxLoc(result)
-            if max_value >= 0.97:
+            if max_value >= 0.98:
                 # 匹配成功，点击配方位置
                 x, y = max_loc
                 # 计算模板图像的中心位置
@@ -1371,7 +1373,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             if i == 0:
                 self.click(910, 110)
             else:
-                self.drag(910, 95 + i * 15, 0, 15)
+                self.drag(910, 95 + i * 17, 0, 17)
             QtCore.QThread.msleep(200)
         # 匹配失败，弹出弹窗
         self.show_dialog_signal.emit("危", "配方识别失败,请检查自己的配方")
@@ -2171,7 +2173,11 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 停止运行
         self.is_running = False
         msg = QtWidgets.QMessageBox()
-        msg.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+        # 设置愤怒的芙芙作为图标
+        angry_furina = QtGui.QPixmap(resource_path("items/icon/angry_furina.png"))
+        normal_furina = resource_path("items/icon/furina.ico")
+        msg.setIconPixmap(angry_furina)
+        msg.setWindowIcon(QtGui.QIcon(normal_furina))
         msg.setWindowTitle(title)
         msg.setText(message)
         msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
@@ -2181,7 +2187,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             title=title,
             message=message,
             app_name='天知强卡器',
-            timeout=5  # 通知显示的时间
+            timeout=5,  # 通知显示的时间
+            app_icon=normal_furina,
         )
         msg.exec()
 

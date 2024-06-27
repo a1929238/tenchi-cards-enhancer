@@ -22,6 +22,7 @@ class QWidgetWebExpectation(QWidget):
         # 将html设置到QWebEngineView中
         self.web_view.setHtml(self.create_html())
         self.cus_layout.addWidget(self.web_view)
+        self.setWindowTitle("强化收益")
         self.setLayout(self.cus_layout)
 
 
