@@ -3,7 +3,7 @@ from PyQt6.QtWebEngineWidgets import QWebEngineView
 import json
 
 # 使用ECharts为统计数据绘制图表，用内置的谷歌浏览器显示
-class WebStatistics:
+class WebStatistics():
     """
     使用ECharts为统计数据绘制图表，用内置的谷歌浏览器显示
     """
@@ -17,48 +17,73 @@ class WebStatistics:
         """
         初始化标签页
         """
-        stats_tab_widget = QTabWidget(self.main_window.tab_3)
-        # 分类，按标签页展现统计数据：使用四叶草饼图(绑定/不绑)；使用香料饼图(绑定/不绑)；使用卡片饼图(绑定/不绑)；强化出卡片饼图(绑定/不绑)；强化次数/成功次数柱状图，下付消耗金币总额。共这五个标签，每个标签页内嵌一个QWebEngineView，读取不同的html来显示不同的图片
+        self.web_view = QWebEngineView()
+        self.stats_tab_widget = QTabWidget(self.main_window.tab_3)
+        
         # 创建使用四叶草标签页
-        stats_tab_widget.addTab(self.create_pie_statistics_tab("使用四叶草总和"), "使用四叶草")
-        stats_tab_widget.addTab(self.create_pie_statistics_tab("使用香料总和"), "使用香料")
-        stats_tab_widget.addTab(self.create_pie_statistics_tab("使用卡片总和"), "使用卡片")
-        stats_tab_widget.addTab(self.create_pie_statistics_tab("强化出卡片总和"), "强化出卡片")
-        stats_tab_widget.addTab(self.create_bar_statistics_tab(), "强化次数/成功次数")
+        self.stats_tab_widget.addTab(self.create_empty_tab("使用四叶草总和"), "使用四叶草")
+        self.stats_tab_widget.addTab(self.create_empty_tab("使用香料总和"), "使用香料")
+        self.stats_tab_widget.addTab(self.create_empty_tab("使用卡片总和"), "使用卡片")
+        self.stats_tab_widget.addTab(self.create_empty_tab("强化出卡片总和"), "强化出卡片")
+        self.stats_tab_widget.addTab(self.create_empty_tab("强化次数/成功次数"), "强化次数/成功次数")
 
-    def create_pie_statistics_tab(self, type):
+        # 连接 tab change 信号
+        self.stats_tab_widget.currentChanged.connect(lambda index: self.load_tab_content(self.stats_tab_widget, index))
+
+        # 将四叶草综合页预加载内容
+        self.load_tab_content(self.stats_tab_widget, 0)
+    
+    def create_empty_tab(self, type):
         """
-        按类型创建统计数据标签页，此为饼图
+        创建一个空的标签页
         """
-        web_view = QWebEngineView()
         tab = QWidget()
+        tab.setProperty("type", type)
         layout = QVBoxLayout(tab)
+        tab.setLayout(layout)
+        return tab
+
+    def load_tab_content(self, stats_tab_widget, index):
+        """
+        加载标签页内容
+        """
+        tab = stats_tab_widget.widget(index)
+        layout = tab.layout()
+
+        if layout.count() == 0 or layout.itemAt(0).widget() is not self.web_view:
+            # 清除旧的 QWebEngineView
+            for i in reversed(range(layout.count())):
+                layout.itemAt(i).widget().setParent(None)
+            layout.addWidget(self.web_view)
+
+        type = tab.property("type")
+        
+        if type == "强化次数/成功次数":
+            html = self.create_bar_statistics_html()
+        else:
+            html = self.create_pie_statistics_html(type)
+        
+        self.web_view.setHtml(html)
+
+    def create_pie_statistics_html(self, type):
+        """
+        创建饼图统计数据的 HTML
+        """
         # 创建饼option
         option1, option2 = self.create_pie_options(type)
         # 创建html
         html = self.create_double_statistics_html(option1, option2)
-        # 将html设置到QWebEngineView中
-        web_view.setHtml(html)
-        layout.addWidget(web_view)
-        tab.setLayout(layout)
-        return tab
-    
-    def create_bar_statistics_tab(self):
+        return html
+
+    def create_bar_statistics_html(self):
         """
-        按类型创建统计数据标签页，此为柱状图
+        创建柱状图统计数据的 HTML
         """
-        web_view = QWebEngineView()
-        tab = QWidget()
-        layout = QVBoxLayout(tab)
         # 创建柱状图option
         option = self.create_bar_option()
         # 创建html
         html = self.create_statistics_html(option)
-        # 将html设置到QWebEngineView中
-        web_view.setHtml(html)
-        layout.addWidget(web_view)
-        tab.setLayout(layout)
-        return tab
+        return html
 
 
     def create_double_statistics_html(self, option1, option2):

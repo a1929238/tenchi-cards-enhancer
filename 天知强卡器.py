@@ -1,8 +1,6 @@
 # 天知强卡器，打算用pyqt6做GUI
 # setting字典的结构为:setting[type][name][count]
 # 统计数据字典的结构为:statistics[type][name][count]
-# 0.3.0更新计划：
-# 0.3.0已完成：给日志加上时间戳；把香料上限做成个数;改进位置标志识别方法；将四叶草翻页间隔也做成设置;优化删除标签的按钮图标；自定义拖曳距离; 间隔一段时间自动刷新；自动输入二级密码；卡包强卡；自动分解宝石；强化模拟器；单卡强卡时，查找第一张卡方法；加入不绑卡加绑定草/绑定卡时，自动点击确定按钮；统计数据可视化; 自动垫卡；优化截图函数；修改因为qt6.7导致的一系列问题；强化期望
 # BUG修复： 制卡时跳出检测超时；会错误点到永久保鲜袋；页面会来回切换；修复了四叶草标识没有在开始时被正确初始化的BUG
 # -*- coding: utf-8 -*-
 import time
@@ -1047,6 +1045,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.enhanceronlybtn.setEnabled(True)
             self.gem_decompose_btn.setEnabled(True)
             self.start_cushion_btn.setEnabled(True)
+            # 句柄改变时，重置单卡位置
+            self.single_max_card_position = 0
             if win32gui.GetClassName(handle) == "NativeWindowClass":
                 print("360游戏大厅模式, 允许刷新, 可用 window_name_360 是否 None 判断")
                 # 获取上级句柄
@@ -1350,9 +1350,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     # 预计更新方法，模板匹配第一处卡片上框架的位置，然后裁剪图片，再进行识别，失败，因为最上方框架与下方的所有卡片都不同。
     # 尝试直接使用模板匹配，非常好使。
     def get_recipe(self, target_img):
-        # 截图四次，每次拖曳四格
-        for i in range(4):
-            # 等待100毫秒
+        # 截图四次，每次拖曳三格(第一次为点击滑块最上方)
+        for i in range(5):
+            # 等待150毫秒
             QtCore.QThread.msleep(150)
             # 截图
             img = self.get_image(559, 90, 343, 196)
@@ -1373,7 +1373,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             if i == 0:
                 self.click(910, 110)
             else:
-                self.drag(910, 95 + i * 17, 0, 17)
+                self.drag(910, 95 + i * 15, 0, 15)
             QtCore.QThread.msleep(200)
         # 匹配失败，弹出弹窗
         self.show_dialog_signal.emit("危", "配方识别失败,请检查自己的配方")
@@ -1449,6 +1449,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             self.card_dict = {}
             self.card_dict = self.get_card_dict(img, single_plan)
             if self.card_dict:
+                # 如果是单卡强卡且最高等级小于10，则检测一遍最上面一排，第七张卡(0-6)是否等于等级上限，如果等于，就往下拉一行
+                if card_num == 1 and self.max_level < 10:
+                    self.check_first_row_card()
                 # 强化当前页面卡片
                 self.card_enhancer(single_plan=single_plan)
                 if self.cards_enough:
@@ -1511,6 +1514,22 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     return
             self.drag(908, 120 + i * 10, 0, 10)
     
+    # 检测第一行卡片
+    def check_first_row_card(self):
+        first_row_card = self.card_dict.get("6-0", None)
+        if first_row_card and first_row_card["星级"] == str(self.max_level):
+            # 往下拉一行
+            while True:
+                QtCore.QThread.msleep(150)
+                img = self.get_cut_cards_img()
+                card_dict = self.get_card_dict(img)
+                if card_dict.get("6-0", None) and card_dict.get("6-0")["星级"] == str(self.max_level):
+                    self.drag(908, 120 + self.single_max_card_position, 0, 10)
+                    self.single_max_card_position += 10
+                else:
+                    return
+                
+
     # 获取裁剪过的合成屋卡片图像
     def get_cut_cards_img(self, need_offset=False) -> list:
         img = self.get_image(559, 91, 343, 456)
@@ -2533,7 +2552,7 @@ class EnhancerThread(QtCore.QThread):
                 self.enhancer.check_second_password()
             # 重新点击合成屋
             self.enhancer.click(685, 558)
-            QtCore.QThread.msleep(600)
+            QtCore.QThread.msleep(1000)
             # 归零强化次数
             self.enhancer.enhance_times = 0
         else:

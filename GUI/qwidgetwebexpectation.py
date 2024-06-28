@@ -1,6 +1,5 @@
-from PyQt6.QtWidgets import QWidget, QTabWidget, QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-import json
 
 
 # 使用ECharts为统计数据绘制图表，用内置的谷歌浏览器显示
