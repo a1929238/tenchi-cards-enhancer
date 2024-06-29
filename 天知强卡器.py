@@ -1,7 +1,8 @@
 # 天知强卡器，打算用pyqt6做GUI
 # setting字典的结构为:setting[type][name][count]
 # 统计数据字典的结构为:statistics[type][name][count]
-# BUG修复： 制卡时跳出检测超时；会错误点到永久保鲜袋；页面会来回切换；修复了四叶草标识没有在开始时被正确初始化的BUG
+# 新增危险设置，弹窗后自动刷新功能，一次最多刷新五次
+# BUG修复： 在不存在副卡等级的情况下点击添加副卡会闪退的BUG，背包满时单卡强卡有概率把滚动条卡在最上方的BUG，强化出卡片统计永远是绑定的BUG，换行时有概率点歪的BUG,在极大背包容量情况下，单卡强化会找不到卡片位置的BUG
 # -*- coding: utf-8 -*-
 import time
 from PyQt6 import QtWidgets, QtCore, QtGui, uic
@@ -101,6 +102,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.enhance_type = '无'
         self.time_last_reload_game = time.time()
         self.single_max_card_position = 0
+
+        # 弹窗后刷新区
+        self.failed_refresh = False
+        self.failed_refresh_count = 0
         
 
         # 初始化香料列表
@@ -125,6 +130,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.is_reload_game = bool(self.settings["个人设置"]["是否刷新游戏"])
         self.reload_time = int(self.settings["个人设置"]["刷新游戏时间"]) # 该变量单位为分钟
         self.is_secondary_password = bool(self.settings["个人设置"]["是否输入二级密码"])
+        self.failed_refresh = bool(self.settings["个人设置"]["弹窗后是否刷新游戏"])
         self.secondary_password = self.settings["个人设置"]["二级密码"]
         self.produce_interval = int(self.settings["个人设置"]["制卡间隔"])
         self.produce_check_interval = int(self.settings["个人设置"]["制卡检测间隔"])
@@ -699,6 +705,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.reload_time_input.setValue(self.reload_time)
         self.is_secondary_password_input.setChecked(self.is_secondary_password)
         self.secondary_password_input.setText(self.secondary_password)
+        self.failed_refresh_check.setChecked(self.failed_refresh)
 
         self.produce_interval_input.setValue(self.produce_interval)
         self.produce_check_interval_input.setValue(self.produce_check_interval)
@@ -717,6 +724,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.reload_time_input.valueChanged.connect(self.on_setting_changed)
         self.is_secondary_password_input.stateChanged.connect(self.on_setting_changed)
         self.secondary_password_input.textChanged.connect(self.on_setting_changed)
+        self.failed_refresh_check.stateChanged.connect(self.on_setting_changed)
 
         self.produce_interval_input.valueChanged.connect(self.on_setting_changed)
         self.produce_check_interval_input.valueChanged.connect(self.on_setting_changed)
@@ -833,6 +841,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             sub_card_quality_box = getattr(self, f"sub_card_quality_box_{id}")
             level = sub_card_level_box.currentText()
             quality = sub_card_quality_box.currentText()
+            if not level or not quality:
+                return
             self.enhance_simulator.simulator_cards[id] = {
                 "星级": level,
                 "质量": quality_map[quality],
@@ -995,6 +1005,9 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         elif sender_name == "reload_time_input":
             self.settings["个人设置"]["刷新游戏时间"] = f"{value}"
             self.reload_time = value
+        elif sender_name == "failed_refresh_check":
+            self.settings["个人设置"]["弹窗后是否刷新游戏"] = sender.isChecked()
+            self.failed_refresh = sender.isChecked()
         elif sender_name == "is_secondary_password_input":
             self.settings["个人设置"]["是否输入二级密码"] = sender.isChecked()
             self.is_secondary_password = sender.isChecked()
@@ -1272,6 +1285,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             for key, value in default.items():
                 if key not in settings:
                     settings[key] = value
+                if key == "个人设置":
+                    for k, v in value.items():
+                        if k not in settings["个人设置"]:
+                            settings["个人设置"][k] = v
             return settings  # 返回设置字典
         except FileNotFoundError:
             filename = resource_path('GUI/default/setting.json')
@@ -1425,8 +1442,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             return
         # 初始化当前位置
         current_position = 0
-        # 最终方案，滚动条的长度是110-415，共计315个像素，根据设置的滚动次数来进行滚动
-        scroll_length = 315 // self.scroll_times
+        # 最终方案，滚动条的长度是110-470，共计360个像素，根据设置的滚动次数来进行滚动
+        scroll_length = 360 // self.scroll_times
         # 确认当前生产方案中卡片数量
         if enhance_only:
             card_num = 2
@@ -1465,7 +1482,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 # 如果在非第一次拖曳中，当前页面没有获取到强化字典，同时识别出了空格，表明再往下拉也没卡了，那么就退出循环
                 if current_position != 0 and not self.match_image(img, self.resources.empty_card, 3):
                     return
-                # 拖曳长度取决于拖曳次数，每次拖曳长度为315/滚动次数，当前位置为0时，点击一次滑块最顶端
+                # 拖曳长度取决于拖曳次数，每次拖曳长度为420/滚动次数，当前位置为0时，点击一次滑块最顶端
                 if current_position == 0:
                     current_position += 5
                     self.click(908, 120)
@@ -1473,8 +1490,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                     self.drag(908, 120 + current_position, 0, scroll_length)
                     current_position += scroll_length
                 QtCore.QThread.msleep(100)
-                # 当前位置超过315，退出循环
-                if current_position >= 315:
+                # 当前位置超过360，退出循环
+                if current_position >= 360:
                     return
             else:
                 # 单卡拖曳方式，固定在等级最高卡片位置
@@ -1488,7 +1505,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         current_max_level = 0
         full_card_dict = {}
         # 分8次获取卡片字典，获得目前最高卡片等级
-        scroll_length = 315 // 8
+        scroll_length = 360 // 8
         for i in range(8):
             QtCore.QThread.msleep(150)
             img = self.get_cut_cards_img()
@@ -1500,8 +1517,10 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             card_level = int(card["星级"])
             if card_level <= target_level:
                 current_max_level = max(current_max_level, card_level)
+        # 点击一下滑块的最上方
+        self.click(908, 120)
         # 寻找到目标等级后，从开始慢慢拖曳滑块，直到那张等级最高的卡片出现在第一行
-        for i in range(30):
+        for i in range(37): # 滚动条总长度为360
             if not self.is_running:
                 return
             QtCore.QThread.msleep(150)
@@ -1521,7 +1540,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
             # 往下拉一行
             while True:
                 QtCore.QThread.msleep(150)
-                img = self.get_cut_cards_img()
+                img = self.get_cut_cards_img(need_offset=True)
                 card_dict = self.get_card_dict(img)
                 if card_dict.get("6-0", None) and card_dict.get("6-0")["星级"] == str(self.max_level):
                     self.drag(908, 120 + self.single_max_card_position, 0, 10)
@@ -1836,7 +1855,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                 card_infos = sub_card_infos + [main_card_info]
                 self.edit_statistics(2, card_infos)
                 # 判定结果的绑定情况，只要材料中出现任意绑定，则强化出卡片为绑定
-                result_bind = any([main_card_info['绑定'], (sub_card_info['绑定'] for sub_card_info in sub_card_infos), enhance_plan["四叶草"]['绑定']])
+                result_bind = any([main_card_info['绑定']] + [sub_card_info['绑定'] for sub_card_info in sub_card_infos] + [enhance_plan["四叶草"]['绑定']])
                 # 强化之后截图强化区域，判定成功/失败，输出日志
                 if single_plan: # 如果是单独方案，就使用自动垫卡的检测方法再多检测一轮
                     self.auto_cushion.get_result(main_card_info["星级"])
@@ -2153,18 +2172,28 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         # 能使用的强卡方案里，有没有副卡全是无的？
         for j in range(self.max_level, self.min_level, -1):
             # 初始化无计数
-            None_count = 0
+            none_count = 0
+            name_None_count = 0
             # 遍历可用的强卡方案
             for k in range(1, 4):
-                subcard_level = self.settings["强化方案"][f"{j - 1}-{j}"][f'副卡{k}'].get('星级', '无')
+                subcard = self.settings["强化方案"][f"{j - 1}-{j}"][f'副卡{k}']
+                subcard_level = subcard.get('星级', '无')
                 if subcard_level == "无":
                     # 将无计数加一
-                    None_count += 1
+                    none_count += 1
                 # 如果有三个无，就直接弹窗，并停止运行
-                if None_count == 3:
+                if none_count == 3:
                     self.show_dialog_signal.emit("这……", f"{j - 1}-{j}方案的副卡全是无，回去再设置设置吧……")
                     self.onStop()
                     return
+                # 确认这些副卡是不是都存在卡片名称
+                subcard_name = subcard.get('卡片名称', '无')
+                if subcard_name == "无":
+                    name_None_count += 1
+                if name_None_count == 3:
+                        self.show_dialog_signal.emit("嗯嗯？", "你还没有设置要强化的卡片呢！请到强卡方案——强化类型按钮里去进行设置，或使用乌瑟勋爵一键设置")
+                        self.onStop()
+                        return
         if mode == "仅强卡":
             return
         # 生产方案里面，到底有没有卡？
@@ -2191,6 +2220,15 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
     def show_dialog(self, title, message):
         # 停止运行
         self.is_running = False
+        # 如果打开了弹窗后刷新游戏
+        if self.failed_refresh and self.failed_refresh_count < 5:
+            # 弹窗计数+1
+            self.failed_refresh_count += 1
+            return
+        elif self.failed_refresh_count == 5:
+            title = "已达到弹窗后刷新上限"
+            message = "呼……好累……老是弹窗……刷新不动了……"
+            self.failed_refresh_count += 1
         msg = QtWidgets.QMessageBox()
         # 设置愤怒的芙芙作为图标
         angry_furina = QtGui.QPixmap(resource_path("items/icon/angry_furina.png"))
@@ -2478,10 +2516,9 @@ class EnhancerThread(QtCore.QThread):
             # 如果强化到达一定时间，且打开刷新游戏设置，就刷新游戏重进一下游戏, 防止卡顿
             if self.enhancer.is_reload_game and time.time() - self.enhancer.time_last_reload_game >= self.enhancer.reload_time * 60:
                 self.reload_game()
-                self.enhancer.single_max_card_position = 0 # 刷新后要初始化卡片位置
             # 检查停止标识
             if not self.enhancer.is_running:
-                return
+                break
             # 如果强化到了一定次数，就退出重进一下合成屋，防止卡顿
             if self.enhancer.enhance_times >= self.enhancer.reload_count:
                 self.reload_house()
@@ -2501,10 +2538,19 @@ class EnhancerThread(QtCore.QThread):
             QtCore.QThread.msleep(100)
             # 强化主函数
             self.enhancer.main_enhancer()
+            # 检查停止标识
+            if not self.enhancer.is_running:
+                break
             QtCore.QThread.msleep(100)
             # 数组卡片全部强化完成后，点击卡片制作标签，再次循环
             self.enhancer.change_position(0)
             QtCore.QThread.msleep(200)
+        # 如果开启了弹窗后刷新功能，则刷新一次
+        if self.enhancer.failed_refresh and self.enhancer.failed_refresh_count != 0 and self.enhancer.failed_refresh_count <= 5:
+            print("危险设置！ 弹窗后刷新游戏")
+            self.enhancer.is_running = True
+            self.reload_game()
+            self.run() # 递归调用
 
     # 初始化位置,使用截图与识图函数判断当前位置，一共有三次判断：1.判断窗口上是否有合成屋图标，如果有就点击 2.根据右上角的“XX说明”判断目前所处位置，分别执行不同操作 
     def init_position(self) -> bool:
@@ -2552,9 +2598,10 @@ class EnhancerThread(QtCore.QThread):
                 self.enhancer.check_second_password()
             # 重新点击合成屋
             self.enhancer.click(685, 558)
-            QtCore.QThread.msleep(1000)
+            QtCore.QThread.msleep(3000)
             # 归零强化次数
             self.enhancer.enhance_times = 0
+            self.enhancer.single_max_card_position = 0 # 刷新后要初始化卡片位置
         else:
             print("虽然到一小时了, 但非360游戏大厅 不刷新")
 

@@ -78,7 +78,7 @@
     }</string>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>8</number>
     </property>
     <widget class="QWidget" name="tab_1">
      <property name="toolTip">
@@ -3593,6 +3593,41 @@ border-radius: 20px;</string>
         </layout>
        </item>
       </layout>
+     </widget>
+     <widget class="QLabel" name="label_64">
+      <property name="geometry">
+       <rect>
+        <x>270</x>
+        <y>0</y>
+        <width>221</width>
+        <height>61</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string/>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color: red;</string>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;————危险设置区————&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;请确保你知道自己在做什么&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="failed_refresh_check">
+      <property name="geometry">
+       <rect>
+        <x>300</x>
+        <y>60</y>
+        <width>181</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string>最多刷新五次，五次后停止</string>
+      </property>
+      <property name="text">
+       <string>出现问题弹窗后刷新游戏</string>
+      </property>
      </widget>
     </widget>
    </widget>

@@ -250,7 +250,7 @@ class WebStatistics():
         option = {
             "title": {
                 "text": title,
-                "left": 'center'
+                "left": 'right'
             },
             "legend": {
                 "left": "left"
