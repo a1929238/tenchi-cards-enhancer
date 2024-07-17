@@ -1,6 +1,7 @@
 # 天知强卡器，打算用pyqt6做GUI
 # setting字典的结构为:setting[type][name][count]
 # 统计数据字典的结构为:statistics[type][name][count]
+# 更新目标： 增加香料/四叶草点击后检查
 # 新增危险设置，弹窗后自动刷新功能，一次最多刷新五次
 # BUG修复： 在不存在副卡等级的情况下点击添加副卡会闪退的BUG，背包满时单卡强卡有概率把滚动条卡在最上方的BUG，强化出卡片统计永远是绑定的BUG，换行时有概率点歪的BUG,在极大背包容量情况下，单卡强化会找不到卡片位置的BUG
 # -*- coding: utf-8 -*-
@@ -84,7 +85,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.dpi = self.get_system_dpi()
 
         # 变量初始化
-        self.version = "0.3.0"
+        self.version = "0.3.1"
         self.handle = None
         self.handle_browser = None
         self.handle_360 = None
@@ -288,6 +289,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
         self.startbtn.setEnabled(True)
         self.enhanceronlybtn.setEnabled(True)
         self.stopbtn.setEnabled(False)
+        # 重置弹窗计数
+        self.failed_refresh_count = 0
 
     # 仅强卡按钮
     def enhanceronly(self):
@@ -1603,7 +1606,7 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                                 break
                             cards.append(name)
                         continue
-                    if card_name != "无" and card_name not in cards:
+                    elif card_name != "无" and card_name not in cards:
                         cards.append(card_name)
         # 遍历卡片数组，分别识图，凑成一个完整的字典
         for card_name in cards:
@@ -2034,6 +2037,8 @@ class tenchi_cards_enhancer(QtWidgets.QMainWindow):
                             current_gold_img = self.get_image(869, 555, 30, 15)
                             if not np.array_equal(gold_img, current_gold_img):
                                 break
+                            if (i+11) % 10 == 0: # 每隔10次就点击一次，防止卡住
+                                self.click(284, 377)
                             QtCore.QThread.msleep(100)
                         else:
                             # 强化失败，弹窗
