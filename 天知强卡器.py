@@ -1539,7 +1539,7 @@ class TenchiCardsEnhancer(QtWidgets.QMainWindow):
         # 点击一下滑块的最上方
         self.click(908, 120)
         # 寻找到目标等级后，从开始慢慢拖曳滑块，直到等级最高的卡片出现在第一行
-        for i in range(37):  # 滚动条总长度为360
+        for i in range(46):  # 滚动条总长度为360，但存在极特殊情况
             if not self.is_running:
                 return
             QtCore.QThread.msleep(150)
@@ -1625,10 +1625,10 @@ class TenchiCardsEnhancer(QtWidgets.QMainWindow):
                     elif card_name != "无" and card_name not in cards:
                         cards.append(card_name)
         # 遍历卡片数组，分别识图，凑成一个完整的字典
-        for card_name in cards:
+        for card_name_ in cards:
             # 遍历当前页面的卡片,识图出设置中目标卡片
-            card_image = imread(resource_path(f"items/card/{card_name}.png"))
-            card_info = self.match_image(img, card_image, 2, None, card_name)
+            card_image = imread(resource_path(f"items/card/{card_name_}.png"))
+            card_info = self.match_image(img, card_image, 2, None, card_name_)
             if card_info:
                 card_dict.update(card_info)
         return card_dict
@@ -1756,13 +1756,13 @@ class TenchiCardsEnhancer(QtWidgets.QMainWindow):
         # 遍历生产方案，查询对应的副卡是否在生产计划之内，如果不在，就往下一级的副卡做
         spice_list = list(self.spice_dict.keys())
         for j in range(len(spice_list), 0, -1):
-            currect_spice = j - 1
-            spice_name = spice_list[currect_spice]
+            current_spice = j - 1
+            spice_name = spice_list[current_spice]
             count = int(self.settings["生产方案"][spice_name])
             # 需要有对应生产方案，且生产卡片星级低于最高副卡要求，且不能和当前已有副卡重复，且需要是可用副卡
-            if count != 0 and currect_spice <= max_sub_card and currect_spice not in level_list and currect_spice in sub_card_list:
+            if count != 0 and current_spice <= max_sub_card and current_spice not in level_list and current_spice in sub_card_list:
                 # 按照生产方案指定次数，制作一轮需求的副卡中，星级最高的卡片
-                self.card_producer(currect_spice)
+                self.card_producer(current_spice)
                 return
 
     # 动态生产卡片，方法2
