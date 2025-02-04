@@ -1,16 +1,17 @@
 import sys
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QListWidget, QInputDialog, QMessageBox, QComboBox
 )
 from PyQt6.QtCore import Qt, pyqtSignal
+
 
 class CardPackEditor(QWidget):
     save_signal = pyqtSignal(dict)
 
     def __init__(self, card_packs=None):
         super().__init__()
-        
+
         # 卡包数据,格式为{卡包名称:[卡片1,卡片2,etc]}
         if card_packs:
             self.card_packs = card_packs
@@ -19,7 +20,7 @@ class CardPackEditor(QWidget):
 
         # 主布局
         main_layout = QVBoxLayout()
-        
+
         # 卡包名称编辑
         pack_name_layout = QHBoxLayout()
         self.pack_name_label = QLabel("卡包名称:")
@@ -43,7 +44,7 @@ class CardPackEditor(QWidget):
         self.delete_pack_button.clicked.connect(self.delete_pack)
         current_pack_layout.addWidget(self.current_pack_label)
         current_pack_layout.addWidget(self.delete_pack_button)
-        
+
         # 卡包列表
         self.pack_list_widget = QListWidget()
         # 初始化卡包列表
@@ -83,7 +84,7 @@ class CardPackEditor(QWidget):
         main_layout.addWidget(self.card_list_widget)
         main_layout.addLayout(button_layout)
         main_layout.addWidget(self.save_pack_button)
-        
+
         self.setLayout(main_layout)
 
     def add_pack(self):
@@ -150,7 +151,7 @@ class CardPackEditor(QWidget):
             self.current_pack_label.setText("当前选中卡包: " + pack_name)
             self.card_list_widget.clear()
             self.card_list_widget.addItems(self.card_packs[pack_name])
-    
+
     def save_pack(self):
         # 保存卡包，将卡包配置文件在信号中发送到主窗口
         self.save_signal.emit(self.card_packs)

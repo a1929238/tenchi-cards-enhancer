@@ -4,6 +4,9 @@ from PyQt6.QtWidgets import QTableWidgetItem, QMessageBox
 import re
 import numpy as np
 
+from module.core.LevelCheck import check_card_enhance_result
+
+
 # 自动垫卡
 class AutoCushion():
     # 自动垫卡分为几步：1.强化成功率计算器，找到相等的成功几率 2.选择卡片配方 3.自行选择多种规律 4.进行自动制卡跟垫卡，出现任意一种规律后停止
@@ -296,7 +299,7 @@ class AutoCushion():
         获取垫卡结果
         """
         # 获取结果
-        result = self.main_window.check_enhance_result(int(target_level), result_bind=None, need_record=False)
+        result = check_card_enhance_result(int(target_level))
         # 将结果添加到结果列表中
         self.results.append(result)
         # 更新结果列表

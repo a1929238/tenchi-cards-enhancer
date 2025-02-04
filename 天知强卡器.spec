@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['天知强卡器.py'],
+    ['TenchiCardEnhancer.py'],
     pathex=[],
     binaries=[],
     datas=[('GUI', 'GUI'), ('items', 'items')],

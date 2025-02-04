@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QLabel, QMainWindow
 from PyQt6.QtCore import Qt
 
+
 class ClickableLabel(QLabel):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -28,7 +29,7 @@ class ClickableLabel(QLabel):
         if main_window:
             main_window.open_edit_window(self.objectName())
         super().mousePressEvent(event)
-    
+
     def enterEvent(self, event):
         # 鼠标悬停时的样式
         self.setStyleSheet("""
