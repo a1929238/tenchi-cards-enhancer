@@ -1,8 +1,9 @@
 __pycache__/
-test/
+test/test_image/
 .gitignore
 test/index.html
 /.idea/
 build/
 .vscode/
 dist/
+enhance_stats/
