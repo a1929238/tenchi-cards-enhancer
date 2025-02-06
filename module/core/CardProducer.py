@@ -33,12 +33,15 @@ def get_spice_usable(spice_stock: list[Item], produce_plan):
 
 def filter_spice(usable_spice, settings):
     """
-    根据强化方案剔除不符合绑定情况的香料，纯绑定和不绑的逻辑都很简单
+    根据强化方案剔除不符合绑定情况与最低使用星级的香料，纯绑定和不绑的逻辑都很简单
     """
-    max_level, min_level = settings["个人设置"]["最小星级"], settings["个人设置"]["最大星级"]
+    min_level, max_level = int(settings["个人设置"]["最小星级"]), int(settings["个人设置"]["最大星级"])
     bind_list = []
     level_bind_list = set()
-    for level in range(int(max_level), int(min_level)):
+    # 过滤掉星级范围外的香料
+    usable_spice = [spice for spice in usable_spice if min_level <= spice.get_level() < max_level]
+    # 获取绑定等级集合
+    for level in range(min_level, max_level):
         enhance_type = f'{level}-{level + 1}'
         enhance_plan = settings["强化方案"][enhance_type]
         # 遍历所要使用的所有卡片，判断是否全为一种情况，同时给出元组列表
@@ -48,7 +51,7 @@ def filter_spice(usable_spice, settings):
             if info.get("星级", "无") == "无":
                 continue
             # 无视零星卡的绑定情况
-            card_level = int(info.get("星级", 0)) == 0
+            card_level = int(info.get("星级", 0))
             if card_level == 0:
                 continue
             bind = info["绑定"]
@@ -237,6 +240,12 @@ def dynamic_card_producer(settings, card_count_dict=None):
         card_demand = get_card_demand(enhance_plan, card_count_dict, usable_spice)
     # 用主卡需求进行填充
     card_demand = fill_demand_with_main_card(enhance_plan, card_demand, usable_spice)
+    # 把已经存在的卡片从卡片需求中删除
+    if card_count_dict:
+        for card, count in card_count_dict.items():
+            for i in range(count):
+                if card in card_demand:
+                    card_demand.remove(card)
     # 截取前 14 项
     limited_cards = card_demand[:14]
 
@@ -246,7 +255,7 @@ def dynamic_card_producer(settings, card_count_dict=None):
     # 将元组列表送到解析器里，然后送给制卡器
     produce_list = parse_produce_list(enhance_plan, produce_list, usable_spice)
     # 如果解析器返回的produce_list为空，则表明没有香料了，返回False
-    if not produce_list:
+    if not produce_list or 0 in [count for _, count in produce_list]:
         event_manager.show_dialog_signal.emit("没有香料了！", "你的香料不足，无法进行制卡！")
         return False
     print(f"动态制卡需求：{produce_list}")
@@ -258,10 +267,12 @@ def dynamic_card_producer(settings, card_count_dict=None):
         actual_count, actual_card_name = produce_card(name, level, bind, count, card_pack_dict, produce_check_interval)
         if actual_count == 0:
             return
+        bind_str = "绑定" if card.bind else "不绑"
         event_manager.log_signal.emit(
             f"<font color='purple'>[{QTime.currentTime().toString()}]"
-            f"动态制卡{card.level}星{actual_card_name}{actual_count}次</font>"
+            f"动态制卡{bind_str}{card.level}星{actual_card_name}{actual_count}次</font>"
         )
+
 
 def get_card_demand(enhance_plan, card_count_dict, usable_spice) -> list[Card]:
     """
@@ -340,6 +351,9 @@ def parse_produce_list(enhance_plan, produce_list, usable_spice):
     注意，添加的主卡一定是和使用香料对应的，但是副卡会出现没有可用香料的情况
     这种情况就要解析副卡来源，用可用香料与等级屏蔽进行填充
     """
+    # 没有生产列表则说明没有香料，返回空列表
+    if not produce_list:
+        return []
     # 初始化来源列表，用于记录需要单独制卡的卡片
     needed_list = []
     # 集合化可用香料等级列表
@@ -348,6 +362,8 @@ def parse_produce_list(enhance_plan, produce_list, usable_spice):
         if card.level not in usable_spice_level and count > 5:
             # 分解该卡片来源
             need_cards = calculate_total_base_cards(card.level, usable_spice_level, enhance_plan)
+            if not need_cards:
+                return []
             needed_list += need_cards * count
     # 元组列表化需求列表
     needed_list = [(card, count) for card, count in Counter(needed_list).items()]
@@ -372,7 +388,7 @@ def parse_produce_list(enhance_plan, produce_list, usable_spice):
 
 def calculate_total_base_cards(target_level, usable_spice_level, enhance_plan):
     """
-    递归计算强化到目标星级所需的基础0星卡总数
+    递归计算强化到目标星级所需的基础卡总数
     Args:
         target_level(int):需要分解的目标星级
         usable_spice_level(set):可用香料等级集合
@@ -381,6 +397,10 @@ def calculate_total_base_cards(target_level, usable_spice_level, enhance_plan):
          total_list:具体的所需卡片列表
     """
     total_list = []
+
+    # 零星不可被分解
+    if target_level == 0:
+        return total_list
 
     # 获取对应的强化方案（格式：当前星级-目标星级）
     plan_key = f"{target_level - 1}-{target_level}"

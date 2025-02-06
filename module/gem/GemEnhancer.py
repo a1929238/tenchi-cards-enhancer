@@ -2,7 +2,7 @@ import random
 
 import cv2
 import numpy as np
-from PyQt6.QtCore import QThread
+from PyQt6.QtCore import QThread, QTime
 
 from module.core.DepositoryTab import click_gem
 from module.core.DynamicWait import dynamic_check_gold, dynamic_wait_gem_enhance_btn_to_gry
@@ -82,7 +82,7 @@ class GemEnhancer:
         获取宝石的名称，星级，绑定
         """
         gem_info = {}
-        level = 0
+        level = None
         name = None
         img = img[1:45, 1:45]
         level_icon = img[3:10, 4:11]
@@ -104,7 +104,7 @@ class GemEnhancer:
                     break
             # 判断是否为空格
             else:
-                if direct_img_match(img[22:37, 8:41], resource.empty_card):
+                if direct_img_match(img[22:37, 8:41], hash(resource.empty_card.tobytes())):
                     gem_info['name'] = '空格'
                     return gem_info
                 else:
@@ -112,10 +112,13 @@ class GemEnhancer:
         # 获取绑定状态
         bind = direct_img_match(bind_icon, resource.spice_bind_img)
         # 获取该宝石星级，如果该星级不在范围内，则返回None
-        for i in range(11):
+        for i in range(1, 11):
             if direct_img_match(level_icon, resource.level_images[i]):
                 level = i
                 break
+        # 只有当最低星级为0时，获取不到星级的宝石才是0星宝石
+        if self.plan["等级范围"][0] == 0 and level is None:
+            level = 0
         if level < self.plan["等级范围"][0] or level >= self.plan["等级范围"][1]:
             return None
         # 返回结果
@@ -263,7 +266,7 @@ class GemEnhancer:
 
     def gem_decomposition(self):
         # 先检查是否在宝石分解页面
-        if check_position != "宝石分解":
+        if check_position() != "宝石分解":
             event_manager.show_dialog_signal.emit("呜呜", "请切换到宝石分解页面再点我！")
             return
         while self.enhancer.is_running:
@@ -308,18 +311,18 @@ class GemEnhancer:
             # 点击失败，弹窗
             event_manager.show_dialog_signal.emit("哎呦", "宝石怎么点不上去")
             return False
-        # 截一张当前金币的图
-        gold_img = get_image(869, 555, 30, 15)
         # 点击分解
         click(284, 377)
         # 检测槽里的宝石有没有消失
         if has_area_changed(267, 315, 30, 30):
             # 输出分解日志
-            text = gem["name"] + "分解成功!"
-            self.enhancer.log_signal.emit(text)
+            gem_name = gem["name"]
+            gem_bind = "绑定" if gem["bind"] else "不绑"
+            text = f"<font color='purple'>[{QTime.currentTime().toString()}]{gem_bind}{gem_name}分解成功!</font>"
+            event_manager.log_signal.emit(text)
             return True  # 成功分解，返回True
         else:
-            # 强化失败，弹窗
+            # 分解失败，弹窗
             event_manager.show_dialog_signal.emit("哎呦", "这宝石分解不了啊")
             return False
 

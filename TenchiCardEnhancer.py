@@ -1304,10 +1304,10 @@ class TenchiCardsEnhancer(QMainWindow):
             card_list = get_card_list(img, self.card_names, rows=7, columns=7, min_level=self.min_level,
                                       max_level=self.max_level)
             if card_list:
-                self.card_list = card_list
                 # 如果是单卡强卡且最高等级小于10，则检测一遍最上面一排，第七张卡(0-6)是否等于等级上限，如果等于，就往下拉一行
                 if card_num == 1 and self.max_level < 10:
                     self.check_first_row_card(card_list)
+                self.card_list = card_list
                 # 强化当前页面卡片，传输进去的是拷贝后的卡片列表，可在强化函数中修改
                 self.enhance_card_once(card_list=card_list.copy(), enhance_plan=self.settings["强化方案"])
                 # 检查停止标识
@@ -1384,6 +1384,9 @@ class TenchiCardsEnhancer(QMainWindow):
             return True, card_list
         # 往下拉一行
         while True:
+            drag(908, 120 + self.single_max_card_position, 0, self.single_line_length)
+            self.single_max_card_position += self.single_line_length
+            QThread.msleep(200)
             img = self.get_cut_cards_img(need_offset=True)
             card_list = get_card_list(img, self.card_names, rows=7, columns=7, min_level=self.min_level,
                                       max_level=self.max_level)
@@ -1394,9 +1397,6 @@ class TenchiCardsEnhancer(QMainWindow):
             else:
                 # 使用本次获得的卡片列表
                 return True, card_list
-            drag(908, 120 + self.single_max_card_position, 0, self.single_line_length)
-            self.single_max_card_position += self.single_line_length
-            QThread.msleep(150)
 
     # 获取裁剪过的合成屋卡片图像
     def get_cut_cards_img(self, rows=7, need_offset=False):
