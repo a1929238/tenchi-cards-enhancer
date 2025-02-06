@@ -4,21 +4,25 @@ from module.core.CardEnhancer import is_card_placed
 from module.core.GetImg import get_image
 from module.core.ImgMatch import has_area_changed, direct_img_match, screenshot_and_direct_img_match
 from module.core.MouseEvent import click
+from module.globals import GLOBALS
 from module.globals.ResourceInit import resource
 
 
-def dynamic_check_gold(interval=200, times=4, with_click=False, click_pos=None):
+def dynamic_check_gold(interval=100, round_times=8, times=5, with_click=False, click_pos=None):
     """
     通过多次检测金币有无变化，来实现动态等待
     可在检测的间隔中点击对应位置
     Args:
-        interval: 区域检测间隔时间，默认200ms
-        times: 检测轮数，默认4次
+        interval: 区域检测间隔时间，默认100ms
+        round_times: 检测轮数，默认8次
+        times: 检测次数，默认5次
         with_click: 是否在检测间隔中点击对应位置，默认False
         click_pos: 点击位置，默认None
     """
-    for _ in range(times):
-        if has_area_changed(860, 555, 45, 10, interval):
+    for _ in range(round_times):
+        if not GLOBALS.IS_RUNNING:
+            return True
+        if has_area_changed(860, 555, 45, 10, interval, times):
             return True
         if with_click:
             click(*click_pos)
@@ -67,7 +71,7 @@ def dynamic_wait_card_slot_state(card_index, state, interval=100, times=80) -> b
     """
     动态等待目标卡槽是否为目标状态
     Args:
-        card_index: 卡槽索引，2,3,4
+        card_index: 卡槽索引，2,3,4；5是四叶草
         state: 目标状态，True表示有卡，False表示无卡
         interval: 检测间隔时间，默认50ms
         times: 检测次数，默认80次
@@ -77,3 +81,19 @@ def dynamic_wait_card_slot_state(card_index, state, interval=100, times=80) -> b
             return True
         QThread.msleep(interval)
     return False
+
+
+def dynamic_wait_recipe_changed(area, interval=100) -> bool:
+    """
+    动态等待配方发生变化（数量或配方被用完）
+    卡片制作时，动态检测金币变化非常不靠谱，金币会先于卡片制作15帧发生变化
+    """
+    x, y, width, height = area
+    for i in range(8):
+        if has_area_changed(x, y, width, height, interval):
+            return True
+        if (i + 1) % 4 == 0:
+            # 点击制作按钮
+            click(285, 425)
+    else:
+        return False

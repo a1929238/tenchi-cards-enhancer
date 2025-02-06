@@ -1,7 +1,7 @@
-from module.utils import imread
-import numpy as np
-import cv2
+card_list = [1, 2, 3, 4, 5, 6]
 
-img = imread("C:/192/code//tenchi-cards-enhancer//error_image28.png")
-img = img[:, :2]
-cv2.imwrite("..png", img)
+for card in card_list:
+    if card == 6:
+        break
+else:
+    print(1)

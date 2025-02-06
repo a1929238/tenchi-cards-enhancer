@@ -53,8 +53,8 @@ def get_success_rate():
                 cv2.imwrite(f"error_image{i}2.png", error_part2)
                 cv2.imwrite(f"error_image{i}_full.png", success_rate_img)
 
-            # 使用最大步长推进（保证至少推进1像素）
-            i += 5
+            # 保证至少推进1像素
+            i += 1
     if result:
         # 处理字符串
         result = result.replace('%', '')  # 移除百分号
@@ -71,7 +71,6 @@ def make_gray(img):
     :param img: numpy 数组，表示 RGB 图像
     :return: 处理后的 numpy 数组，文字颜色变为黑色，其余变为白色
     """
-
     # 创建一个新图像副本
     result = np.ones_like(img) * 255  # 将所有像素设为白色
 
@@ -80,6 +79,9 @@ def make_gray(img):
 
     # 将纯白色像素变为黑色
     result[words_pixels] = [0, 0, 0]
+
+    # 将图像转化为灰度图像
+    result = cv2.cvtColor(result, cv2.COLOR_RGB2GRAY)
 
     return result
 
@@ -102,7 +104,7 @@ def clip_img(img):
     img = img[top:bottom + 1, left:right + 1]
 
     # 去除所有纯白色像素的列
-    non_white_cols = np.any(np.any(img < 255, axis=2), axis=0)  # 找到非全白的列
+    non_white_cols = np.any(img < 255, axis=0)  # 找到非全白的列
     img = img[:, non_white_cols]  # 保留非全白的列
 
     return img

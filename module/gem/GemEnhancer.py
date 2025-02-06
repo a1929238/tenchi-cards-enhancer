@@ -63,7 +63,7 @@ class GemEnhancer:
                     # 判断绑定
                     bind = direct_img_match(bind_icon, resource.spice_bind_img)
                     # 获取数量
-                    num = get_num(num_img, resource.num_images)
+                    num = get_num(num_img)
                     full_name = ('绑定' if bind else '不绑') + name
                     crystal_info[full_name] = num
                     break

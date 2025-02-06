@@ -6,9 +6,10 @@ from module.globals.EventManager import event_manager
 from module.globals.ResourceInit import resource
 
 _CARD_SLOT_POSITION = {
-    2: (267, 253, 40, 50),
-    3: (211, 324, 40, 50),
-    4: (323, 324, 40, 50)
+    2: (267, 253, 40, 50),  # 卡槽2
+    3: (211, 324, 40, 50),  # 卡槽3
+    4: (323, 324, 40, 50),  # 卡槽4
+    5: (162, 375, 40, 40)  # 四叶草槽
 }
 
 
@@ -53,5 +54,5 @@ def is_card_placed(card_index):
     """判断目标卡片槽位中是否放置了卡片"""
     position = _CARD_SLOT_POSITION[card_index]
     img = get_image(*position)
-    result = direct_img_match(img, resource.sub_card_icon)
+    result = direct_img_match(img, resource.enhance_slot_image_dict[card_index])
     return not result

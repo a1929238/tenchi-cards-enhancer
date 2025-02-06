@@ -1,8 +1,8 @@
 from collections import Counter
 
-from PyQt6.QtCore import QThread
+from PyQt6.QtCore import QThread, QTime
 
-from module.core.DynamicWait import dynamic_check_gold
+from module.core.DynamicWait import dynamic_check_gold, dynamic_wait_recipe_changed
 from module.core.GetImg import get_image
 from module.core.ImgMatch import template_img_match, screenshot_and_direct_img_match, find_and_crop_template, \
     direct_img_match
@@ -78,68 +78,69 @@ def get_recipe(card_name, level, bind, count, card_pack_dict):
     Returns:
         produce_count(int): 最终制卡的数量
         actual_card_name(str): 实际使用的卡片名
+        recipe_area: 配方数量的区域
     """
-    if card_pack_dict and card_name in card_pack_dict:
+    if card_pack_dict and card_name in card_pack_dict.keys():
+        print(f"{card_name} 使用卡包")
         # 按卡包列表的顺序查找配方
-        for card_name in card_pack_dict[card_name]:
+        for _card_name in card_pack_dict[card_name]:
             # 过滤掉没有配方的卡片和在不可用列表中的卡片
-            if card_name not in resource.recipe_images or card_name in GLOBALS.NOT_USABLE_RECIPES:
+            if _card_name not in resource.recipe_images or _card_name in GLOBALS.NOT_USABLE_RECIPES:
                 continue
             # 递归调用自己，尝试获取对应的配方
-            produce_count, actual_card_name = get_recipe(card_name, level, bind, count, card_pack_dict)
+            produce_count, actual_card_name, recipe_area = get_recipe(_card_name, level, bind, count, card_pack_dict)
             # 如果卡片的实际数量小于期望生产数量，则单独调用一次生产方法，生产剩余需要的卡片
             if 0 < produce_count < count:
-                produce_card(card_name, level, bind, count - produce_count, card_pack_dict)
-                return produce_count, actual_card_name
+                produce_card(_card_name, level, bind, count - produce_count, card_pack_dict)
+                return produce_count, actual_card_name, recipe_area
             # 如果卡片的实际数量大于等于期望生产数量，则直接返回
             elif produce_count >= count:
-                return count, actual_card_name
+                return count, actual_card_name, recipe_area
             else:
                 # 将该不可用的配方加入不可用列表中
-                GLOBALS.NOT_USABLE_RECIPES.append(card_name)
+                GLOBALS.NOT_USABLE_RECIPES.append(_card_name)
         # 全是用不可制作的卡包为啥还要点制卡并强卡
         else:
-            return 0, None
-    # 点击一下滚动条最顶端，重置位置
-    click(907, 112)
+            return 0, None, None
     # 等待图像加载
     QThread.msleep(400)
     recipe_img = resource.recipe_images[card_name]
-    for _ in range(4):
+    for index in range(4):
         # 尝试校验目标配方可用性与数量
         recipe_tab_img = get_image(559, 90, 343, 196)
-        usable, actual_count = get_recipe_usable_and_count(recipe_tab_img, recipe_img)
+        usable, actual_count, recipe_area = get_recipe_usable_and_count(recipe_tab_img, recipe_img)
         if usable:
             print(f"{card_name} 是否可用：{usable}，实际数量：{actual_count}")
-            break
-        # 点俩下下滑键
-        for _ in range(2):
-            click(910, 278)
+            return min(count, actual_count), card_name, recipe_area
+        if index == 0:
+            # 点击一下滚动条最顶端，重置位置
+            click(907, 112)
+        else:
+            # 点俩下下滑键
+            for _ in range(2):
+                click(910, 278)
         # 等待图像加载
-        QThread.msleep(400)
-    else:
-        return 0, None
-    return min(count, actual_count), card_name
+        QThread.msleep(500)
+    return 0, None, None
 
 
 def get_recipe_count(recipe_tab_img, recipe_img):
     """获取目标配方的数量"""
-    img = find_and_crop_template(recipe_tab_img, recipe_img, extra_h=15, extra_w=7)
+    img, area = find_and_crop_template(recipe_tab_img, recipe_img, threshold=0.98, extra_h=15, extra_w=7)
     # 剪切一下图像，保留下半部分
     img = img[int(img.shape[0] / 2):, :]
-    cv2.imwrite("test.png", img)
-    count = get_num(img, resource.num_images)
+    count = get_num(img)
     if count:
-        return count
+        return count, area
     else:
         # 如果没匹配到数量，那就点一下下滑键，再截一次图
         click(910, 278)
         # 等待图像加载
         QThread.msleep(300)
         recipe_tab_img = get_image(559, 90, 343, 196)
-        img = find_and_crop_template(recipe_tab_img, recipe_img, extra_h=15, extra_w=7)
-        count = get_num(img, resource.num_images)
-        return count
+        img, area = find_and_crop_template(recipe_tab_img, recipe_img, extra_h=15, extra_w=7)
+        count = get_num(img)
+        return count, area
 
 
 def get_recipe_usable_and_count(recipe_tab_img, recipe_img):
@@ -147,19 +148,19 @@ def get_recipe_usable_and_count(recipe_tab_img, recipe_img):
     # 配方栏左上角坐标
     origin_pos = [559, 90]
     # 模版匹配，获取目标配方的位置，并点一下
-    if template_img_match(recipe_tab_img, recipe_img, origin_pos=origin_pos):
+    if template_img_match(recipe_tab_img, recipe_img, threshold=0.98, with_click=True, origin_pos=origin_pos):
         # 获取到了的话，看看能不能对目标位置进行识别数字
-        count = get_recipe_count(recipe_tab_img, recipe_img)
+        count, area = get_recipe_count(recipe_tab_img, recipe_img)
     else:
-        return False, 0
+        return False, 0, None
     # 等待图片被点上合成屋
     QThread.msleep(200)
     # 能识别数字，就检查可用性
     btn_img = get_image(259, 416, 10, 10)
     if not direct_img_match(btn_img, resource.can_card_produce):
-        return False, 0
-    # 可用，返回可用性，数量
-    return True, count
+        return False, 0, None
+    # 可用，返回可用性，数量, 区域
+    return True, count, area
 
 
 def get_recipe_tab_img():
@@ -167,7 +168,7 @@ def get_recipe_tab_img():
     return get_image(559, 90, 343, 196)
 
 
-def produce_card(card_name, level, bind, count, card_pack_dict):
+def produce_card(card_name, level, bind, count, card_pack_dict, produce_check_interval=100):
     """
     制造对应数量的卡片，支持卡包和校验
     Args:
@@ -176,6 +177,7 @@ def produce_card(card_name, level, bind, count, card_pack_dict):
         bind(int): 是否绑定
         count(int): 制造数量
         card_pack_dict(dict): 卡包字典
+        produce_check_interval(int): 制造检查间隔
     Returns:
         count: 实际生产的数量
         card_name: 实际生产出的卡片名
@@ -183,28 +185,35 @@ def produce_card(card_name, level, bind, count, card_pack_dict):
     spice_list = ["不放香料", "天然香料", "上等香料", "秘制香料", "极品香料", "皇室香料", "魔幻香料", "精灵香料",
                   "天使香料"]
     # 尝试获取剩余数量大于需要生产量的配方，如果获取配方的剩余数量小于需要生产量，且配方为卡包，则递归调用该方法来生产剩下的卡片
-    count, card_name = get_recipe(card_name, level, bind, count, card_pack_dict)
+    count, card_name, recipe_area = get_recipe(card_name, level, bind, count, card_pack_dict)
     if count == 0:
         event_manager.show_dialog_signal.emit("强化完成！", "你的卡套已经全部制作完成！什么也不剩啦")
         return 0, None
+    # 配方区域是没有加上左上角位置的，在这里加上
+    recipe_area = (recipe_area[0] + 559, recipe_area[1] + 90, recipe_area[2], recipe_area[3])
+    # 点掉之前的香料
+    click(182, 398)
     # 点击对应的香料
     if level != 0:
         find, _ = get_target_item(resource.spice_images[spice_list[level]], bind)
         # 如果找不到香料，弹窗
         if not find:
             event_manager.show_dialog_signal.emit("没有找到对应的香料！", "恭喜你触发了一个几乎不可能触发的弹窗！")
-        return 0, None
+            return 0, None
+    # 开始制作
+    produce_count = 0
     for _ in range(count):
         if not GLOBALS.IS_RUNNING:
             return 0, None
         # 点击制作按钮
         click(285, 425)
-        # 通过动态等待金币变化，检测是否制作成功
-        if not dynamic_check_gold(with_click=True, click_pos=(285, 425)):
+        # 通过动态等待目标配方变化，检测是否制作成功
+        if not dynamic_wait_recipe_changed(recipe_area, interval=produce_check_interval):
             event_manager.show_dialog_signal.emit("卡片制作卡住啦！", "发生什么事了，快去看看吧")
             return 0, None
+        produce_count += 1
     # 制作完成后返回数量以及实际的卡片名
-    return count, card_name
+    return produce_count, card_name
 
 
 def dynamic_card_producer(settings, card_count_dict=None):
@@ -212,10 +221,13 @@ def dynamic_card_producer(settings, card_count_dict=None):
     根据卡片需求动态制卡。将现存的所有卡片看作主卡，计算副卡需求。再用所有主卡需求填充制卡列表
     """
     enhance_plan = settings["强化方案"]
+    card_pack_dict = settings["卡包配置"]
     # 获取香料数量
     spice_stock = get_item_list("香料")
     # 获取可用香料
     usable_spice = get_spice_usable(spice_stock, settings["生产方案"])
+    # 获得制卡间隔和制卡检测间隔
+    produce_check_interval = int(settings["个人设置"]["制卡检测间隔"])
     # 根据强化方案的绑定情况，过滤一遍香料
     usable_spice = filter_spice(usable_spice, settings)
     card_demand: list[Card] = []
@@ -243,11 +255,13 @@ def dynamic_card_producer(settings, card_count_dict=None):
         name, level, bind = card.get_state()
         spice = next((item for item in usable_spice if item.get_level() == level), None)
         count = min(count, spice.count // 5)
-        actual_count, actual_card_name = produce_card(name, level, bind, count, settings["卡包配置"])
+        actual_count, actual_card_name = produce_card(name, level, bind, count, card_pack_dict, produce_check_interval)
         if actual_count == 0:
-            return False
-        print(f"动态制卡{card.level}星{actual_card_name}{actual_count}次")
-
+            return
+        event_manager.log_signal.emit(
+            f"<font color='purple'>[{QTime.currentTime().toString()}]"
+            f"动态制卡{card.level}星{actual_card_name}{actual_count}次</font>"
+        )
 
 def get_card_demand(enhance_plan, card_count_dict, usable_spice) -> list[Card]:
     """

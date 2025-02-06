@@ -5,7 +5,14 @@ from module.core.DynamicWait import dynamic_wait_areas_to_change
 from module.core.GetImg import get_image
 from module.core.ImgMatch import direct_img_match
 from module.core.MouseEvent import click
+from module.globals.EventManager import event_manager
 from module.globals.ResourceInit import resource
+
+COMPOSE_HOUSE_POSITION = (685, 558)
+CARD_PRODUCE_POSITION = (108, 260)
+CARD_ENHANCE_POSITION = (112, 326)
+GEM_ENHANCE_POSITION = (463, 358)
+GEM_DECOMPOSE_POSITION = (460, 440)
 
 
 def check_position() -> str:
@@ -43,45 +50,48 @@ def change_position(target_position, current_position=None):
         current_position = check_position()
     if current_position == target_position:
         return
-    # compose_position_list = ["卡片制作", "卡片强化", "宝石强化", "宝石分解"]
     # 初始化多区域，使用多区域检测来确定位置切换完成
     img_1 = get_image(862, 33, 20, 20)  # 右上角标签位置
     img_2 = get_image(870, 500, 20, 20)   # 右下角卡片位置
     area_1, area_2 = (862, 33, img_1), (870, 500, img_2)
-    compose_house_position = (685, 558)
-    card_produce_position = (108, 260)
-    card_enhance_position = (112, 326)
-    gem_enhance_position = (463, 358)
-    gem_decompose_position = (460, 440)
+
+    # 定义点击目标变量
+    click_target = None
+
     match target_position:
         case "主菜单":
-            click(913, 39)
+            click_target = (913, 39)
         case "卡片制作":
             if current_position == "主菜单":
-                click(*compose_house_position)
+                click_target = COMPOSE_HOUSE_POSITION
             else:
-                click(*card_produce_position)
+                click_target = CARD_PRODUCE_POSITION
         case "卡片强化":
             if current_position == "主菜单":
-                change_position("主菜单", "卡片制作")
-                click(*card_enhance_position)
+                change_position("卡片制作")
+                click_target = CARD_ENHANCE_POSITION
             else:
-                click(*card_enhance_position)
+                click_target = CARD_ENHANCE_POSITION
         case "宝石强化":
             if current_position == "主菜单":
-                change_position("主菜单", "卡片制作")
-                click(*gem_enhance_position)
+                change_position("卡片制作")
+                click_target = GEM_ENHANCE_POSITION
             else:
-                click(*gem_enhance_position)
+                click_target = GEM_ENHANCE_POSITION
         case "宝石分解":
             if current_position == "主菜单":
-                change_position("主菜单", "卡片制作")
-                click(*gem_decompose_position)
+                change_position("卡片制作")
+                click_target = GEM_DECOMPOSE_POSITION
             else:
-                click(*gem_decompose_position)
-
+                click_target = GEM_DECOMPOSE_POSITION
+    # 点击目标位置
+    click(*click_target)
     # 等待位置切换完成
-    if dynamic_wait_areas_to_change(area_1, area_2):
-        return True
+    for _ in range(4):
+        if dynamic_wait_areas_to_change(area_1, area_2, interval=50, times=10):
+            return True
+        # 再次点击目标位置
+        click(*click_target)
     else:
+        event_manager.show_dialog_signal.emit("位置切换失败！", "为什么位置无法切换？")
         return False

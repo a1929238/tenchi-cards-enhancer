@@ -12,7 +12,7 @@ from module.core.LevelCheck import check_gem_enhance_result
 from module.globals.ResourceInit import resource
 from module.ocr.NumberOcr import get_num
 from module.ocr.SuccessRateOcr import get_success_rate
-from module.utils import template_match_with_mask, imread
+from module.utils import template_match_with_mask, imread, resource_path
 
 
 def img_save(img, filename):
@@ -36,7 +36,8 @@ def get_pixel_position(x, y):
 
 
 def test():
-    result = dynamic_wait_card_slot_state(3, True)
+    img = imread(resource_path("test.png"))
+    result = get_num(img)
     print(result)
 
 

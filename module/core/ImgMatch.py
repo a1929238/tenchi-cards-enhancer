@@ -47,7 +47,8 @@ def direct_img_match(img, tar_img_hash) -> bool:
     return hash(img.tobytes()) == tar_img_hash
 
 
-def template_img_match(img, tar_img, threshold=0.95, with_click=True, origin_pos=None, with_mask=False, extra_mask=None) -> bool:
+def template_img_match(img, tar_img, threshold=0.95,
+                       with_click=False, origin_pos=None, with_mask=False, extra_mask=None) -> bool:
     """
     使用模板匹配算法进行图像匹配，可以在匹配成功后点击匹配到的图像中央
 
@@ -55,7 +56,7 @@ def template_img_match(img, tar_img, threshold=0.95, with_click=True, origin_pos
         img(numpy.ndarray): numpy数组
         tar_img(numpy.ndarray): numpy数组
         threshold(float): 匹配阈值，默认为0.95，表示匹配成功所需的相似度
-        with_click(bool): 是否在匹配成功后点击匹配到的图像中央，默认为True
+        with_click(bool): 是否在匹配成功后点击匹配到的图像中央，默认为False
         origin_pos(Tuple): 图像左上角位置，用于点击
         with_mask(bool): 是否使用目标图像本身的透明度通道作为掩码进行匹配，默认为False
         extra_mask(numpy.ndarray): 额外掩码，用于对目标图像进行掩码处理，默认为None
@@ -123,7 +124,7 @@ def find_and_crop_template(img, tar_img, threshold=0.95, extra_h=0, extra_w=0):
         w += extra_w
 
     # 使用cv2.matchTemplate进行模板匹配
-    result = cv2.matchTemplate(img, tar_img, cv2.TM_CCOEFF_NORMED)
+    result = cv2.matchTemplate(img, tar_img, cv2.TM_CCORR_NORMED)
 
     # 找到匹配结果中的最大值及其位置
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
@@ -137,7 +138,10 @@ def find_and_crop_template(img, tar_img, threshold=0.95, extra_h=0, extra_w=0):
         # 裁剪出目标区域
         cropped_image = img[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
 
-        return cropped_image
+        # 制作目标区域下半部分的元组，为左上角x,左上角y，width和height
+        area = (top_left[0], top_left[1] + h // 2, w, h // 2)
+
+        return cropped_image, area
 
 
 def has_area_changed(x, y, width, height, interval=200, times=10) -> bool:

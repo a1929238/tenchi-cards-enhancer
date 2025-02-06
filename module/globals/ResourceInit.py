@@ -11,9 +11,17 @@ def load_num_images():
     for num_file in os.listdir(num_dir):
         # 去掉文件扩展名
         num = os.path.splitext(num_file)[0]
-        num_images[num] = imread_to_hash(os.path.join(num_dir, num_file))
-        num_images_without_hash[num] = imread(os.path.join(num_dir, num_file))
-    return num_images, num_images_without_hash
+        num_images_without_hash[num] = imread(os.path.join(num_dir, num_file), True)  # 单通道图像不能用read color
+    # 预计算所有数字的宽度和最大步长
+    num_entries = []
+    num_entries_without_hash = []
+    for num_str, num_img in num_images_without_hash.items():
+        # 解析数字字符串格式
+        width_str, digit = num_str[0], num_str[1]
+        width = int(width_str)
+        num_entries_without_hash.append((width, digit, num_img))
+        num_entries.append((width, digit, hash(num_img.tobytes())))
+    return num_entries, num_entries_without_hash
 
 
 def load_success_rate_num_images() -> list[tuple]:
@@ -22,7 +30,7 @@ def load_success_rate_num_images() -> list[tuple]:
     for success_rate_file in os.listdir(success_rate_num_dir):
         # 去掉文件扩展名
         success_rate = os.path.splitext(success_rate_file)[0]
-        success_rate_num_images[success_rate] = imread(os.path.join(success_rate_num_dir, success_rate_file))
+        success_rate_num_images[success_rate] = imread(os.path.join(success_rate_num_dir, success_rate_file), True)
     # 预计算所有数字的宽度和最大步长
     num_entries = []
     for num_str, num_img in success_rate_num_images.items():
@@ -96,6 +104,20 @@ def load_card_images():
     return card_images
 
 
+def load_enhance_slot_image_dict():
+    """读取强化卡槽的图片"""
+    paths = [
+        resource_path("items/position/sub_card_1_slot.png"),
+        resource_path("items/position/sub_card_2_slot.png"),
+        resource_path("items/position/sub_card_3_slot.png"),
+        resource_path("items/position/clover_slot.png"),
+    ]
+    enhance_slot_image_dict = {}
+    for index, path in enumerate(paths):
+        enhance_slot_image_dict[index+2] = imread_to_hash(path)
+    return enhance_slot_image_dict
+
+
 class ResourceInit:
     _instance = None
 
@@ -124,10 +146,11 @@ class ResourceInit:
         }
         # 四叶草也以字典形式存储
         self.clover_images = load_clover_images()
-        # 香料也一样
+        # 香料
         self.spice_images = load_spice_images()
+        # 强化卡槽
+        self.enhance_slot_image_dict = load_enhance_slot_image_dict()
         # 位置标志的存储
-        self.sub_card_icon = imread_to_hash(resource_path("items/position/sub_card.png"))
         self.compose_icon = imread_to_hash(resource_path("items/position/合成屋.png"))
         self.produce_help_icon = imread_to_hash(resource_path("items/position/制作说明.png"))
         self.enhance_help_icon = imread_to_hash(resource_path("items/position/强化说明.png"))

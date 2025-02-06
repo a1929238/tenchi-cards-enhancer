@@ -15,7 +15,7 @@ def clip_img(img):
     """
     根据数字剪裁图片
     :param img: numpy 数组，白底黑字的二值图像，白色为 255，黑色为 0
-    :return: 剪裁后的 numpy 数组，包含数字的最小边界
+    :return: 剪裁后的 numpy 数组，去除了所有空格的数字图像
     """
     # 找到黑色像素的行列索引
     rows = np.any(img < 255, axis=1)
@@ -26,9 +26,16 @@ def clip_img(img):
     left, right = np.where(cols)[0][[0, -1]]
 
     # 裁剪图像到包含数字的最小矩形区域
-    cropped_img = img[top:bottom + 1, left:right + 3]
+    img = img[top:bottom + 1, left:right + 1]
+    # 去除小于等于1个黑色像素的列
+    # 计算每一列的黑色像素数量（小于255的值）
+    black_pixels_per_col = np.sum(img < 255, axis=0)
+    # 找到黑色像素数量大于1的列的索引
+    cols_to_keep = np.where(black_pixels_per_col > 1)[0]
+    # 使用这些索引来切片图像，只保留符合条件的列
+    img = img[:, cols_to_keep]
 
-    return cropped_img
+    return img
 
 
 def make_gray(img):
@@ -64,14 +71,16 @@ def make_gray(img):
     # 将纯白色像素变为黑色
     result[white_pixels] = [0, 0, 0]
 
+    # 将图像转化为灰度图像
+    result = cv2.cvtColor(result, cv2.COLOR_RGB2GRAY)
+
     return result
 
 
-def get_num(img, num_images: dict):
+def get_num(img):
     """
     识别图中数字，返回识别结果
     :param img: numpy 数组，待识别的图像
-    :param num_images: 包含数字0-9和01的图像的字典，每个图像为 numpy 数组
     :return: 识别的数字（int 类型）
     """
     # 将图像变为灰度图
@@ -80,49 +89,33 @@ def get_num(img, num_images: dict):
     # 裁剪图像
     img = clip_img(img)
 
-    # 初始步长
-    width = 7
-
     # 初始化索引和结果字符串
     i = 0
     result = ""
 
     # 使用 while 循环，手动控制步长
     while i < img.shape[1]:
-        # 提取待识别的数字图像部分
-        num_part = img[:, i:i + width]
-        # 舍弃余数部分
-        if num_part.shape[1] < width:
-            break
-        # 对比 num_img_list 中的数字图像，找到最匹配的数字
-        for num, num_img in num_images.items():
-            # 当1在第一位时，做特殊处理
-            if i == 0 and num == "01":
-                extra_num_part = num_part[:, :-1]
-                if direct_img_match(extra_num_part, num_img):
-                    result += "1"
-                    i -= 1
-                    break
-            # 如果数字部分和当前数字图像匹配，则记录数字
-            elif direct_img_match(num_part, num_img):
-                result += str(num)
+        matched = False
+        # 尝试匹配所有可能宽度的数字
+        for width, digit, num_img in resource.num_images:
+
+            # 提取当前宽度的图像区域
+            num_part = img[:, i:i + width]
+
+            # 直接匹配当前宽度
+            if direct_img_match(num_part, num_img):
+                result += digit
+                i += width  # 按实际宽度步进
+                matched = True
                 break
-        else:
+        if not matched:
             # 识别均失败则尝试使用模版匹配再匹配一轮
-            for num, num_img in resource.num_images_without_hash.items():
-                # 当1在第一位时，做特殊处理
-                if i == 0 and num == "01":
-                    extra_num_part = num_part[:, :-1]
-                    if template_img_match(extra_num_part, num_img, with_click=False, threshold=0.97):
-                        result += "1"
-                        i -= 1
-                        break
+            for width, digit, num_img in resource.num_images_without_hash:
+                num_part = img[:, i:i + width]
                 # 如果数字部分和当前数字图像匹配，则记录数字
-                elif template_img_match(num_part, num_img, with_click=False, threshold=0.97):
-                    if num == "01":
-                        result += "1"
-                        break
-                    result += str(num)
+                if template_img_match(num_part, num_img, threshold=0.9):
+                    result += digit
+                    i += width
                     break
             else:
                 # 还是失败，油尽灯枯，保存错误图像
@@ -130,8 +123,8 @@ def get_num(img, num_images: dict):
                 cv2.imwrite(f"error_image{i}.png", num_part)
                 cv2.imwrite(f"error_image{i}_full.png", img)
 
-        # 更新索引
-        i += width
+                # 保证至少推进1像素
+                i += 1
 
     # 返回识别的数字（整数形式）
     return int(result) if result else None

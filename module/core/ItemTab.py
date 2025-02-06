@@ -45,7 +45,7 @@ def get_item_count(item_img) -> int:
         item_img: 49x49的标准道具图像
     """
     num_img = item_img[34:42, 10:45]
-    return get_num(num_img, resource.num_images)
+    return get_num(num_img)
 
 
 def get_item_name(item_img, tar_img_dict) -> str:
