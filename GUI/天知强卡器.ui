@@ -1057,7 +1057,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
        </rect>
       </property>
      </widget>
-     <widget class="QComboBox" name="gem_combo">
+     <widget class="SearchableComboBox" name="gem_combo">
       <property name="geometry">
        <rect>
         <x>11</x>
@@ -3373,7 +3373,7 @@ border-radius: 20px;</string>
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="GentilhommeUsher_box">
+        <widget class="SearchableComboBox" name="GentilhommeUsher_box">
          <property name="toolTip">
           <string>不要选自己没有的配方哦</string>
          </property>
@@ -3583,6 +3583,11 @@ border-radius: 20px;</string>
    <extends>QWidget</extends>
    <header location="global">GUI/bindingcheckbox</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SearchableComboBox</class>
+   <extends>QComboBox</extends>
+   <header location="global">GUI/SearchableComboBox</header>
   </customwidget>
  </customwidgets>
  <resources/>

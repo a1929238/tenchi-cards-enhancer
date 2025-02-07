@@ -45,7 +45,11 @@ def get_item_count(item_img) -> int:
         item_img: 49x49的标准道具图像
     """
     num_img = item_img[34:42, 10:45]
-    return get_num(num_img)
+    count = get_num(num_img)
+    # 道具截图总是能截到数字，没有数字就代表该道具只有一个
+    if count is None:
+        count = 1
+    return count
 
 
 def get_item_name(item_img, tar_img_dict) -> str:

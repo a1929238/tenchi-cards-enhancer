@@ -37,6 +37,7 @@ def get_pixel_position(x, y):
 
 def test():
     img = imread(resource_path("test.png"))
+    img = img[:9, :]
     result = get_num(img)
     print(result)
 

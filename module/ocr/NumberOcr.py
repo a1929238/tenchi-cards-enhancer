@@ -34,6 +34,10 @@ def clip_img(img):
     cols_to_keep = np.where(black_pixels_per_col > 1)[0]
     # 使用这些索引来切片图像，只保留符合条件的列
     img = img[:, cols_to_keep]
+    # 再去除小于等于1个黑色像素的行
+    black_pixels_per_row = np.sum(img < 255, axis=1)
+    rows_to_keep = np.where(black_pixels_per_row > 1)[0]
+    img = img[rows_to_keep, :]
 
     return img
 
@@ -47,9 +51,9 @@ def make_gray(img):
     # 创建描边颜色的掩码，找到所有描边像素，图像的颜色顺序是BGR
     mask = np.all(img == [72, 35, 13], axis=-1)
 
-    # 如果没有描边像素，返回全黑图像
+    # 如果没有描边像素，返回None
     if not np.any(mask):
-        return np.zeros_like(img)
+        return None
 
     # 获取描边像素的行列坐标
     rows = np.where(mask)[0]
@@ -67,6 +71,10 @@ def make_gray(img):
 
     # 找到纯白色像素的位置
     white_pixels = np.all(img == 255, axis=-1)
+
+    # 如果不存在纯白色像素，返回None
+    if not np.any(white_pixels):
+        return None
 
     # 将纯白色像素变为黑色
     result[white_pixels] = [0, 0, 0]
@@ -86,8 +94,15 @@ def get_num(img):
     # 将图像变为灰度图
     img = make_gray(img)
 
+    if img is None:
+        return None
+
     # 裁剪图像
     img = clip_img(img)
+
+    # 图像如果为空列表，就直接返回None
+    if img.size == 0:
+        return None
 
     # 初始化索引和结果字符串
     i = 0
@@ -98,6 +113,9 @@ def get_num(img):
         matched = False
         # 尝试匹配所有可能宽度的数字
         for width, digit, num_img in resource.num_images:
+            # 如果剩余区域小于当前宽度，则跳过当前数字
+            if i + width > img.shape[1]:
+                continue
 
             # 提取当前宽度的图像区域
             num_part = img[:, i:i + width]
@@ -111,7 +129,13 @@ def get_num(img):
         if not matched:
             # 识别均失败则尝试使用模版匹配再匹配一轮
             for width, digit, num_img in resource.num_images_without_hash:
+                # 如果剩余区域小于当前宽度，则跳过当前数字
+                if i + width > img.shape[1]:
+                    continue
                 num_part = img[:, i:i + width]
+                # 确认数字部分不能小于模版部分
+                if num_img.shape[1] > num_part.shape[1] or num_img.shape[0] > num_part.shape[0] :
+                    continue
                 # 如果数字部分和当前数字图像匹配，则记录数字
                 if template_img_match(num_part, num_img, threshold=0.9):
                     result += digit

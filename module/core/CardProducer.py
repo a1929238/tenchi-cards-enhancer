@@ -108,7 +108,7 @@ def get_recipe(card_name, level, bind, count, card_pack_dict):
     # 等待图像加载
     QThread.msleep(400)
     recipe_img = resource.recipe_images[card_name]
-    for index in range(4):
+    for index in range(8):
         # 尝试校验目标配方可用性与数量
         recipe_tab_img = get_image(559, 90, 343, 196)
         usable, actual_count, recipe_area = get_recipe_usable_and_count(recipe_tab_img, recipe_img)
@@ -119,30 +119,25 @@ def get_recipe(card_name, level, bind, count, card_pack_dict):
             # 点击一下滚动条最顶端，重置位置
             click(907, 112)
         else:
-            # 点俩下下滑键
-            for _ in range(2):
+            # 点一下下滑键
+            for _ in range(1):
                 click(910, 278)
         # 等待图像加载
-        QThread.msleep(500)
+        QThread.msleep(300)
     return 0, None, None
 
 
 def get_recipe_count(recipe_tab_img, recipe_img):
     """获取目标配方的数量"""
-    img, area = find_and_crop_template(recipe_tab_img, recipe_img, threshold=0.98, extra_h=15, extra_w=7)
+    img, area = find_and_crop_template(recipe_tab_img, recipe_img, threshold=0.99, extra_mask=resource.recipe_mask)
     # 剪切一下图像，保留下半部分
     img = img[int(img.shape[0] / 2):, :]
     count = get_num(img)
     if count:
         return count, area
     else:
-        # 如果没匹配到数量，那就点一下下滑键，再截一次图
-        click(910, 278)
-        # 等待图像加载
-        QThread.msleep(300)
-        recipe_tab_img = get_image(559, 90, 343, 196)
-        img, area = find_and_crop_template(recipe_tab_img, recipe_img, extra_h=15, extra_w=7)
-        count = get_num(img)
+        # 数量为1时不显示数字
+        count = 1
         return count, area
 
 
@@ -150,8 +145,9 @@ def get_recipe_usable_and_count(recipe_tab_img, recipe_img):
     """获得配方的可用性和数量"""
     # 配方栏左上角坐标
     origin_pos = [559, 90]
-    # 模版匹配，获取目标配方的位置，并点一下
-    if template_img_match(recipe_tab_img, recipe_img, threshold=0.98, with_click=True, origin_pos=origin_pos):
+    # 带掩码的模版匹配，获取目标配方的位置，并点一下
+    if template_img_match(recipe_tab_img, recipe_img, threshold=0.99, with_click=True, origin_pos=origin_pos,
+                          with_mask=True, extra_mask=resource.recipe_mask):
         # 获取到了的话，看看能不能对目标位置进行识别数字
         count, area = get_recipe_count(recipe_tab_img, recipe_img)
     else:

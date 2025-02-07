@@ -99,7 +99,7 @@ def template_img_match(img, tar_img, threshold=0.95,
         return False
 
 
-def find_and_crop_template(img, tar_img, threshold=0.95, extra_h=0, extra_w=0):
+def find_and_crop_template(img, tar_img, threshold=0.95, extra_mask=None):
     """
     使用模板匹配找到目标图像中的模板区域，并裁剪出该区域。
 
@@ -107,7 +107,7 @@ def find_and_crop_template(img, tar_img, threshold=0.95, extra_h=0, extra_w=0):
         img: 图像。
         tar_img : 目标图像
         threshold (float): 匹配阈值，范围为0到1，默认为0.8
-        extra_h (int): 额外高度，用于调整切割出结果的高度，默认为0
+        extra_mask (numpy.ndarray): 额外掩码，用于对目标图像进行掩码处理，默认为None
 
     Returns:
         cropped_image (numpy.ndarray): 裁剪出的目标区域图像。
@@ -117,14 +117,20 @@ def find_and_crop_template(img, tar_img, threshold=0.95, extra_h=0, extra_w=0):
     # 获取模板图像的尺寸
     h, w = tar_img.shape[:2]
 
-    if extra_h:
-        h += extra_h
+    if extra_mask is not None:
+        # 将目标图像的透明度通道作为掩码
+        mask = tar_img[:, :, 3]
+        # 叠加上基础掩码
+        extra_mask = extra_mask[:, :, 0]
+        mask = cv2.bitwise_and(mask, extra_mask)
+    else:
+        mask = None
+    # 只取前三个通道
+    img = img[..., :3] if img.ndim == 3 else img
+    tar_img = tar_img[..., :3] if tar_img.ndim == 3 else tar_img
 
-    if extra_w:
-        w += extra_w
-
-    # 使用cv2.matchTemplate进行模板匹配
-    result = cv2.matchTemplate(img, tar_img, cv2.TM_CCORR_NORMED)
+    # 进行模板匹配
+    result = cv2.matchTemplate(img, tar_img, cv2.TM_CCORR_NORMED, mask=mask)
 
     # 找到匹配结果中的最大值及其位置
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
@@ -138,7 +144,7 @@ def find_and_crop_template(img, tar_img, threshold=0.95, extra_h=0, extra_w=0):
         # 裁剪出目标区域
         cropped_image = img[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
 
-        # 制作目标区域下半部分的元组，为左上角x,左上角y，width和height
+        # 制作目标区域下半部分的元组，用于后续的数字识别操作
         area = (top_left[0], top_left[1] + h // 2, w, h // 2)
 
         return cropped_image, area

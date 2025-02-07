@@ -1,6 +1,5 @@
 # 天知强卡器，以pyqt6为GUI
 # setting字典的结构为:setting[type][name][count]
-# 统计数据字典的结构为:statistics[type][name][count]
 # 更新目标： 完善ui；增加校验，强化方案里有卡包就不进入单卡强卡模式
 # -*- coding: utf-8 -*-
 import time
@@ -17,7 +16,7 @@ import copy
 from PyQt6.QtCore import pyqtSignal, Qt, QElapsedTimer, QTimer, QTime, QThread, pyqtSlot, QEvent, \
     QAbstractNativeEventFilter, QByteArray
 from PyQt6.QtGui import QIcon, QPalette, QMovie, QPixmap, QColor, QFontDatabase, QFont, QPainter, QPainterPath
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QGraphicsBlurEffect, QWidget
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QGraphicsBlurEffect, QWidget, QPushButton
 
 from module.UI.GemUI import GemUI
 from module.bg_img_match import match_p_in_w, loop_match_ps_in_w, loop_match_p_in_w
@@ -80,7 +79,7 @@ class TenchiCardsEnhancer(QMainWindow):
         # 设置样式表
         self.setStyleSheet(f"""
                 QMainWindow {{
-                    background: rgba(240, 248, 255, 1);
+                    background: rgb(240, 248, 255);
                     border: 1px solid #3A3A3A;
                     border-radius: 12px;
                 }}
@@ -103,6 +102,7 @@ class TenchiCardsEnhancer(QMainWindow):
         # 检测GUI的主题，如果是深色模式，就把蒙版变成黑色
         palette = self.palette()
         if palette.color(QPalette.ColorRole.Window).lightness() < 128:
+            GLOBALS.THEME = 'dark'
             self.frosted_layer.setStyleSheet(f"""
                 background-color: rgba(0, 0, 0, 180);
                 background-image: url("{background_image_path}");
@@ -110,6 +110,7 @@ class TenchiCardsEnhancer(QMainWindow):
                 border-top-right-radius: 12px;
                 """)
         else:
+            GLOBALS.THEME = 'light'
             self.frosted_layer.setStyleSheet(f"""
                 background-color: rgba(255, 255, 255, 150);
                 background-image: url("{background_image_path}");
@@ -154,7 +155,6 @@ class TenchiCardsEnhancer(QMainWindow):
         filename = resource_path('GUI/default/default_constants.json')
         with open(filename, 'r', encoding='utf-8') as f:
             default_constants = json.load(f)
-        self.spice_dict = default_constants['默认香料字典']
         self.best_enhance_plan = default_constants['强化最优路径']
 
         self.settings = load_settings()  # 读取设置作为全局变量
@@ -286,6 +286,9 @@ class TenchiCardsEnhancer(QMainWindow):
         # 打开运行标识
         self.is_running = True
         GLOBALS.IS_RUNNING = True
+        # 初始化卡片列表和卡片数量字典
+        self.card_list = []
+        self.card_count_dict = {}
         # 正式开始前先防呆
         self.dull_detection()
         # 如果没通过防呆检测，就直接返回
@@ -600,9 +603,11 @@ class TenchiCardsEnhancer(QMainWindow):
                 self.edit_window.close()
 
         # 创建一个新的编辑窗口
-        self.edit_window = EditWindow(label_object_name, self)
+        self.edit_window = EditWindow(label_object_name, GLOBALS.THEME, self)
         # 设置编辑窗口图标
         self.edit_window.setWindowIcon(QIcon(resource_path("items/icon/hutao.ico")))
+        # 设置编辑窗口的标题
+        self.edit_window.setWindowTitle(f"强化类型编辑窗口")
         # 初始化编辑窗口
         self.init_edit_window(label_object_name)
         self.edit_window.show()
@@ -620,6 +625,7 @@ class TenchiCardsEnhancer(QMainWindow):
         # 从窗口名读取信息
         level = int(label_object_name.replace("E", ""))
         self.enhance_type = f'{level - 1}-{level}'
+        enhance_plan = self.settings["强化方案"][self.enhance_type]
         # 初始化配方选择框
         for i in range(4):
             recipe_box = getattr(self.edit_window, f'card_box{i}')
@@ -628,22 +634,36 @@ class TenchiCardsEnhancer(QMainWindow):
             recipe_box.currentIndexChanged.connect(self.on_recipe_box_changed)
 
         # 根据设置文件，初始化选择框的索引，并在星级不存在时，隐藏对应的配方选择框
+        hidden_rows = 0
         for i in range(4):
             recipe_box = getattr(self.edit_window, f'card_box{i}')
+            # 暂时屏蔽信号
+            recipe_box.blockSignals(True)
             if i == 0:
-                card_name = self.settings["强化方案"][self.enhance_type]["主卡"].get("卡片名称", "无")
+                card_name = enhance_plan["主卡"].get("卡片名称", "无")
             else:
                 # 只会隐藏部分副卡的选择框
-                card_name = self.settings["强化方案"][self.enhance_type][f"副卡{i}"].get("卡片名称", "无")
-                card_level = self.settings["强化方案"][self.enhance_type][f"副卡{i}"].get("星级", "无")
+                card_name = enhance_plan[f"副卡{i}"].get("卡片名称", "无")
+                card_level = enhance_plan[f"副卡{i}"].get("星级", "无")
                 if card_level == "无":
                     # 不用这张副卡，就隐藏这张副卡相关的所有控件
-                    hide_row_widgets(self.edit_window.gridLayout, i)
+                    hide_row_widgets(self.edit_window.grid_layout, i)
+                    hidden_rows += 1
             index = 0
             for index in range(recipe_box.count()):
                 if recipe_box.itemText(index).split("-")[0] == card_name:
                     break
             recipe_box.setCurrentIndex(index)
+            recipe_box.blockSignals(False)
+
+        # 如果当前等级没有使用四叶草，那么就把四叶草行也隐藏了
+        if enhance_plan["四叶草"]["种类"] == "无":
+            hide_row_widgets(self.edit_window.grid_layout, 4)
+            hidden_rows += 1
+
+        # 动态调整窗口高度
+        row_height = 35
+        self.edit_window.resize(self.edit_window.width(), (5 - hidden_rows) * row_height + 40 + 10)  # 40 是标题栏和边距，5是最大行数
 
         # 初始化绑定按钮，绑定按钮有五个,0是主卡，1-3是副卡，4是四叶草
         for i in range(5):
@@ -751,17 +771,16 @@ class TenchiCardsEnhancer(QMainWindow):
             clover_box.blockSignals(True)
             # 清除现有的选项
             clover_box.clear()
+            # 加上无
+            clover_box.addItem("无")
             # 给每个四叶草菜单加上所有四叶草
             clover_dir = resource_path("items/clover")
             if os.path.exists(clover_dir):
                 for filename in os.listdir(clover_dir):
                     clover_name = filename.replace("四叶草.png", "")
                     clover_box.addItem(clover_name)
-            # 加上无
-            clover_box.addItem("无")
             # 菜单选项添加完后，根据设置文件，设置菜单的当前选中项
-            selected_clover = self.settings.get("强化方案", {}).get(f"{i}-{i + 1}", {}).get("四叶草", "无").get("种类",
-                                                                                                                "无")
+            selected_clover = self.settings["强化方案"].get(f"{i}-{i + 1}", {}).get("四叶草", "无").get("种类", "无")
             # 在 QComboBox 中查找这个卡片名称对应的索引
             index = clover_box.findText(selected_clover)
             if index >= 0:
@@ -805,7 +824,6 @@ class TenchiCardsEnhancer(QMainWindow):
         self.is_secondary_password_input.setChecked(self.is_secondary_password)
         self.secondary_password_input.setText(self.secondary_password)
         self.failed_refresh_check.setChecked(self.failed_refresh)
-
 
         self.produce_check_interval_input.setValue(self.produce_check_interval)
         self.enhance_interval_input.setValue(self.enhance_interval)

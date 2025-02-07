@@ -5,7 +5,6 @@ import os
 
 
 def load_num_images():
-    num_images = {}
     num_images_without_hash = {}
     num_dir = resource_path("items/ocr/num")
     for num_file in os.listdir(num_dir):
@@ -89,7 +88,7 @@ def load_recipe_images():
         recipe_name = os.path.splitext(recipe_file)[0]
         recipe_name = recipe_name.replace("配方", "")  # 只保留配方的种类
         # 读取配方图像并存储到字典中
-        recipe_images[recipe_name] = imread(os.path.join(recipe_dir, recipe_file))
+        recipe_images[recipe_name] = imread(os.path.join(recipe_dir, recipe_file), with_alpha=True)
     return recipe_images
 
 
@@ -170,6 +169,8 @@ class ResourceInit:
 
         # 非哈希资源
         self.gem_mask = imread(resource_path("items/mask/gem_mask.png"))  # 掩码
+        self.recipe_mask = imread(resource_path("items/mask/recipe_mask.png"))
+
         self.line_img = imread(resource_path("items/position/line.png"))
         self.gem_images = load_gem_images()
         self.recipe_images = load_recipe_images()  # 配方
