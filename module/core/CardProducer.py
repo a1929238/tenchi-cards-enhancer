@@ -248,6 +248,7 @@ def dynamic_card_producer(settings, card_count_dict=None):
 
     # 将结果转为元组列表
     produce_list: list[tuple[Card, int]] = [(card, count) for card, count in Counter(limited_cards).items()]
+    logger.debug(f"解析前元组列表：{produce_list}")
 
     # 将元组列表送到解析器里，然后送给制卡器
     produce_list = parse_produce_list(enhance_plan, produce_list, usable_spice)
@@ -353,6 +354,8 @@ def parse_produce_list(enhance_plan, produce_list, usable_spice):
         return []
     # 初始化来源列表，用于记录需要单独制卡的卡片
     needed_list = []
+    # 将数量少于5的香料移除可用香料
+    usable_spice = [spice for spice in usable_spice if spice.count >= 5]
     # 集合化可用香料等级列表
     usable_spice_level = set(spice.get_level() for spice in usable_spice)
     for card, count in produce_list:
@@ -378,6 +381,12 @@ def parse_produce_list(enhance_plan, produce_list, usable_spice):
         delete_rate = 21 / max_count
         # 按比例对所有数量进行缩放
         filtered_list = [(card, int(count * delete_rate)) for card, count in filtered_list]
+        # 剔除缩放后的数量为0的卡片
+        filtered_list = [
+            (card, count)
+            for (card, count) in filtered_list
+            if count > 0
+        ]
 
     # 返回最终列表
     return filtered_list
