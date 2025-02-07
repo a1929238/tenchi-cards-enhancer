@@ -12,6 +12,7 @@ from module.globals.DataClass import Card, Item
 import module.globals.GLOBALS as GLOBALS
 from module.globals.ResourceInit import resource
 from module.globals.EventManager import event_manager
+from module.log.TenchiLogger import logger
 from module.ocr.NumberOcr import get_num
 from module.utils import merge_card_counts
 
@@ -27,7 +28,7 @@ def get_spice_usable(spice_stock: list[Item], produce_plan):
     usable_spice.append(Item("不放香料", False, 9999))
     # 剔除生产方案中不可用的香料
     usable_spice = [spice for spice in usable_spice if produce_plan[spice.name]]
-    print(usable_spice)
+    logger.debug(usable_spice)
     return usable_spice
 
 
@@ -113,7 +114,7 @@ def get_recipe(card_name, level, bind, count, card_pack_dict):
         recipe_tab_img = get_image(559, 90, 343, 196)
         usable, actual_count, recipe_area = get_recipe_usable_and_count(recipe_tab_img, recipe_img)
         if usable:
-            print(f"{card_name} 是否可用：{usable}，实际数量：{actual_count}")
+            logger.debug(f"{card_name} 是否可用：{usable}，实际数量：{actual_count}")
             return min(count, actual_count), card_name, recipe_area
         if index == 0:
             # 点击一下滚动条最顶端，重置位置
@@ -254,7 +255,7 @@ def dynamic_card_producer(settings, card_count_dict=None):
     if not produce_list or 0 in [count for _, count in produce_list]:
         event_manager.show_dialog_signal.emit("没有香料了！", "你的香料不足，无法进行制卡！")
         return False
-    print(f"动态制卡需求：{produce_list}")
+    logger.debug(f"动态制卡需求：{produce_list}")
     # 进行制卡
     for card, count in produce_list:
         name, level, bind = card.get_state()

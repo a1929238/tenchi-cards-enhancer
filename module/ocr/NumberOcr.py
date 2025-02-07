@@ -5,6 +5,7 @@ import cv2
 
 from module.core.ImgMatch import direct_img_match, template_img_match
 from module.globals.ResourceInit import resource
+from module.log.TenchiLogger import logger
 
 """
 包括剪裁图片，灰度转化，识别数字，输出int等函数
@@ -143,7 +144,7 @@ def get_num(img):
                     break
             else:
                 # 还是失败，油尽灯枯，保存错误图像
-                print("识别失败，保存错误图像")
+                logger.debug("识别失败，保存错误图像")
                 cv2.imwrite(f"error_image{i}.png", num_part)
                 cv2.imwrite(f"error_image{i}_full.png", img)
 
