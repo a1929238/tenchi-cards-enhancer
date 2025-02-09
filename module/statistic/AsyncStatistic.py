@@ -126,20 +126,9 @@ class AsyncStatsRecorder:
         if not self.backup_buffer:
             return
 
-        # 按日期分组数据
-        date_groups = defaultdict(list)
-        for data in self.backup_buffer:
-            try:
-                dt = datetime.fromtimestamp(data[0])
-                date_str = dt.strftime("%Y-%m-%d")
-                date_groups[date_str].append(data)
-            except (IndexError, TypeError) as e:
-                print(f"无效数据格式: {e}")
-                continue
-
         # 处理每个日期的数据
-        for date_str, records in date_groups.items():
-            daily_file = f"{self.base}_{date_str}{self.ext}"
+        for records in self.backup_buffer:
+            daily_file = f"{self.base}{self.ext}"
             try:
                 # 自动创建目录
                 os.makedirs(os.path.dirname(daily_file), exist_ok=True)
@@ -174,4 +163,4 @@ class AsyncStatsRecorder:
         self._flush_to_disk()
 
 
-recorder = AsyncStatsRecorder(resource_path("enhance_stats//stats.csv"))
+recorder = AsyncStatsRecorder(resource_path("enhance_stats//card_stats.csv"))
