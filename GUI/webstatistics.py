@@ -57,6 +57,8 @@ class WebStatistics:
         self.stats_tab_widget.addTab(self.create_empty_tab("制卡结果"), "制卡结果")
         self.stats_tab_widget.addTab(self.create_empty_tab("强化结果"), "强化结果")
         self.stats_tab_widget.addTab(self.create_empty_tab("强卡成功率"), "强卡成功率")
+        self.stats_tab_widget.addTab(self.create_empty_tab("偏移-1"), "偏移-1")
+        self.stats_tab_widget.addTab(self.create_empty_tab("偏移-2"), "偏移-2")
 
         # 连接 tab change 信号
         self.stats_tab_widget.currentChanged.connect(
@@ -98,6 +100,10 @@ class WebStatistics:
             html = self.create_html_for_made_card()
         elif type == "强卡成功率":
             html = self.create_html_for_success_rate()
+        elif type == "偏移-1":
+            html = self.create_html_for_success_rate_and_p_by_add()
+        elif type == "偏移-2":
+            html = self.create_html_for_success_rate_and_p_by_multi()
 
         self.web_view.setHtml(html)
 
@@ -418,11 +424,11 @@ class WebStatistics:
         bind_data = [0] * len(card_order)
         unbind_data = [0] * len(card_order)
 
-        # 处理主卡的绑定和非绑定情况
+        # 处理主卡的绑定和不绑情况
         bind_main_counts = df[df['main_bind']]['main_star'].value_counts().sort_index()
         unbind_main_counts = df[~df['main_bind']]['main_star'].value_counts().sort_index()
 
-        # 处理副卡的绑定和非绑定情况
+        # 处理副卡的绑定和不绑情况
         bind_sub_stars = pd.Series(dtype='int64')
         unbind_sub_stars = pd.Series(dtype='int64')
 
@@ -435,7 +441,7 @@ class WebStatistics:
             bind_sub = sub_star[mask_bind].astype(int)
             bind_sub_stars = pd.concat([bind_sub_stars, bind_sub])
 
-            # 非绑定副卡
+            # 不绑副卡
             mask_unbind = (sub_bind == False) & (sub_star.notna())
             unbind_sub = sub_star[mask_unbind].astype(int)
             unbind_sub_stars = pd.concat([unbind_sub_stars, unbind_sub])
@@ -443,7 +449,7 @@ class WebStatistics:
         bind_sub_counts = bind_sub_stars.value_counts().sort_index()
         unbind_sub_counts = unbind_sub_stars.value_counts().sort_index()
 
-        # 处理成功和失败的次数，区分绑定和非绑定
+        # 处理成功和失败的次数，区分绑定和不绑
         # 绑定情况
         bind_success_mask = (df['main_bind']) & (df['result'] == 'success')
         bind_success_counts = df[bind_success_mask]['main_star'].value_counts().sort_index()
@@ -451,7 +457,7 @@ class WebStatistics:
         bind_failure_mask = (df['main_bind']) & (df['result'] == 'failure')
         bind_failure_counts = df[bind_failure_mask]['main_star'].value_counts().sort_index()
 
-        # 非绑定情况
+        # 不绑情况
         unbind_success_mask = (~df['main_bind']) & (df['result'] == 'success')
         unbind_success_counts = df[unbind_success_mask]['main_star'].value_counts().sort_index()
 
@@ -468,7 +474,7 @@ class WebStatistics:
             bind_total = bind_main + bind_sub - bind_succ - bind_fail
             bind_data[s] = max(bind_total, 0)  # 确保非负
 
-            # 非绑定数据计算
+            # 不绑数据计算
             unbind_main = unbind_main_counts.get(s, 0)
             unbind_sub = unbind_sub_counts.get(s, 0)
             unbind_succ = unbind_success_counts.get(s - 1, 0)
@@ -709,6 +715,9 @@ class WebStatistics:
             success_data = [data[k]['success'] for k in categories]
             failure_data = [data[k]['failure'] for k in categories]
 
+            # 将 [0,1,...,15] -> ['0->1', '1->2', ... ,'15->16']
+            categories = [f"{k}→{k + 1}" for k in categories]
+
             opt = {
                 "title": {
                     "text": title,
@@ -720,7 +729,7 @@ class WebStatistics:
                     "top": "10%"
                 },
                 "grid": {
-                    "left": 20,
+                    "left": 50,
                     "right": 20,
                     "top": 55,
                     "bottom": 10
@@ -738,7 +747,7 @@ class WebStatistics:
                 },
                 "series": [
                     {
-                        "name": '成功率 - (直接加算)',
+                        "name": '实际成功率',
                         "type": 'bar',
                         "stack": 'total',
                         "barWidth": '60%',
@@ -752,7 +761,7 @@ class WebStatistics:
                         "data": success_data
                     },
                     {
-                        "name": '失败率',
+                        "name": '实际失败率',
                         "type": 'bar',
                         "stack": 'total',
                         "barWidth": '60%',
@@ -823,8 +832,422 @@ class WebStatistics:
 
         return html
 
+    """强卡 理论成功率(加算) - 堆叠柱状图 归一化"""
 
-    #
-    # """强卡 理论成功率(加算) - 堆叠柱状图 归一化"""
-    #
-    # """强卡 理论成功率(乘算) - 堆叠柱状图 归一化"""
+    def create_html_for_success_rate_and_p_by_add(self):
+        """
+        创建统计数据的html，包含切换按钮，比较实际成功率与理论期望
+        """
+
+        def df_transform():
+            # === 检查数据存在性 ===
+            if self.data_frame.empty:
+                print("[Error] 数据框为空")
+                return None, None
+
+            print(self.data_frame)
+
+            # === 计算理论成功率 ===
+            self.data_frame['theory_success'] = (
+                    self.data_frame['original_success_rate'] + self.data_frame['extra_success_rate']).clip(upper=100)
+
+            # === 核心统计 ===
+            grouped = self.data_frame.groupby(['main_star', 'main_bind'], observed=True)
+            stats = grouped.agg(
+                success=('result', 'sum'),
+                total=('result', 'count'),
+                theory_success_rate=('theory_success', 'mean')
+            ).reset_index()
+
+            # === 成功率计算 ===
+            stats['total'] = stats['total'].replace(0, 1)
+            stats['success_rate'] = (stats['success'] / stats['total'] * 100).round(1)
+            stats['theory_success_rate'] = stats['theory_success_rate'].round(1)
+
+            # === 数据拆分 ===
+            bind_mask = stats['main_bind'] == True
+            unbind_mask = ~bind_mask
+
+            bind_stats = stats[bind_mask].set_index('main_star')
+            unbind_stats = stats[unbind_mask].set_index('main_star')
+
+            # === 图表数据准备 ===
+            def prepare_chart_data(df):
+                return {
+                    star: {
+                        'actual': row['success_rate'],
+                        'theory': row['theory_success_rate']
+                    }
+                    for star, row in df.iterrows()
+                }
+
+            bind_data = prepare_chart_data(bind_stats)
+            unbind_data = prepare_chart_data(unbind_stats)
+
+            return bind_data, unbind_data
+
+        def create_option(data, title):
+
+            # 补全0-15星级数据
+            all_keys = set(range(16))
+            data = {key: data.get(key, {'actual': 0, 'theory': 0}) for key in all_keys}
+            categories = sorted(data.keys())
+
+            # 生成系列数据
+            base_data = []
+            green_data = []
+            red_data = []
+            for star in categories:
+                actual = data[star]['actual']
+                theory = data[star]['theory']
+                base = round(min(actual, theory), 1)
+                green = round(max(actual - theory, 0), 1)
+                red = round(max(theory - actual, 0), 1)
+
+                base_data.append(base)
+                green_data.append(green)
+                red_data.append(red)
+
+            # 将 [0,1,...,15] -> ['0->1', '1->2', ... ,'15->16']
+            categories = [f"{k}→{k + 1}" for k in categories]
+
+            option = {
+                "title": {
+                    "text": title,
+                    "left": "center",
+                    "top": "0%"
+                },
+                "legend": {"show": False},
+                "grid": {
+                    "left": 50,
+                    "right": 20,
+                    "top": 55,
+                    "bottom": 10
+                },
+                "xAxis": {
+                    "type": "value",
+                    "min": 0,
+                    "max": 100,
+                    "axisLabel": {
+                        "formatter": "{value}%"
+                    },
+                    "show": False
+                },
+                "yAxis": {
+                    "type": "category",
+                    "data": [str(star) for star in categories],
+                    "axisLabel": {
+                        "interval": 0
+                    }
+                },
+                "tooltip": {
+                    "trigger": 'axis',
+                    "axisPointer": {
+                        "type": 'shadow'
+                    }
+                },
+                "series": [
+                    {
+                        "name": "填充值",
+                        "type": "bar",
+                        "stack": "Compare",
+                        "itemStyle": {
+                            "color": "#CBE5E3",
+                            "opacity": 0.5
+                        },
+                        "data": base_data
+                    },
+                    {
+                        "name": "向上偏移值",
+                        "type": "bar",
+                        "stack": "Compare",
+                        "itemStyle": {
+                            "color": "#91cc75"
+                        },
+                        "data": green_data,
+                        "label": {
+                            "show": False,
+                            "position": "right",
+                            "formatter": "{@[1]}%",
+                            "color": "#333"
+                        }
+                    },
+                    {
+                        "name": "向下偏移值",
+                        "type": "bar",
+                        "stack": "Compare",
+                        "itemStyle": {
+                            "color": "#ee6666"
+                        },
+                        "data": red_data,
+                        "label": {
+                            "show": False,
+                            "position": "left",
+                            "formatter": "{@[1]}%",
+                            "color": "#333"
+                        }
+                    }
+                ]
+            }
+            return option
+
+        def create_html(option1, option2):
+            """
+            创建统计数据的html，包含切换按钮
+            """
+            # 将option转换为json字符串
+            option1_str = json.dumps(option1)
+            option2_str = json.dumps(option2)
+
+            # 创建html
+            html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>ECharts</title>
+                <script src="{self.src}"></script>
+            </head>
+            <body>
+                <div id="main" style="width: 475px;height:375px;"></div>
+                <div class="button-container" style="margin-left: 170px;">
+                    <button onclick="showChart1()">显示绑定</button>
+                    <button onclick="showChart2()">显示不绑</button>
+                </div>
+                <script type="text/javascript">
+                    var myChart = echarts.init(document.getElementById('main'));
+                    var option1 = {option1_str};
+                    var option2 = {option2_str};
+
+                    function showChart1() {{
+                        myChart.setOption(option1);
+                    }}
+
+                    function showChart2() {{
+                        myChart.setOption(option2);
+                    }}
+
+                    // 默认显示第一个图表
+                    showChart1();
+                </script>
+            </body>
+            </html>
+            """
+            return html
+
+        # 执行转换并生成HTML
+        bind_data, unbind_data = df_transform()
+        bind_opt = create_option(bind_data, "绑定主卡-实际vs理论成功率(加算)")
+        unbind_opt = create_option(unbind_data, "不绑主卡-实际vs理论成功率(加算)")
+        return create_html(bind_opt, unbind_opt)
+
+    """强卡 理论成功率(乘算) - 堆叠柱状图 归一化"""
+
+    def create_html_for_success_rate_and_p_by_multi(self):
+        """
+        创建统计数据的html，包含切换按钮，比较实际成功率与理论期望
+        """
+
+        def df_transform():
+            # === 检查数据存在性 ===
+            if self.data_frame.empty:
+                print("[Error] 数据框为空")
+                return None, None
+
+            print(self.data_frame)
+
+            # === 计算理论成功率 ===
+            self.data_frame['theory_success'] = ((
+                    self.data_frame['original_success_rate']/100 +
+                    (1 - self.data_frame['original_success_rate']/100) *
+                    self.data_frame['extra_success_rate']/100)*100).clip(upper=100)
+
+            # === 核心统计 ===
+            grouped = self.data_frame.groupby(['main_star', 'main_bind'], observed=True)
+            stats = grouped.agg(
+                success=('result', 'sum'),
+                total=('result', 'count'),
+                theory_success_rate=('theory_success', 'mean')
+            ).reset_index()
+
+            # === 成功率计算 ===
+            stats['total'] = stats['total'].replace(0, 1)
+            stats['success_rate'] = (stats['success'] / stats['total'] * 100).round(1)
+            stats['theory_success_rate'] = stats['theory_success_rate'].round(1)
+
+            # === 数据拆分 ===
+            bind_mask = stats['main_bind'] == True
+            unbind_mask = ~bind_mask
+
+            bind_stats = stats[bind_mask].set_index('main_star')
+            unbind_stats = stats[unbind_mask].set_index('main_star')
+
+            # === 图表数据准备 ===
+            def prepare_chart_data(df):
+                return {
+                    star: {
+                        'actual': row['success_rate'],
+                        'theory': row['theory_success_rate']
+                    }
+                    for star, row in df.iterrows()
+                }
+
+            bind_data = prepare_chart_data(bind_stats)
+            unbind_data = prepare_chart_data(unbind_stats)
+
+            return bind_data, unbind_data
+
+        def create_option(data, title):
+
+            # 补全0-15星级数据
+            all_keys = set(range(16))
+            data = {key: data.get(key, {'actual': 0, 'theory': 0}) for key in all_keys}
+            categories = sorted(data.keys())
+
+            # 生成系列数据
+            base_data = []
+            green_data = []
+            red_data = []
+            for star in categories:
+                actual = data[star]['actual']
+                theory = data[star]['theory']
+                base = round(min(actual, theory), 1)
+                green = round(max(actual - theory, 0), 1)
+                red = round(max(theory - actual, 0), 1)
+
+                base_data.append(base)
+                green_data.append(green)
+                red_data.append(red)
+
+            # 将 [0,1,...,15] -> ['0->1', '1->2', ... ,'15->16']
+            categories = [f"{k}→{k + 1}" for k in categories]
+
+            option = {
+                "title": {
+                    "text": title,
+                    "left": "center",
+                    "top": "0%"
+                },
+                "legend": {"show": False},
+                "grid": {
+                    "left": 50,
+                    "right": 20,
+                    "top": 55,
+                    "bottom": 10
+                },
+                "xAxis": {
+                    "type": "value",
+                    "min": 0,
+                    "max": 100,
+                    "axisLabel": {
+                        "formatter": "{value}%"
+                    },
+                    "show": False
+                },
+                "yAxis": {
+                    "type": "category",
+                    "data": [str(star) for star in categories],
+                    "axisLabel": {
+                        "interval": 0
+                    }
+                },
+                "tooltip": {
+                    "trigger": 'axis',
+                    "axisPointer": {
+                        "type": 'shadow'
+                    }
+                },
+                "series": [
+                    {
+                        "name": "填充值",
+                        "type": "bar",
+                        "stack": "Compare",
+                        "itemStyle": {
+                            "color": "#CBE5E3",
+                            "opacity": 0.5
+                        },
+                        "data": base_data
+                    },
+                    {
+                        "name": "向上偏移值",
+                        "type": "bar",
+                        "stack": "Compare",
+                        "itemStyle": {
+                            "color": "#91cc75"
+                        },
+                        "data": green_data,
+                        "label": {
+                            "show": False,
+                            "position": "right",
+                            "formatter": "{@[1]}%",
+                            "color": "#333"
+                        }
+                    },
+                    {
+                        "name": "向下偏移值",
+                        "type": "bar",
+                        "stack": "Compare",
+                        "itemStyle": {
+                            "color": "#ee6666"
+                        },
+                        "data": red_data,
+                        "label": {
+                            "show": False,
+                            "position": "left",
+                            "formatter": "{@[1]}%",
+                            "color": "#333"
+                        }
+                    }
+                ]
+            }
+            return option
+
+        def create_html(option1, option2):
+            """
+            创建统计数据的html，包含切换按钮
+            """
+            # 将option转换为json字符串
+            option1_str = json.dumps(option1)
+            option2_str = json.dumps(option2)
+
+            # 创建html
+            html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>ECharts</title>
+                <script src="{self.src}"></script>
+            </head>
+            <body>
+                <div id="main" style="width: 475px;height:375px;"></div>
+                <div class="button-container" style="margin-left: 170px;">
+                    <button onclick="showChart1()">显示绑定</button>
+                    <button onclick="showChart2()">显示不绑</button>
+                </div>
+                <script type="text/javascript">
+                    var myChart = echarts.init(document.getElementById('main'));
+                    var option1 = {option1_str};
+                    var option2 = {option2_str};
+
+                    function showChart1() {{
+                        myChart.setOption(option1);
+                    }}
+
+                    function showChart2() {{
+                        myChart.setOption(option2);
+                    }}
+
+                    // 默认显示第一个图表
+                    showChart1();
+                </script>
+            </body>
+            </html>
+            """
+            return html
+
+        # 执行转换并生成HTML
+        bind_data, unbind_data = df_transform()
+        bind_opt = create_option(bind_data, "绑定主卡-实际vs理论成功率(乘算)")
+        unbind_opt = create_option(unbind_data, "不绑主卡-实际vs理论成功率(乘算)")
+        return create_html(bind_opt, unbind_opt)
