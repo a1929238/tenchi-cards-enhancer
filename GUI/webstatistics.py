@@ -5,6 +5,7 @@ from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWidgets import QWidget, QTabWidget, QVBoxLayout
 import pandas as pd
 
+from module.globals import GLOBALS
 from module.utils import resource_path
 
 
@@ -20,12 +21,16 @@ class WebStatistics:
         self.main_window = main_window
         self.statistics = self.main_window.statistics
         self.src = "https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"  # 没办法，暂时使用公共cdn
+        self.theme = GLOBALS.THEME
+        self.background_color = '#100C2A' if self.theme == "dark" else '#FFFFFF'
 
-        # asyncio.create_task(self.load_csv_data()).add_done_callback(lambda _: self.init_tab())
-
-        self.load_csv_to_df(csv_path=resource_path("enhance_stats//card_stats.csv"))
-
-        self.init_tab()
+        # 尝试读取本地csv文件
+        try:
+            self.load_csv_to_df(csv_path=resource_path("enhance_stats//card_stats.csv"))
+        except FileNotFoundError:
+            print("没有找到统计文件")
+        if self.data_frame is not None:
+            self.init_tab()
 
     def load_csv_to_df(self, csv_path):
         # 读取CSV文件
@@ -49,12 +54,13 @@ class WebStatistics:
         """
         初始化标签页
         """
+
         self.web_view = QWebEngineView()
         self.stats_tab_widget = QTabWidget(self.main_window.tab_3)
 
         # 创建使用四叶草标签页
         self.stats_tab_widget.addTab(self.create_empty_tab("使用四叶草"), "使用四叶草")
-        self.stats_tab_widget.addTab(self.create_empty_tab("制卡结果"), "制卡结果")
+        self.stats_tab_widget.addTab(self.create_empty_tab("使用卡片"), "使用卡片")
         self.stats_tab_widget.addTab(self.create_empty_tab("强化结果"), "强化结果")
         self.stats_tab_widget.addTab(self.create_empty_tab("强卡成功率"), "强卡成功率")
         self.stats_tab_widget.addTab(self.create_empty_tab("偏移-1"), "偏移-1")
@@ -96,7 +102,7 @@ class WebStatistics:
             html = self.create_bar_for_upgrade()
         elif type == "使用四叶草":
             html = self.create_html_for_clover()
-        elif type == "制卡结果":
+        elif type == "使用卡片":
             html = self.create_html_for_made_card()
         elif type == "强卡成功率":
             html = self.create_html_for_success_rate()
@@ -219,6 +225,12 @@ class WebStatistics:
                 <meta charset="utf-8">
                 <title>ECharts</title>
                 <script src="{self.src}"></script>
+                <style>
+                body {{
+                    background: {self.background_color};
+                }}
+                }}
+                </style>
             </head>
             <body>
                 <!-- Container for ECharts -->
@@ -228,7 +240,7 @@ class WebStatistics:
                     <button onclick="showChart2()">显示不绑</button>
                 </div>
                 <script type="text/javascript">
-                    var myChart = echarts.init(document.getElementById('main'));
+                    var myChart = echarts.init(document.getElementById('main'), '{self.theme}');
                     var option1 = {option1_str};
                     var option2 = {option2_str};
 
@@ -278,7 +290,7 @@ class WebStatistics:
 
         return html
 
-    """制卡结果"""
+    """使用卡片"""
 
     def create_html_for_made_card(self):
         """
@@ -292,7 +304,7 @@ class WebStatistics:
 
             option1 = {
                 "title": {
-                    "text": '卡片 - 绑定制造量',
+                    "text": '卡片 - 绑定使用量',
                     "left": 'center',
                     "top": '5%'
                 },
@@ -320,7 +332,7 @@ class WebStatistics:
                 },
                 "series": [
                     {
-                        "name": '制造量',
+                        "name": '使用量',
                         "type": 'bar',
                         "label": {
                             "show": True,
@@ -333,7 +345,7 @@ class WebStatistics:
 
             option2 = {
                 "title": {
-                    "text": '卡片 - 不绑制造量',
+                    "text": '卡片 - 不绑使用量',
                     "left": 'center',
                     "top": '5%'
                 },
@@ -361,7 +373,7 @@ class WebStatistics:
                 },
                 "series": [
                     {
-                        "name": '制造量',
+                        "name": '使用量',
                         "type": 'bar',
                         "label": {
                             "show": True,
@@ -390,6 +402,12 @@ class WebStatistics:
                 <meta charset="utf-8">
                 <title>ECharts</title>
                 <script src="{self.src}"></script>
+                <style>
+                body {{
+                    background: {self.background_color};
+                }}
+                }}
+                </style>
             </head>
             <body>
                 <div id="main" style="width: 475px;height:375px;"></div>
@@ -398,7 +416,7 @@ class WebStatistics:
                     <button onclick="showChart2()">显示不绑</button>
                 </div>
                 <script type="text/javascript">
-                    var myChart = echarts.init(document.getElementById('main'));
+                    var myChart = echarts.init(document.getElementById('main'), '{self.theme}');
                     var option1 = {option1_str};
                     var option2 = {option2_str};
 
@@ -420,13 +438,9 @@ class WebStatistics:
 
         df = self.data_frame
 
-        card_order = list(range(9))
+        card_order = list(range(16))
         bind_data = [0] * len(card_order)
         unbind_data = [0] * len(card_order)
-
-        # 处理主卡的绑定和不绑情况
-        bind_main_counts = df[df['main_bind']]['main_star'].value_counts().sort_index()
-        unbind_main_counts = df[~df['main_bind']]['main_star'].value_counts().sort_index()
 
         # 处理副卡的绑定和不绑情况
         bind_sub_stars = pd.Series(dtype='int64')
@@ -449,38 +463,15 @@ class WebStatistics:
         bind_sub_counts = bind_sub_stars.value_counts().sort_index()
         unbind_sub_counts = unbind_sub_stars.value_counts().sort_index()
 
-        # 处理成功和失败的次数，区分绑定和不绑
-        # 绑定情况
-        bind_success_mask = (df['main_bind']) & (df['result'] == 'success')
-        bind_success_counts = df[bind_success_mask]['main_star'].value_counts().sort_index()
-
-        bind_failure_mask = (df['main_bind']) & (df['result'] == 'failure')
-        bind_failure_counts = df[bind_failure_mask]['main_star'].value_counts().sort_index()
-
-        # 不绑情况
-        unbind_success_mask = (~df['main_bind']) & (df['result'] == 'success')
-        unbind_success_counts = df[unbind_success_mask]['main_star'].value_counts().sort_index()
-
-        unbind_failure_mask = (~df['main_bind']) & (df['result'] == 'failure')
-        unbind_failure_counts = df[unbind_failure_mask]['main_star'].value_counts().sort_index()
-
         # 计算每个星级的制造量
         for s in card_order:
             # 绑定数据计算
-            bind_main = bind_main_counts.get(s, 0)
             bind_sub = bind_sub_counts.get(s, 0)
-            bind_succ = bind_success_counts.get(s - 1, 0)
-            bind_fail = bind_failure_counts.get(s + 1, 0)
-            bind_total = bind_main + bind_sub - bind_succ - bind_fail
-            bind_data[s] = max(bind_total, 0)  # 确保非负
+            bind_data[s] = max(bind_sub, 0)  # 确保非负
 
             # 不绑数据计算
-            unbind_main = unbind_main_counts.get(s, 0)
             unbind_sub = unbind_sub_counts.get(s, 0)
-            unbind_succ = unbind_success_counts.get(s - 1, 0)
-            unbind_fail = unbind_failure_counts.get(s + 1, 0)
-            unbind_total = unbind_main + unbind_sub - unbind_succ - unbind_fail
-            unbind_data[s] = max(unbind_total, 0)  # 确保非负
+            unbind_data[s] = max(unbind_sub, 0)  # 确保非负
 
         # 转为 int 而不是 int64
         bind_data = [int(x) for x in bind_data]
@@ -623,6 +614,12 @@ class WebStatistics:
                 <meta charset="utf-8">
                 <title>ECharts</title>
                 <script src="{self.src}"></script>
+                <style>
+                body {{
+                    background: {self.background_color};
+                }}
+                }}
+                </style>
             </head>
             <body>
                 <div id="main" style="width: 475px;height:375px;"></div>
@@ -631,7 +628,7 @@ class WebStatistics:
                     <button onclick="showChart2()">显示不绑</button>
                 </div>
                 <script type="text/javascript">
-                    var myChart = echarts.init(document.getElementById('main'));
+                    var myChart = echarts.init(document.getElementById('main'), '{self.theme}');
                     var option1 = {option1_str};
                     var option2 = {option2_str};
                     function showChart1() {{
@@ -795,6 +792,12 @@ class WebStatistics:
                 <meta charset="utf-8">
                 <title>ECharts</title>
                 <script src="{self.src}"></script>
+                <style>
+                body {{
+                    background: {self.background_color};
+                }}
+                }}
+                </style>
             </head>
             <body>
                 <div id="main" style="width: 475px;height:375px;"></div>
@@ -803,7 +806,7 @@ class WebStatistics:
                     <button onclick="showChart2()">显示不绑</button>
                 </div>
                 <script type="text/javascript">
-                    var myChart = echarts.init(document.getElementById('main'));
+                    var myChart = echarts.init(document.getElementById('main'), '{self.theme}');
                     var option1 = {option1_str};
                     var option2 = {option2_str};
 
@@ -844,8 +847,6 @@ class WebStatistics:
             if self.data_frame.empty:
                 print("[Error] 数据框为空")
                 return None, None
-
-            print(self.data_frame)
 
             # === 计算理论成功率 ===
             self.data_frame['theory_success'] = (
@@ -1007,6 +1008,12 @@ class WebStatistics:
                 <meta charset="utf-8">
                 <title>ECharts</title>
                 <script src="{self.src}"></script>
+                <style>
+                body {{
+                    background: {self.background_color};
+                }}
+                }}
+                </style>
             </head>
             <body>
                 <div id="main" style="width: 475px;height:375px;"></div>
@@ -1015,7 +1022,7 @@ class WebStatistics:
                     <button onclick="showChart2()">显示不绑</button>
                 </div>
                 <script type="text/javascript">
-                    var myChart = echarts.init(document.getElementById('main'));
+                    var myChart = echarts.init(document.getElementById('main'), '{self.theme}');
                     var option1 = {option1_str};
                     var option2 = {option2_str};
 
@@ -1054,13 +1061,12 @@ class WebStatistics:
                 print("[Error] 数据框为空")
                 return None, None
 
-            print(self.data_frame)
-
             # === 计算理论成功率 ===
             self.data_frame['theory_success'] = ((
-                    self.data_frame['original_success_rate']/100 +
-                    (1 - self.data_frame['original_success_rate']/100) *
-                    self.data_frame['extra_success_rate']/100)*100).clip(upper=100)
+                                                         self.data_frame['original_success_rate'] / 100 +
+                                                         (1 - self.data_frame['original_success_rate'] / 100) *
+                                                         self.data_frame['extra_success_rate'] / 100) * 100).clip(
+                upper=100)
 
             # === 核心统计 ===
             grouped = self.data_frame.groupby(['main_star', 'main_bind'], observed=True)
@@ -1218,6 +1224,12 @@ class WebStatistics:
                 <meta charset="utf-8">
                 <title>ECharts</title>
                 <script src="{self.src}"></script>
+                <style>
+                body {{
+                    background: {self.background_color};
+                }}
+                }}
+                </style>
             </head>
             <body>
                 <div id="main" style="width: 475px;height:375px;"></div>
@@ -1226,7 +1238,7 @@ class WebStatistics:
                     <button onclick="showChart2()">显示不绑</button>
                 </div>
                 <script type="text/javascript">
-                    var myChart = echarts.init(document.getElementById('main'));
+                    var myChart = echarts.init(document.getElementById('main'), '{self.theme}');
                     var option1 = {option1_str};
                     var option2 = {option2_str};
 

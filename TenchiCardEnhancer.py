@@ -16,8 +16,10 @@ import copy
 from PyQt6.QtCore import pyqtSignal, Qt, QElapsedTimer, QTimer, QTime, QThread, pyqtSlot, QEvent, \
     QAbstractNativeEventFilter, QByteArray
 from PyQt6.QtGui import QIcon, QPalette, QMovie, QPixmap, QColor, QFontDatabase, QFont, QPainter, QPainterPath
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QGraphicsBlurEffect, QWidget, QPushButton
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QGraphicsBlurEffect, QWidget, QPushButton, \
+    QFrame
 
+from GUI.css_styles import TAB_BAR_LIGHT, TAB_BAR_DARK, OUTPUT_LOG_DARK, OUTPUT_LOG_LIGHT
 from module.UI.GemUI import GemUI
 from module.bg_img_match import match_p_in_w, loop_match_ps_in_w, loop_match_p_in_w
 from module.core.CardEnhancer import enhance_log
@@ -65,58 +67,33 @@ class TenchiCardsEnhancer(QMainWindow):
         # 初始化拖动变量
         self.drag_start_position = None
         self.drag_window_position = None
-        # 初始化标题栏
-        self.init_title_bar()
         # 设置窗口图标
         self.setWindowIcon(QIcon(resource_path("items/icon/furina.ico")))
         # 设置窗口背景透明
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         # 固定大小
         self.setFixedSize(self.size())
-        # 设置窗口背景图
-        background_image_path = resource_path('items/icon/furina_background.jpg')
-
-        # 设置样式表
-        self.setStyleSheet(f"""
-                QMainWindow {{
-                    background: rgb(240, 248, 255);
-                    border: 1px solid #3A3A3A;
-                    border-radius: 12px;
-                }}
-                /* 工具提示样式 */
-                QToolTip {{
-                    background-color: rgb(170, 255, 255);
-                    color: black;
-                    border: 3px dotted rgb(170, 255, 255);
-                    border-radius: 4px;
-                }}
-            """)
 
         # 背景遮盖层初始化
-        self.frosted_layer.lower()  # 将半透明层放到底层
+        self.frosted_layer.lower()  # 将磨砂图片层放到底层
+        self.background_layer.lower()  # 将背景层放到底层
         # 设置模糊效果
         blur = QGraphicsBlurEffect()
-        blur.setBlurRadius(18)
+        blur.setBlurRadius(12)
         self.frosted_layer.setGraphicsEffect(blur)
 
         # 检测GUI的主题，如果是深色模式，就把蒙版变成黑色
         palette = self.palette()
         if palette.color(QPalette.ColorRole.Window).lightness() < 128:
             GLOBALS.THEME = 'dark'
-            self.frosted_layer.setStyleSheet(f"""
-                background-color: rgba(0, 0, 0, 180);
-                background-image: url("{background_image_path}");
-                border-top-left-radius: 12px;
-                border-top-right-radius: 12px;
-                """)
         else:
             GLOBALS.THEME = 'light'
-            self.frosted_layer.setStyleSheet(f"""
-                background-color: rgba(255, 255, 255, 150);
-                background-image: url("{background_image_path}");
-                border-top-left-radius: 12px;
-                border-top-right-radius: 12px;
-                """)
+
+        # 设置控件css
+        self.init_css()
+
+        # 初始化标题栏
+        self.init_title_bar()
 
         # 初始化窗口dpi
         GLOBALS.DPI = get_system_dpi()
@@ -230,6 +207,8 @@ class TenchiCardsEnhancer(QMainWindow):
         self.init_setting()
         # 初始化状态栏
         self.init_statusbar()
+        # 隐藏不在等级范围内的强化方案
+        self.init_enhance_plan_ui()
 
         # 创建生产队列实例
         self.produce_queue = queue.Queue()
@@ -276,6 +255,40 @@ class TenchiCardsEnhancer(QMainWindow):
         if TEST_MODE:
             test_page = TestPage(self)
             self.tabWidget.addTab(test_page, "测试")
+
+    def init_css(self):
+        """根据主题设置控件的css"""
+        # 窗口背景图
+        background_image_path = resource_path('items/icon/furina_background.jpg')
+        # Tooltip样式表
+        self.setStyleSheet(f"""
+                        /* 工具提示样式 */
+                        QToolTip {{
+                            background-color: rgb(170, 255, 255);
+                            color: black;
+                            border-radius: 12px;
+                            padding: 1px;
+                        }}
+                    """)
+        if GLOBALS.THEME == "dark":
+            self.background_layer.setStyleSheet(f"""
+                            background-color: rgba(0, 0, 0, 255);
+                            """)
+            self.frosted_layer.setStyleSheet(f"""
+                            background-image: url("{background_image_path}");
+                            """)
+            self.tabWidget.setStyleSheet(TAB_BAR_DARK)
+            self.output_log.setStyleSheet(OUTPUT_LOG_DARK)
+        else:
+            self.background_layer.setStyleSheet(f"""
+                            background-color: rgba(255, 255, 255, 255);
+                            """)
+            self.frosted_layer.setStyleSheet(f"""
+                            background-color: rgba(255, 255, 255, 150);
+                            background-image: url("{background_image_path}");
+                            """)
+            self.tabWidget.setStyleSheet(TAB_BAR_LIGHT)
+            self.output_log.setStyleSheet(OUTPUT_LOG_LIGHT)
 
     # 开始按钮
     def onStart(self):
@@ -456,33 +469,10 @@ class TenchiCardsEnhancer(QMainWindow):
         self.title_icon.setFixedSize(30, 30)
         # 设置标题栏名称
         self.title_name.setText("天知强卡器！！！！！")
-        # 让标题栏名称的字体大一些
-        self.title_name.setStyleSheet("""
-            QLabel {
-                color: black;  /* 文字颜色 */
-                font: 20px;
-            }
-        """)
         # 创建背景层
         self.titleBarBackground = QWidget(self.titleBar)
         self.titleBarBackground.setGeometry(self.titleBar.rect())
         self.titleBarBackground.lower()  # 置于底层
-
-        self.titleBar.setStyleSheet("""
-                QWidget #titleBar {
-                    background: transparent;
-                    border-top-left-radius: 12px;
-                    border-top-right-radius: 12px;
-                    border: none;
-                }
-            """)
-
-        # 设置背景层样式
-        self.titleBarBackground.setStyleSheet("""
-                border-top-left-radius: 12px;
-                border-top-right-radius: 12px;
-                background: rgba(240, 248, 255, 1);
-            """)
 
         # 确保背景层不拦截鼠标事件
         self.titleBarBackground.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
@@ -505,47 +495,65 @@ class TenchiCardsEnhancer(QMainWindow):
         self.closeButton.setFont(fa_font)
         self.closeButton.setText("\uf00d")  # fa-times
 
-        # self.minimizeButton.setText("−")  # Unicode减号
-        # self.closeButton.setText("✕")  # 使用更粗的乘号（U+2715）
+        if GLOBALS.THEME == "light":
+            titlebar_bg_color = "rgba(240, 248, 255, 1)"  # 浅色背景
+            title_text_color = "black"  # 黑色文字
+            button_color = "#666666"
+            button_hover_color = "#444444"
+        else:  # Dark theme
+            titlebar_bg_color = "#283148"
+            title_text_color = "#F0F8FF"  # 浅灰/白色文字
+            button_color = "#AAAAAA"  # 浅灰色按钮
+            button_hover_color = "#DDDDDD"  # 更浅的悬停颜色
+
+        self.titleBar.setStyleSheet("""
+                                QWidget #titleBar {
+                                    background: transparent;
+                                    border-top-left-radius: 12px;
+                                    border-top-right-radius: 12px;
+                                    border: none;
+                                }
+                            """)
+
+        # 设置背景层样式
+        self.titleBarBackground.setStyleSheet(f"""
+                                border-top-left-radius: 12px;
+                                border-top-right-radius: 12px;
+                                background: {titlebar_bg_color};
+                            """)
+
+        # 让标题栏名称的字体大一些
+        self.title_name.setStyleSheet(f"""
+                            QLabel {{
+                                color: {title_text_color};  /* 文字颜色 */
+                                font: 20px;
+                            }}
+                        """)
 
         # 设置按钮样式
-        button_style = """
-                QPushButton {
-                    background: transparent;
-                    border: none;
-                    font-size: 22px;
-                    font-weight: 900;
-                    padding: 0;
-                    margin: 0;
-                    qproperty-alignment: AlignCenter;
-                }
-                QPushButton:hover {
-                    background: rgba(0, 0, 0, 0.1);
-                }
-                QPushButton:pressed {
-                    background: rgba(0, 0, 0, 0.15);
-                }
-            """
+        button_style = f"""
+                        QPushButton {{
+                            background: transparent;
+                            border: none;
+                            font-size: 22px;
+                            font-weight: 900;
+                            padding: 0;
+                            margin: 0;
+                            qproperty-alignment: AlignCenter;
+                            color: {button_color};
+                        }}
+                        QPushButton:hover {{
+                            background: rgba(255, 255, 255, 0.1); /* 浅色半透明悬停 */
+                            color: {button_hover_color};
+                        }}
+                        QPushButton:pressed {{
+                            background: rgba(255, 255, 255, 0.2); /* 更浅的半透明按下 */
+                        }}
+                    """
 
-        # 单独设置关闭按钮颜色
-        self.closeButton.setStyleSheet(button_style + """
-                QPushButton {
-                    color: #666666;
-                }
-                QPushButton:hover {
-                    color: #444444;
-                }
-            """)
-
-        # 设置最小化按钮颜色
-        self.minimizeButton.setStyleSheet(button_style + """
-                QPushButton {
-                    color: #666666;
-                }
-                QPushButton:hover {
-                    color: #444444;
-                }
-            """)
+        # 可以根据需要单独设置关闭按钮的颜色
+        self.closeButton.setStyleSheet(button_style)
+        self.minimizeButton.setStyleSheet(button_style)
 
         # 设置按钮固定尺寸
         self.minimizeButton.setFixedSize(30, 30)
@@ -846,8 +854,22 @@ class TenchiCardsEnhancer(QMainWindow):
         self.enhance_check_interval_input.valueChanged.connect(self.on_setting_changed)
         self.bag_size_input.valueChanged.connect(self.on_setting_changed)
 
+    def init_enhance_plan_ui(self):
+        """根据最大最小星级，隐藏不在星级范围内的强化方案"""
+        level_list = [i for i in range(1, 17)]
+        level_range = [i for i in range(self.min_level + 1, self.max_level + 1)]
+        missing_levels = [i for i in level_list if i not in level_range]
+        for level in missing_levels:
+            hide_row_widgets(self.enhance_plan_grid_layout, level)
+        for level in level_range:
+            show_row_widgets(self.enhance_plan_grid_layout, level)
+
     # 初始化状态栏
     def init_statusbar(self):
+        if GLOBALS.THEME == "light":
+            status_bar_color = "rgb(240, 248, 255)"
+        else:
+            status_bar_color = "#283148"
         # 设置颜色蒙版
         self.statusBar.setStyleSheet(f"""
                 /* 状态栏样式 */
@@ -856,22 +878,23 @@ class TenchiCardsEnhancer(QMainWindow):
                     border-bottom-left-radius: 12px;
                     border-bottom-right-radius: 12px;
                     padding: 4px;
-                    background-color: rgba(240, 248, 255, 0.8);
+                    background-color: {status_bar_color};
+                }}
+                /* 隐藏 QSizeGrip */
+                QStatusBar::item {{
+                    border: none;
                 }}
                 """)
         # 获取打开程序的时间
         self.start_time = QElapsedTimer()
         self.start_time.start()  # 开始计时
 
-        # 创建一个控件让当前时间标签往右偏移一些
-        self.offset_label = QLabel()
-        self.statusBar.addWidget(self.offset_label)
-        self.offset_label.setFixedWidth(10)
-
         # 创建并添加当前时间标签
         self.current_time_label = QLabel()
         self.statusBar.addWidget(self.current_time_label)
-        self.current_time_label.setFixedWidth(115)
+        self.current_time_label.setFixedWidth(120)
+        # 添加左边距，使其向右移动
+        self.current_time_label.setStyleSheet("QLabel { margin-left: 5px; }")
 
         # 创建并添加程序运行时间标签
         self.run_time_label = QLabel()
@@ -1078,9 +1101,13 @@ class TenchiCardsEnhancer(QMainWindow):
         if sender_name == "max_level_input":
             self.settings["个人设置"]["最大星级"] = f"{value}"
             self.max_level = value
+            # 调用强卡方案UI刷新函数，隐藏超出星级范围的方案
+            self.init_enhance_plan_ui()
         elif sender_name == "min_level_input":
             self.settings["个人设置"]["最小星级"] = f"{value}"
             self.min_level = value
+            self.init_enhance_plan_ui()
+            # 调用强卡方案UI刷新函数，隐藏超出星级范围的方案
         elif sender_name == "reload_count_input":
             self.settings["个人设置"]["刷新次数"] = f"{value}"
             self.reload_count = value
@@ -2137,12 +2164,6 @@ if not getattr(sys, 'frozen', False):
 # 主函数
 def main():
     app = QApplication(sys.argv)
-    # 设置禁用状态下的按钮文本颜色
-    palette = QPalette()
-    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor("#888888"))
-    palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Button,
-                     QColor(255, 255, 255, 190))
-    app.setPalette(palette)
     # 设置默认字体
     font_id = QFontDatabase.addApplicationFont(resource_path("items/font/font.ttf"))
     if font_id != -1:

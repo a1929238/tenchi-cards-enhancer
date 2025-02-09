@@ -21,7 +21,6 @@ import cv2
 
 def get_spice_usable(spice_stock: list[Item], produce_plan):
     """从香料列表获取可用香料，返回按等级倒序的可用香料列表"""
-    # print(spice_stock)
     # 剔除数量少于5的香料
     usable_spice = [spice for spice in spice_stock if spice.count > 5]
     # 暂时方案，总是加入无限多的零星香料
@@ -354,8 +353,6 @@ def parse_produce_list(enhance_plan, produce_list, usable_spice):
         return []
     # 初始化来源列表，用于记录需要单独制卡的卡片
     needed_list = []
-    # 将数量少于5的香料移除可用香料
-    usable_spice = [spice for spice in usable_spice if spice.count >= 5]
     # 集合化可用香料等级列表
     usable_spice_level = set(spice.get_level() for spice in usable_spice)
     for card, count in produce_list:

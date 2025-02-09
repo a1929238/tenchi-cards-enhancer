@@ -23,11 +23,7 @@
    <string notr="true">天知强卡器</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">QToolTip {
-    background-color: rgb(170, 255, 255);
-    color: black;
-    border: 3px dotted rgb(170, 255, 255);
-}</string>
+   <string notr="true"/>
   </property>
   <property name="tabShape">
    <enum>QTabWidget::Rounded</enum>
@@ -156,638 +152,567 @@ li.checked::marker { content: &quot;\2612&quot;; }
      <attribute name="toolTip">
       <string>记得用心填写哦</string>
      </attribute>
-     <widget class="QWidget" name="layoutWidget">
+     <widget class="QWidget" name="">
       <property name="geometry">
        <rect>
-        <x>2</x>
-        <y>1</y>
-        <width>381</width>
+        <x>4</x>
+        <y>3</y>
+        <width>491</width>
         <height>461</height>
        </rect>
       </property>
-      <layout class="QVBoxLayout" name="verticalLayout">
-       <property name="spacing">
-        <number>0</number>
-       </property>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout">
-         <item>
-          <widget class="QLabel" name="label">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="toolTip">
-            <string>鼠标点击下面的数字有惊喜！</string>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;强化类型&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_40">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>70</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;副卡1&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_7">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>70</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;副卡2&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_8">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>69</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;副卡3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_9">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>69</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;四叶草&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+      <layout class="QGridLayout" name="enhance_plan_grid_layout">
+       <item row="0" column="0" colspan="2" alignment="Qt::AlignHCenter">
+        <widget class="QLabel" name="label">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>鼠标点击下面的数字有惊喜！</string>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;强化类型&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_4">
-         <item>
-          <widget class="ClickableLabel" name="E1">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>54</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;0→1&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_0"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_0"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_0"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover0"/>
-         </item>
-        </layout>
+       <item row="0" column="2" colspan="2" alignment="Qt::AlignHCenter">
+        <widget class="QLabel" name="label_40">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>70</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;副卡1&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_5">
-         <item>
-          <widget class="ClickableLabel" name="E2">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>54</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;1→2&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_1"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_1"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_1"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover1"/>
-         </item>
-        </layout>
+       <item row="0" column="4" colspan="2" alignment="Qt::AlignHCenter">
+        <widget class="QLabel" name="label_7">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>70</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;副卡2&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_7">
-         <item>
-          <widget class="ClickableLabel" name="E3">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>54</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;2→3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_2"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_2"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_2"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover2"/>
-         </item>
-        </layout>
+       <item row="0" column="6" colspan="2" alignment="Qt::AlignHCenter">
+        <widget class="QLabel" name="label_8">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>69</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;副卡3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_8">
-         <item>
-          <widget class="ClickableLabel" name="E4">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>54</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;3→4&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_3"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_3"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_3"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover3"/>
-         </item>
-        </layout>
+       <item row="0" column="8" alignment="Qt::AlignHCenter">
+        <widget class="QLabel" name="label_9">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>69</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;四叶草&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_9">
-         <item>
-          <widget class="ClickableLabel" name="E5">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>54</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;4→5&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_4"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_4"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_4"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover4"/>
-         </item>
-        </layout>
+       <item row="1" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E1">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>54</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;0→1&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_10">
-         <item>
-          <widget class="ClickableLabel" name="E6">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>54</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;5→6&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_5"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_5"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_5"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover5"/>
-         </item>
-        </layout>
+       <item row="1" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_0"/>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_11">
-         <item>
-          <widget class="ClickableLabel" name="E7">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>54</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;6→7&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_6"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_6"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_6"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover6"/>
-         </item>
-        </layout>
+       <item row="1" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_0"/>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_12">
-         <item>
-          <widget class="ClickableLabel" name="E8">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>54</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;7→8&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_7"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_7"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_7"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover7"/>
-         </item>
-        </layout>
+       <item row="1" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_0"/>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_13">
-         <item>
-          <widget class="ClickableLabel" name="E9">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>54</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;8→9&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_8"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_8"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_8"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover8"/>
-         </item>
-        </layout>
+       <item row="1" column="8">
+        <widget class="QComboBox" name="clover0"/>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_14">
-         <item>
-          <widget class="ClickableLabel" name="E10">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>54</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;9→10&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_9"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_9"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_9"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover9"/>
-         </item>
-        </layout>
+       <item row="2" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E2">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>54</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;1→2&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_15">
-         <item>
-          <widget class="ClickableLabel" name="E11">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;10→11&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_10"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_10"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_10"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover10"/>
-         </item>
-        </layout>
+       <item row="2" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_1"/>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_16">
-         <item>
-          <widget class="ClickableLabel" name="E12">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;11→12&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_11"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_11"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_11"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover11"/>
-         </item>
-        </layout>
+       <item row="2" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_1"/>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_17">
-         <item>
-          <widget class="ClickableLabel" name="E13">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;12→13&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_12"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_12"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_12"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover12"/>
-         </item>
-        </layout>
+       <item row="2" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_1"/>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_18">
-         <item>
-          <widget class="ClickableLabel" name="E14">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;13→14&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_13"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_13"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_13"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover13"/>
-         </item>
-        </layout>
+       <item row="2" column="8">
+        <widget class="QComboBox" name="clover1"/>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_19">
-         <item>
-          <widget class="ClickableLabel" name="E15">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;14→15&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_14"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_14"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_14"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover14"/>
-         </item>
-        </layout>
+       <item row="3" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E3">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>54</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;2→3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_20">
-         <item>
-          <widget class="ClickableLabel" name="E16">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;15→16&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard1_15"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard2_15"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="subcard3_15"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="clover15"/>
-         </item>
-        </layout>
+       <item row="3" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_2"/>
+       </item>
+       <item row="3" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_2"/>
+       </item>
+       <item row="3" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_2"/>
+       </item>
+       <item row="3" column="8">
+        <widget class="QComboBox" name="clover2"/>
+       </item>
+       <item row="4" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E4">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>54</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;3→4&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_3"/>
+       </item>
+       <item row="4" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_3"/>
+       </item>
+       <item row="4" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_3"/>
+       </item>
+       <item row="4" column="8">
+        <widget class="QComboBox" name="clover3"/>
+       </item>
+       <item row="5" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E5">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>54</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;4→5&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_4"/>
+       </item>
+       <item row="5" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_4"/>
+       </item>
+       <item row="5" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_4"/>
+       </item>
+       <item row="5" column="8">
+        <widget class="QComboBox" name="clover4"/>
+       </item>
+       <item row="6" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E6">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>54</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;5→6&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_5"/>
+       </item>
+       <item row="6" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_5"/>
+       </item>
+       <item row="6" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_5"/>
+       </item>
+       <item row="6" column="8">
+        <widget class="QComboBox" name="clover5"/>
+       </item>
+       <item row="7" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E7">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>54</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;6→7&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_6"/>
+       </item>
+       <item row="7" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_6"/>
+       </item>
+       <item row="7" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_6"/>
+       </item>
+       <item row="7" column="8">
+        <widget class="QComboBox" name="clover6"/>
+       </item>
+       <item row="8" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E8">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>54</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;7→8&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_7"/>
+       </item>
+       <item row="8" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_7"/>
+       </item>
+       <item row="8" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_7"/>
+       </item>
+       <item row="8" column="8">
+        <widget class="QComboBox" name="clover7"/>
+       </item>
+       <item row="9" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E9">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>54</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;8→9&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_8"/>
+       </item>
+       <item row="9" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_8"/>
+       </item>
+       <item row="9" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_8"/>
+       </item>
+       <item row="9" column="8">
+        <widget class="QComboBox" name="clover8"/>
+       </item>
+       <item row="10" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E10">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>54</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;9→10&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_9"/>
+       </item>
+       <item row="10" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_9"/>
+       </item>
+       <item row="10" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_9"/>
+       </item>
+       <item row="10" column="8">
+        <widget class="QComboBox" name="clover9"/>
+       </item>
+       <item row="15" column="8">
+        <widget class="QComboBox" name="clover14"/>
+       </item>
+       <item row="11" column="8">
+        <widget class="QComboBox" name="clover10"/>
+       </item>
+       <item row="12" column="8">
+        <widget class="QComboBox" name="clover11"/>
+       </item>
+       <item row="13" column="8">
+        <widget class="QComboBox" name="clover12"/>
+       </item>
+       <item row="14" column="8">
+        <widget class="QComboBox" name="clover13"/>
+       </item>
+       <item row="16" column="8">
+        <widget class="QComboBox" name="clover15"/>
+       </item>
+       <item row="11" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E11">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;10→11&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="11" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_10"/>
+       </item>
+       <item row="12" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_11"/>
+       </item>
+       <item row="13" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_12"/>
+       </item>
+       <item row="14" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_13"/>
+       </item>
+       <item row="15" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_14"/>
+       </item>
+       <item row="16" column="6" colspan="2">
+        <widget class="QComboBox" name="subcard3_15"/>
+       </item>
+       <item row="11" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_10"/>
+       </item>
+       <item row="12" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_11"/>
+       </item>
+       <item row="13" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_12"/>
+       </item>
+       <item row="14" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_13"/>
+       </item>
+       <item row="15" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_14"/>
+       </item>
+       <item row="16" column="4" colspan="2">
+        <widget class="QComboBox" name="subcard2_15"/>
+       </item>
+       <item row="11" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_10"/>
+       </item>
+       <item row="12" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_11"/>
+       </item>
+       <item row="13" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_12"/>
+       </item>
+       <item row="14" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_13"/>
+       </item>
+       <item row="15" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_14"/>
+       </item>
+       <item row="16" column="2" colspan="2">
+        <widget class="QComboBox" name="subcard1_15"/>
+       </item>
+       <item row="12" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E12">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;11→12&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="13" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E13">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;12→13&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="14" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E14">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;13→14&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="15" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E15">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;14→15&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item row="16" column="0" colspan="2">
+        <widget class="ClickableLabel" name="E16">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;15→16&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -1177,7 +1102,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
             </sizepolicy>
            </property>
            <property name="text">
-            <string>最低星级</string>
+            <string>最低使用星级</string>
            </property>
           </widget>
          </item>
@@ -1201,7 +1126,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
             </sizepolicy>
            </property>
            <property name="text">
-            <string>最高星级</string>
+            <string>强化最高星级</string>
            </property>
           </widget>
          </item>
@@ -3544,6 +3469,29 @@ border-radius: 20px;</string>
      </layout>
     </widget>
    </widget>
+   <widget class="QWidget" name="background_layer" native="true">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>30</y>
+      <width>800</width>
+      <height>580</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+   </widget>
+   <zorder>background_layer</zorder>
    <zorder>frosted_layer</zorder>
    <zorder>layoutWidget</zorder>
    <zorder>tabWidget</zorder>

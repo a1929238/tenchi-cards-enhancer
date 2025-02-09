@@ -41,15 +41,15 @@ light_theme_css = """
 dark_theme_css = """
 /* 整个窗口的样式 */
 #content_widget {
-    background-color: #1E3A50; /* 深蓝色/深灰蓝色 */
+    background-color: rgb(33, 41, 54);
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
 }
 
 /* 标题栏样式 */
 #title_bar {
-    background-color: #325670; /* 稍亮的深蓝色 */
-    color: #DDDDDD; /* 浅灰色文本 */
+    background-color: #283148;
+    color: #F0F8FF;
     font-size: 14px;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;

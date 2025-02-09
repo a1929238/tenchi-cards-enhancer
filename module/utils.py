@@ -73,6 +73,21 @@ def hide_row_widgets(layout, row):
                 widget.hide()
 
 
+def show_row_widgets(layout, row):
+    """
+    显示栅格布局中，指定行中的所有控件。
+    Args:
+        layout: QGridLayout 对象。
+        row: 要显示的行号 (从0开始计数)。
+    """
+    for i in range(layout.columnCount()):
+        item = layout.itemAtPosition(row, i)
+        if item is not None:
+            widget = item.widget()
+            if widget is not None:
+                widget.show()
+
+
 def template_match_with_mask(img, tar_img, extra_mask=None):
     # 图片带有透明度通道，先将透明度部分转化为掩码
     mask = tar_img[:, :, 3]
@@ -122,6 +137,7 @@ def merge_card_counts(list1, list2):
         for card, cnt in lst:
             count_dict[card] = count_dict.get(card, 0) + cnt
     return [(card, count) for card, count in count_dict.items()]
+
 
 def load_level_crystal_map():
     """
