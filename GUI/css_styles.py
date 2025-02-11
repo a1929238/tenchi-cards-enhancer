@@ -126,3 +126,17 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
     background: none;
 }
 """
+
+PUSH_BUTTON_LIGHT = """
+QPushButton {
+    background-color: rgb(170, 255, 255);
+    border-radius: 20px;
+}
+"""
+
+PUSH_BUTTON_DARK = """
+QPushButton {
+    background-color: #3C3C3C;
+    border-radius: 20px;
+}
+"""

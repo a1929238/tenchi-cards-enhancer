@@ -19,7 +19,7 @@ from PyQt6.QtGui import QIcon, QPalette, QMovie, QPixmap, QColor, QFontDatabase,
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QGraphicsBlurEffect, QWidget, QPushButton, \
     QFrame
 
-from GUI.css_styles import TAB_BAR_LIGHT, TAB_BAR_DARK, OUTPUT_LOG_DARK, OUTPUT_LOG_LIGHT
+from GUI.css_styles import TAB_BAR_LIGHT, TAB_BAR_DARK, OUTPUT_LOG_DARK, OUTPUT_LOG_LIGHT, PUSH_BUTTON_DARK
 from module.UI.GemUI import GemUI
 from module.bg_img_match import match_p_in_w, loop_match_ps_in_w, loop_match_p_in_w
 from module.core.CardEnhancer import enhance_log
@@ -36,6 +36,7 @@ from module.gem.GemEnhancer import GemEnhancerThread
 from module.globals.DataClass import Card
 from module.globals.ResourceInit import resource
 from module.globals.EventManager import event_manager
+from module.namedpipe import PipeCommunicationThread
 from module.ocr.SuccessRateOcr import get_success_rate
 from module.statistic.AsyncStatistic import recorder
 from module.test.test_page import TestPage
@@ -51,6 +52,7 @@ import module.globals.GLOBALS as GLOBALS
 
 
 class TenchiCardsEnhancer(QMainWindow):
+    task_signal = pyqtSignal(str)
 
     # GUI界面初始化
     def __init__(self):
@@ -248,8 +250,15 @@ class TenchiCardsEnhancer(QMainWindow):
         self.current_label_object_name = None
 
         # 创建宝石强化实例
-        # self.gem_enhancer = GemEnhancer(self)
         self.gem_ui = GemUI(self)
+
+        # 将faa任务信号连接到执行函数
+        self.task_signal.connect(self.faa_task)
+
+        # 创建并启动管道通信线程
+        self.pipe_thread = PipeCommunicationThread("TCE_pipe", self)  # 使用Windows命名管道
+        self.pipe_thread.daemon = True
+        self.pipe_thread.start()
 
         # 测试模式
         if TEST_MODE:
@@ -279,6 +288,11 @@ class TenchiCardsEnhancer(QMainWindow):
                             """)
             self.tabWidget.setStyleSheet(TAB_BAR_DARK)
             self.output_log.setStyleSheet(OUTPUT_LOG_DARK)
+            self.enhanceronlybtn.setStyleSheet(PUSH_BUTTON_DARK)
+            self.startbtn.setStyleSheet(PUSH_BUTTON_DARK)
+            self.stopbtn.setStyleSheet(PUSH_BUTTON_DARK)
+            self.start_cushion_btn.setStyleSheet(PUSH_BUTTON_DARK)
+            self.clear_cushion_btn.setStyleSheet(PUSH_BUTTON_DARK)
         else:
             self.background_layer.setStyleSheet(f"""
                             background-color: rgba(255, 255, 255, 255);
@@ -291,7 +305,7 @@ class TenchiCardsEnhancer(QMainWindow):
             self.output_log.setStyleSheet(OUTPUT_LOG_LIGHT)
 
     # 开始按钮
-    def onStart(self):
+    def onStart(self, without_dialog = False):
         # 确保不会重复点击开始
         self.enhanceronlybtn.setEnabled(False)
         self.startbtn.setEnabled(False)
@@ -307,52 +321,15 @@ class TenchiCardsEnhancer(QMainWindow):
         # 如果没通过防呆检测，就直接返回
         if not self.is_running:
             return
-        # 统计用户目前强化方案与生产方案用卡
-        enhance_plan = self.settings["强化方案"]
-        produce_plan = self.settings["生产方案"]
-        use_cards = ["主卡", "副卡1", "副卡2", "副卡3"]
-        enhance_list = []
-        for i in range(self.min_level, self.max_level):  # 强化方案
-            for card_type in use_cards:
-                card = enhance_plan[f"{i}-{i + 1}"][card_type]
-                card_name = card["卡片名称"]
-                if card["绑定"] == 0:
-                    card_bind = "不绑"
-                elif card["绑定"] == 1:
-                    card_bind = "绑定"
-                else:
-                    card_bind = "绑定 + 不绑"
-                full_name = f"{card_bind}-{card_name} \n"
-                if full_name not in enhance_list:
-                    enhance_list.append(full_name)
-        produce_text = ""
-        # 生产方案
-        produce_text += f"香料使用情况：\n"
-        for spice_name, spice_info in produce_plan.items():
-            if not spice_info:
-                continue
-            produce_text += f"{spice_name}\n"
-        produce_text += f'放心，香料要用完了或没了会自动不使用哒'
-        # 给出弹窗，提醒用户自己目前强化方案用卡与生产方案用卡。用户点击确定才能开始，否则就停止
-        enhance_text = "当前强化用卡：\n" + "\n".join(enhance_list)
-        enhance_range_text = f"当前强化范围：{self.min_level}星-{self.max_level}星"
-        message = f"{enhance_range_text}\n\n{enhance_text}\n\n{produce_text}\n\n确认开始强化吗？"
-
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle('开始前检查！')
-        msg_box.setText(message)
-
-        # 自定义按钮
-        yes_button = msg_box.addButton('确认开始！', QMessageBox.ButtonRole.AcceptRole)
-        no_button = msg_box.addButton('好像不太对', QMessageBox.ButtonRole.RejectRole)
-
-        msg_box.exec()
-
-        if msg_box.clickedButton() == yes_button:
+        # 进行防呆弹窗
+        if not without_dialog:
+            result = self.dull_dialog()
+        else:
+            result = True
+        if result:
             self.EnhancerThread.start_loop()
         else:
             self.onStop()
-            return
 
     # 停止按钮
     def onStop(self):
@@ -588,9 +565,8 @@ class TenchiCardsEnhancer(QMainWindow):
 
     # 初始化日志信息
     def init_log_message(self):
-        self.send_log_message(f"当当！天知强卡器启动成功！目前版本号为{self.version} 测试版")
-        self.send_log_message(f"该版本为测试版，功能还不完善，遇到不稳定的情况，请反馈给我！")
-        self.send_log_message("使用前请关闭二级密码，遇到问题请查看网站里的教程！！（目前还不存在的链接）")
+        self.send_log_message(f"当当！天知强卡器启动成功！目前版本号为{self.version}")
+        self.send_log_message("初次使用前，请根据该教程进行初步的个人设置<a href=https://stareabyss.top/TCEDocs>天知强卡器教程</a>")
         self.send_log_message("目前仅支持360游戏大厅,但支持任何系统缩放，所以说我是高性能的呦")
         self.send_log_message(
             "最新版本 [github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>https://github.com/a1929238"
@@ -1661,6 +1637,20 @@ class TenchiCardsEnhancer(QMainWindow):
         self.stopbtn.setEnabled(True)
         self.gemEnhancerThread.start_enhance()
 
+    def faa_task(self, message):
+        """执行faa的任务"""
+        if message.split(",")[0] == 'enhance_card':
+            event_manager.log_signal.emit("开始执行FAA指令——制卡并强卡")
+            handle = int(message.split(",")[1])
+            self.update_handle_display(handle)
+            self.onStart(without_dialog=True)
+        elif message.split(",")[0] == 'decompose_gem':
+            event_manager.log_signal.emit("开始执行FAA指令——分解宝石")
+            handle = int(message.split(",")[1])
+            self.update_handle_display(handle)
+            # 开始宝石分解
+            self.start_gem_decomposition()
+
     def dull_detection(self, mode: str = None):
         """
         防呆检测
@@ -1704,12 +1694,63 @@ class TenchiCardsEnhancer(QMainWindow):
         # 通过防呆检测，就可以正常开始~
         return
 
+    def dull_dialog(self):
+        # 统计用户目前强化方案与生产方案用卡
+        enhance_plan = self.settings["强化方案"]
+        produce_plan = self.settings["生产方案"]
+        use_cards = ["主卡", "副卡1", "副卡2", "副卡3"]
+        enhance_list = []
+        for i in range(self.min_level, self.max_level):  # 强化方案
+            for card_type in use_cards:
+                card = enhance_plan[f"{i}-{i + 1}"][card_type]
+                card_name = card["卡片名称"]
+                if card["绑定"] == 0:
+                    card_bind = "不绑"
+                elif card["绑定"] == 1:
+                    card_bind = "绑定"
+                else:
+                    card_bind = "绑定 + 不绑"
+                full_name = f"{card_bind}-{card_name} \n"
+                if full_name not in enhance_list:
+                    enhance_list.append(full_name)
+        produce_text = ""
+        # 生产方案
+        produce_text += f"香料使用情况：\n"
+        for spice_name, spice_info in produce_plan.items():
+            if not spice_info:
+                continue
+            produce_text += f"{spice_name}\n"
+        produce_text += f'放心，香料要用完了或没了会自动不使用哒'
+        # 给出弹窗，提醒用户自己目前强化方案用卡与生产方案用卡。用户点击确定才能开始，否则就停止
+        enhance_text = "当前强化用卡：\n" + "\n".join(enhance_list)
+        enhance_range_text = f"当前强化范围：{self.min_level}星-{self.max_level}星"
+        message = f"{enhance_range_text}\n\n{enhance_text}\n\n{produce_text}\n\n确认开始强化吗？"
+
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle('开始前检查！')
+        msg_box.setText(message)
+
+        # 自定义按钮
+        yes_button = msg_box.addButton('确认开始！', QMessageBox.ButtonRole.AcceptRole)
+        no_button = msg_box.addButton('好像不太对', QMessageBox.ButtonRole.RejectRole)
+
+        msg_box.exec()
+
+        if msg_box.clickedButton() == yes_button:
+            return True
+        else:
+            return False
+
     # 劲 爆 弹 窗
     @pyqtSlot(str, str)
     def show_dialog(self, title, message):
         # 停止运行
         self.is_running = False
         GLOBALS.IS_RUNNING = False
+
+        # 如果存在命名管道连接，就发送完成信息
+        if self.pipe_thread.connected:
+            self.pipe_thread.send_complete()
 
         # 如果打开了弹窗后刷新游戏
         if self.failed_refresh and self.failed_refresh_count < 5:
@@ -2164,6 +2205,9 @@ if not getattr(sys, 'frozen', False):
 # 主函数
 def main():
     app = QApplication(sys.argv)
+    palette = app.palette()
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, Qt.GlobalColor.gray)
+    app.setPalette(palette)
     # 设置默认字体
     font_id = QFontDatabase.addApplicationFont(resource_path("items/font/font.ttf"))
     if font_id != -1:

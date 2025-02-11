@@ -11,7 +11,7 @@ from module.core.ImgMatch import direct_img_match, has_area_changed
 from module.core.ItemTab import get_target_item
 from module.core.LevelCheck import check_gem_enhance_result
 from module.core.MouseEvent import click
-from module.core.PositionCheck import check_position
+from module.core.PositionCheck import check_position, change_position
 from module.globals.ResourceInit import resource
 from module.globals.EventManager import event_manager
 from module.ocr.NumberOcr import get_num
@@ -267,10 +267,12 @@ class GemEnhancer:
         return False
 
     def gem_decomposition(self):
-        # 先检查是否在宝石分解页面
-        if check_position() != "宝石分解":
-            event_manager.show_dialog_signal.emit("呜呜", "请切换到宝石分解页面再点我！")
-            return
+        # 尝试输入二级密码
+        self.enhancer.check_second_password()
+        # 将页面切换到宝石分解界面
+        change_position("宝石分解")
+        # 等待500毫秒加载
+        QThread.msleep(500)
         while self.enhancer.is_running:
             # 点一下滑块顶端，进行宝石分解
             click(908, 109)
@@ -280,9 +282,7 @@ class GemEnhancer:
             else:
                 # 宝石分解失败，就退出循环
                 self.enhancer.is_running = False
-                self.enhancer.gem_decompose_btn.setEnabled(True)
-                self.enhancer.gem_enhance_btn.setEnabled(True)
-                return
+                break
         # 分解完成后弹窗提醒
         event_manager.show_dialog_signal.emit("真棒", "宝石分解完成！")
 

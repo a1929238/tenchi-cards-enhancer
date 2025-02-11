@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 from PyQt6.QtCore import QThread
 
@@ -22,6 +23,7 @@ def check_position() -> str:
     """
     # 第一次判断，合成屋图标
     img = get_image(672, 550, 15, 15)
+    cv2.imwrite("compose_house_icon.png", img)
     if direct_img_match(img, resource.compose_icon):
         return "主菜单"
     # 第二次判断，根据XX说明判断目前所处位置

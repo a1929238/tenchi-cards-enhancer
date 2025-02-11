@@ -9,6 +9,7 @@ from module.core.DynamicWait import dynamic_wait_card_slot_state
 from module.core.GetImg import get_image
 from module.core.ItemTab import get_item_list
 from module.core.LevelCheck import check_gem_enhance_result
+from module.core.PositionCheck import check_position
 from module.globals.ResourceInit import resource
 from module.ocr.NumberOcr import get_num
 from module.ocr.SuccessRateOcr import get_success_rate
@@ -36,10 +37,8 @@ def get_pixel_position(x, y):
 
 
 def test():
-    img = imread(resource_path("test.png"))
-    img = img[:9, :]
-    result = get_num(img)
-    print(result)
+    position = check_position()
+    print(position)
 
 
 def test_get_item_list():
