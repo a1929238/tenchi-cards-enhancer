@@ -6,7 +6,7 @@ from PyQt6.QtGui import QPixmap, QPainter, QPen, QColor
 from PyQt6.QtWidgets import QApplication, QLabel
 
 from module.core.GetImg import get_image
-from module.test.test_units import *
+from module.test.test_units import test
 from module.utils import resource_path
 
 

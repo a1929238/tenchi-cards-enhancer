@@ -1,8 +1,8 @@
 import sys
-import qtawesome as qta
 
+import qtawesome as qta
 from PyQt6.QtCore import QRect, QPoint, Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QMouseEvent, QIcon, QPalette
+from PyQt6.QtGui import QColor, QMouseEvent, QPalette
 from PyQt6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -17,9 +17,7 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QWidget,
     QHBoxLayout,
-    QPushButton,
-    QSpacerItem,
-    QSizePolicy
+    QPushButton
 )
 
 

@@ -1,25 +1,26 @@
 # 天知强卡器，以pyqt6为GUI
 # setting字典的结构为:setting[type][name][count]
-# 更新目标： 完善ui；增加校验，强化方案里有卡包就不进入单卡强卡模式
 # -*- coding: utf-8 -*-
-import time
-from ctypes.wintypes import MSG
-
-from PyQt6 import uic
-import win32gui
-import win32con
-from ctypes import windll, c_void_p
-import plyer
 import queue
-import copy
+import time
+from ctypes import c_void_p
 
-from PyQt6.QtCore import pyqtSignal, Qt, QElapsedTimer, QTimer, QTime, QThread, pyqtSlot, QEvent, \
-    QAbstractNativeEventFilter, QByteArray
-from PyQt6.QtGui import QIcon, QPalette, QMovie, QPixmap, QColor, QFontDatabase, QFont, QPainter, QPainterPath
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QGraphicsBlurEffect, QWidget, QPushButton, \
-    QFrame
+import win32con
+import win32gui
+from PyQt6 import uic
+from PyQt6.QtCore import pyqtSignal, Qt, QElapsedTimer, QTimer, QTime, QThread, pyqtSlot
+from PyQt6.QtGui import QIcon, QPalette, QMovie, QPixmap, QFontDatabase, QFont
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QGraphicsBlurEffect, QWidget
+from plyer import notification
 
+import module.globals.GLOBALS as GLOBALS
 from GUI.css_styles import TAB_BAR_LIGHT, TAB_BAR_DARK, OUTPUT_LOG_DARK, OUTPUT_LOG_LIGHT, PUSH_BUTTON_DARK
+from GUI.editwindow import EditWindow
+from GUI.priceeditor import PriceEditor
+from GUI.webstatistics import WebStatistics
+from module.AutoCushion import AutoCushion
+from module.CardPackEditor import CardPackEditor
+from module.EnhanceSimulator import EnhanceSimulator
 from module.UI.GemUI import GemUI
 from module.bg_img_match import match_p_in_w, loop_match_ps_in_w, loop_match_p_in_w
 from module.core.CardEnhancer import enhance_log
@@ -27,28 +28,21 @@ from module.core.CardProducer import dynamic_card_producer
 from module.core.CardTab import exist_empty_block, get_card_names, get_card_list, make_card_count_dict
 from module.core.DynamicWait import dynamic_wait_card_slot_state
 from module.core.GetImg import get_image
-from module.core.ImgMatch import direct_img_match, template_img_match
+from module.core.ImgMatch import direct_img_match
 from module.core.ItemTab import get_target_item
 from module.core.LevelCheck import check_card_enhance_result
 from module.core.MouseEvent import click, drag
 from module.core.PositionCheck import check_position, change_position
 from module.gem.GemEnhancer import GemEnhancerThread
 from module.globals.DataClass import Card
-from module.globals.ResourceInit import resource
 from module.globals.EventManager import event_manager
+from module.globals.ResourceInit import resource
+from module.log.TenchiLogger import logger
 from module.namedpipe import PipeCommunicationThread
 from module.ocr.SuccessRateOcr import get_success_rate
 from module.statistic.AsyncStatistic import recorder
 from module.test.test_page import TestPage
 from module.utils import *
-from GUI.editwindow import EditWindow
-from GUI.priceeditor import PriceEditor
-from GUI.webstatistics import WebStatistics
-from module.CardPackEditor import CardPackEditor
-from module.EnhanceSimulator import EnhanceSimulator
-from module.AutoCushion import AutoCushion
-from module.log.TenchiLogger import logger
-import module.globals.GLOBALS as GLOBALS
 
 
 class TenchiCardsEnhancer(QMainWindow):
@@ -1775,7 +1769,7 @@ class TenchiCardsEnhancer(QMainWindow):
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         # 同时显示系统通知 打包后有BUG，找不到获取平台的方法，原因不明 这BUG起码四年了
         # 解决方法：打包时添加--hidden-import plyer.platforms.win.notification
-        plyer.notification.notify(
+        notification.notify(
             title=title,
             message=message,
             app_name='天知强卡器',
