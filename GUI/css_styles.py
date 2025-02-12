@@ -28,7 +28,7 @@ QTabWidget::pane {
     background-color: rgba(255, 255, 255, 155);  /* 白色背景，55透明度 */
     border: 0px solid rgba(170, 255, 255, 120);
     top: -1px; /* this shifts the pane up to close the gap with the tab bar */
-    border-radius: 20px;
+    border-bottom-right-radius: 20px;
 }
 """
 
@@ -60,15 +60,15 @@ QTabWidget::pane {
     background-color: rgba(61, 69, 89, 155);  /* 深灰蓝色背景，55透明度 */
     border: 0px solid rgba(74, 85, 104, 120);
     top: -1px;
-    border-radius: 20px;
+    border-bottom-right-radius: 20px;
 }
 """
 
 
 OUTPUT_LOG_LIGHT = """
-QWidget {
-    background-color: rgba(255, 255, 255, 50);  /* 白色背景，透明度大约为 20% */
-    border-color: rgba(255, 255, 255, 0);      /* 描边完全透明 */
+QTextEdit {
+    background-color: rgba(255, 255, 255, 50);
+    border-color: rgba(255, 255, 255, 0);
     border-bottom-left-radius: 20px;
     border-bottom-right-radius: 20px;
 }
@@ -97,7 +97,7 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 """
 
 OUTPUT_LOG_DARK = """
-QWidget {
+QTextEdit {
     background-color: rgba(0, 0, 0, 50);       /* 黑色背景，透明度大约为 20% */
     border-color: rgba(0, 0, 0, 0);           /* 描边完全透明 */
     border-bottom-left-radius: 20px;

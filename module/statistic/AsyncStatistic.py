@@ -126,7 +126,6 @@ class AsyncStatsRecorder:
         if not self.backup_buffer:
             return
 
-        # 处理每个日期的数据
         for records in self.backup_buffer:
             daily_file = f"{self.base}{self.ext}"
             try:
@@ -163,4 +162,4 @@ class AsyncStatsRecorder:
         self._flush_to_disk()
 
 
-recorder = AsyncStatsRecorder(resource_path("enhance_stats//card_stats.csv"))
+recorder = AsyncStatsRecorder("enhance_stats/card_stats.csv")

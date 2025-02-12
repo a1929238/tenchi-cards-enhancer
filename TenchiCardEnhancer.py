@@ -2,14 +2,16 @@
 # setting字典的结构为:setting[type][name][count]
 # -*- coding: utf-8 -*-
 import queue
+import random
 import time
 from ctypes import c_void_p
 
 import win32con
 import win32gui
 from PyQt6 import uic
-from PyQt6.QtCore import pyqtSignal, Qt, QElapsedTimer, QTimer, QTime, QThread, pyqtSlot
-from PyQt6.QtGui import QIcon, QPalette, QMovie, QPixmap, QFontDatabase, QFont
+from PyQt6.QtCore import pyqtSignal, Qt, QElapsedTimer, QTimer, QTime, QThread, pyqtSlot, QUrl, QTranslator, QLocale, \
+    QLibraryInfo
+from PyQt6.QtGui import QIcon, QPalette, QMovie, QPixmap, QFontDatabase, QFont, QDesktopServices, QTextCursor
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QApplication, QGraphicsBlurEffect, QWidget
 from plyer import notification
 
@@ -22,6 +24,7 @@ from module.AutoCushion import AutoCushion
 from module.CardPackEditor import CardPackEditor
 from module.EnhanceSimulator import EnhanceSimulator
 from module.UI.GemUI import GemUI
+from module.UI.UIWidgets import clover_list
 from module.bg_img_match import match_p_in_w, loop_match_ps_in_w, loop_match_p_in_w
 from module.core.CardEnhancer import enhance_log
 from module.core.CardProducer import dynamic_card_producer
@@ -40,6 +43,7 @@ from module.globals.ResourceInit import resource
 from module.log.TenchiLogger import logger
 from module.namedpipe import PipeCommunicationThread
 from module.ocr.SuccessRateOcr import get_success_rate
+from module.statistic.AsyncProduceStatistic import produce_recorder
 from module.statistic.AsyncStatistic import recorder
 from module.test.test_page import TestPage
 from module.utils import *
@@ -59,7 +63,7 @@ class TenchiCardsEnhancer(QMainWindow):
         ui_path = resource_path('GUI/天知强卡器.ui')
         uic.loadUi(ui_path, self)
         # 移除系统边框和标题栏
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowMinMaxButtonsHint)
         # 初始化拖动变量
         self.drag_start_position = None
         self.drag_window_position = None
@@ -131,7 +135,6 @@ class TenchiCardsEnhancer(QMainWindow):
         self.best_enhance_plan = default_constants['强化最优路径']
 
         self.settings = load_settings()  # 读取设置作为全局变量
-        self.statistics = load_statistics()  # 读取统计数据作为全局变量
         self.pack_names = list(self.settings["卡包配置"].keys())  # 提取所有卡包名
         self.min_level = int(self.settings["个人设置"]["最小星级"])
         self.max_level = int(self.settings["个人设置"]["最大星级"])
@@ -150,15 +153,16 @@ class TenchiCardsEnhancer(QMainWindow):
         with open(resource_path('GUI/card_dict/card_info_dict.json'), 'r', encoding='utf-8') as f:
             self.card_info_dict = json.load(f)
 
-        # 获取金币消耗映射
-        with open(resource_path('GUI/card_dict/gold_cost.json'), 'r', encoding='utf-8') as f:
-            self.gold_cost_map = json.load(f)
-
         # 将GUI控件与脚本连接
         # 初始化日志信息
         self.output_log.setOpenExternalLinks(True)
         # 设置日志最大行数
         self.output_log.document().setMaximumBlockCount(2000)
+        self.tab_mapping = {
+            "#个人设置": "personal_settings"
+        }
+        # 设置日志的超链接扩展
+        self.init_output_log()
         self.init_log_message()
 
         # 召唤动态芙芙！
@@ -254,6 +258,9 @@ class TenchiCardsEnhancer(QMainWindow):
         self.pipe_thread.daemon = True
         self.pipe_thread.start()
 
+        # 初始化豆知识
+        self.init_funny_tips()
+
         # 测试模式
         if TEST_MODE:
             test_page = TestPage(self)
@@ -298,8 +305,42 @@ class TenchiCardsEnhancer(QMainWindow):
             self.tabWidget.setStyleSheet(TAB_BAR_LIGHT)
             self.output_log.setStyleSheet(OUTPUT_LOG_LIGHT)
 
-    # 开始按钮
-    def onStart(self, without_dialog = False):
+    def init_funny_tips(self):
+        """豆知识，在每次初始化的时候随机一个豆知识索引，然后把这些豆知识放在一些无关紧要控件的tooltips里"""
+        gold_cost = produce_recorder.produce_statistics["gold_cost"]
+        funny_tips = [
+            f"你知道吗？你用天知强卡器已经累积消耗了{gold_cost}金币了！",
+            "在0.4.0正式版中，自动垫卡是不可用的，你发现了吗？",
+            "其实强化伙伴功能非常复杂，所以到现在也还只是一个空页面！",
+            "这是一条豆知识",
+            "快去发现更多的豆知识吧！豆知识：这是第五条豆知识",
+            "其实我写了很多ToolTips哦，你是怎么发现这条消息的？",
+            "悄悄告诉你，孤心沙龙一开始是用于简化过于复杂的设置的，但现在设置好像很简单了~",
+            "当你注视芙芙时，芙芙也在注视着你！",
+            "其实美食大战老鼠只有20帧哦，所以开倍速强卡是能提升不少稳定性的",
+            "点击强卡日志里的'个人设置'超链接，就能真的跳转到个人设置页面，这个功能其实很厉害哦——",
+            "天知强卡器的统计图标功能由<直视深渊>开发，所以看起来有点丑也没办法啦",
+            "芙芙很努力地想要多塞一些豆知识，但事实上根本没有几个空闲的控件！",
+            "PyCharm对于PyQt的支持很糟糕！",
+            "虽然强卡器是用Qt开发的，但Electron要比Qt现代、漂亮多了！",
+            "天知强卡器 VS FAA，你们知道吗？什么，不会吧，真的吗？"
+        ]
+        object_list = [
+            self.title_icon,
+            self.title_name,
+            self.version_label,
+            self.current_time_label,
+            self.run_time_label,
+            self.enhance_count_label
+        ]
+        for target in object_list:
+            funny_tips_index = random.randint(0, len(funny_tips) - 1)
+            funny_tip_text = f"豆知识：{funny_tips[funny_tips_index]}"
+            target.setToolTip(funny_tip_text)
+
+
+    def onStart(self, without_dialog=False):
+        """开始按钮"""
         # 确保不会重复点击开始
         self.enhanceronlybtn.setEnabled(False)
         self.startbtn.setEnabled(False)
@@ -471,11 +512,15 @@ class TenchiCardsEnhancer(QMainWindow):
             title_text_color = "black"  # 黑色文字
             button_color = "#666666"
             button_hover_color = "#444444"
+            minimize_hover_bg = "rgba(0, 0, 0, 0.1)"  # 浅色主题悬停背景
+            close_hover_bg = "rgba(255, 80, 80, 0.25)"  # 浅红悬停
         else:  # Dark theme
             titlebar_bg_color = "#283148"
             title_text_color = "#F0F8FF"  # 浅灰/白色文字
             button_color = "#AAAAAA"  # 浅灰色按钮
             button_hover_color = "#DDDDDD"  # 更浅的悬停颜色
+            minimize_hover_bg = "rgba(255, 255, 255, 0.1)"  # 深色主题悬停背景
+            close_hover_bg = "rgba(255, 100, 100, 0.25)"  # 深红悬停
 
         self.titleBar.setStyleSheet("""
                                 QWidget #titleBar {
@@ -501,30 +546,55 @@ class TenchiCardsEnhancer(QMainWindow):
                             }}
                         """)
 
-        # 设置按钮样式
-        button_style = f"""
-                        QPushButton {{
-                            background: transparent;
-                            border: none;
-                            font-size: 22px;
-                            font-weight: 900;
-                            padding: 0;
-                            margin: 0;
-                            qproperty-alignment: AlignCenter;
-                            color: {button_color};
-                        }}
-                        QPushButton:hover {{
-                            background: rgba(255, 255, 255, 0.1); /* 浅色半透明悬停 */
-                            color: {button_hover_color};
-                        }}
-                        QPushButton:pressed {{
-                            background: rgba(255, 255, 255, 0.2); /* 更浅的半透明按下 */
-                        }}
-                    """
+        # 最小化按钮样式
+        button_style_minimize = f"""
+                QPushButton {{
+                    background: transparent;
+                    border: none;
+                    font-size: 22px;
+                    font-weight: 900;
+                    padding: 0;
+                    margin: 0;
+                    qproperty-alignment: AlignCenter;
+                    color: {button_color};
+                }}
+                QPushButton:hover {{
+                    background: {minimize_hover_bg};
+                    color: {button_hover_color};
+                }}
+                QPushButton:pressed {{
+                    background: {minimize_hover_bg.replace('0.1', '0.25')};
+                }}
+            """
 
-        # 可以根据需要单独设置关闭按钮的颜色
-        self.closeButton.setStyleSheet(button_style)
-        self.minimizeButton.setStyleSheet(button_style)
+        # 关闭按钮样式（添加圆角匹配标题栏）
+        button_style_close = f"""
+                QPushButton {{
+                    background: transparent;
+                    border: none;
+                    font-size: 22px;
+                    font-weight: 900;
+                    padding: 0;
+                    margin: 0;
+                    qproperty-alignment: AlignCenter;
+                    color: {button_color};
+                }}
+                QPushButton:hover {{
+                    background: {close_hover_bg};
+                    color: {button_hover_color};
+                    border-top-right-radius: 12px;
+                }}
+                QPushButton:pressed {{
+                    background: {close_hover_bg.replace('0.25', '0.45')};
+                    border-top-right-radius: 12px;
+                }}
+            """
+
+        self.closeButton.setStyleSheet(button_style_close)
+        self.minimizeButton.setStyleSheet(button_style_minimize)
+
+        self.closeButton.setToolTip("关闭")
+        self.minimizeButton.setToolTip("最小化")
 
         # 设置按钮固定尺寸
         self.minimizeButton.setFixedSize(30, 30)
@@ -557,10 +627,36 @@ class TenchiCardsEnhancer(QMainWindow):
             self.drag_start_position = None
             self.drag_window_position = None
 
-    # 初始化日志信息
+    def init_output_log(self):
+        """初始化日志的链接事件"""
+        self.output_log.setOpenLinks(False)
+        self.output_log.anchorClicked.connect(self.on_anchor_clicked)
+
+    def on_anchor_clicked(self, url: QUrl):
+        """
+        处理超链接点击事件，区分本地和外部链接。
+        """
+        href = url.toString()
+
+        # 检查链接是否是本地链接 (以 # 开头)
+        if href.startswith("#"):
+            tab_object_name = self.tab_mapping.get(href, None)
+            if tab_object_name is not None:
+                index = self.tabWidget.indexOf(getattr(self, tab_object_name))
+                self.tabWidget.setCurrentIndex(index)
+            else:
+                logger.warning(f"Invalid anchor: {href}")
+        else:
+            # 如果不是本地链接，则认为是外部链接，使用 QDesktopServices 打开
+            QDesktopServices.openUrl(url)  # 使用默认浏览器打开链接
+            # 移动光标到最新消息
+            self.output_log.moveCursor(QTextCursor.MoveOperation.End)
+
     def init_log_message(self):
+        """初始化日志信息"""
         self.send_log_message(f"当当！天知强卡器启动成功！目前版本号为{self.version}")
-        self.send_log_message("初次使用前，请根据该教程进行初步的个人设置<a href=https://stareabyss.top/TCEDocs>天知强卡器教程</a>")
+        self.send_log_message("初次使用前，请根据该教程进行初步的<a href=#个人设置>个人设置</a>：")
+        self.send_log_message("<a href=https://stareabyss.top/TCEDocs>天知强卡器教程</a>")
         self.send_log_message("目前仅支持360游戏大厅,但支持任何系统缩放，所以说我是高性能的呦")
         self.send_log_message(
             "最新版本 [github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>https://github.com/a1929238"
@@ -752,11 +848,8 @@ class TenchiCardsEnhancer(QMainWindow):
             # 加上无
             clover_box.addItem("无")
             # 给每个四叶草菜单加上所有四叶草
-            clover_dir = resource_path("items/clover")
-            if os.path.exists(clover_dir):
-                for filename in os.listdir(clover_dir):
-                    clover_name = filename.replace("四叶草.png", "")
-                    clover_box.addItem(clover_name)
+            for clover in clover_list:
+                clover_box.addItem(clover)
             # 菜单选项添加完后，根据设置文件，设置菜单的当前选中项
             selected_clover = self.settings["强化方案"].get(f"{i}-{i + 1}", {}).get("四叶草", "无").get("种类", "无")
             # 在 QComboBox 中查找这个卡片名称对应的索引
@@ -1363,7 +1456,7 @@ class TenchiCardsEnhancer(QMainWindow):
         # 点击一下滑块的最上方
         click(908, 120)
         for i in range((420 // scroll_length) + 1):
-            QThread.msleep(150)
+            QThread.msleep(200)
             img = self.get_cut_cards_img()
             card_list = get_card_list(img, self.card_names)
             full_card_set.update(card_list)
@@ -1379,7 +1472,7 @@ class TenchiCardsEnhancer(QMainWindow):
         for i in range(self.single_scroll_time):
             if not self.is_running:
                 return
-            QThread.msleep(150)
+            QThread.msleep(200)
             img = self.get_cut_cards_img(rows=1)
             card_list = get_card_list(img, self.card_names, rows=1, min_level=self.min_level,
                                       max_level=self.max_level)
@@ -1520,18 +1613,6 @@ class TenchiCardsEnhancer(QMainWindow):
                     # 强化失败，弹窗
                     event_manager.show_dialog_signal.emit("哎呦", "强化检测超过80轮，看看发生什么了吧")
                     return
-                # for i in range(80):
-                #     # 获得副卡槽图片
-                #     sub_card_image = get_image(267, 253, 40, 50)
-                #     # 判定副卡槽图片是否和副卡空卡槽图片一样
-                #     if direct_img_match(sub_card_image, resource.sub_card_icon):
-                #         break  # 卡槽空了就点掉主卡，进行下一次强化
-                #     # 没空，就重复点击强化
-                #     click(285, 436)
-                #     # 检测等待时间
-                #     QThread.msleep(self.enhance_check_interval)
-                # else:
-                #     return
                 # 检查运行标识
                 if not self.is_running:
                     return
@@ -2208,8 +2289,15 @@ def main():
         font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
         font = QFont(font_family, 10)
         app.setFont(font)
-    enhancer = TenchiCardsEnhancer()
-    enhancer.show()
+    # 加载翻译文件
+    translator = QTranslator()
+    translations_path = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+    if translator.load(QLocale.system(), 'qt', '_', translations_path):
+        app.installTranslator(translator)
+
+    # 实例化强卡器
+    TCE = TenchiCardsEnhancer()
+    TCE.show()
     sys.exit(app.exec())
 
 

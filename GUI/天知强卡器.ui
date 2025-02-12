@@ -34,9 +34,15 @@
      <rect>
       <x>0</x>
       <y>30</y>
-      <width>501</width>
-      <height>501</height>
+      <width>500</width>
+      <height>500</height>
      </rect>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>16777215</width>
+      <height>16777213</height>
+     </size>
     </property>
     <property name="layoutDirection">
      <enum>Qt::LeftToRight</enum>
@@ -152,7 +158,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
      <attribute name="toolTip">
       <string>记得用心填写哦</string>
      </attribute>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>4</x>
@@ -169,6 +175,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>20</height>
+          </size>
          </property>
          <property name="toolTip">
           <string>鼠标点击下面的数字有惊喜！</string>
@@ -946,6 +958,9 @@ li.checked::marker { content: &quot;\2612&quot;; }
      <attribute name="title">
       <string>宝石管理</string>
      </attribute>
+     <attribute name="toolTip">
+      <string>用来分解和强化宝石的工具</string>
+     </attribute>
      <widget class="QLabel" name="label_18">
       <property name="geometry">
        <rect>
@@ -967,6 +982,9 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <width>121</width>
         <height>23</height>
        </rect>
+      </property>
+      <property name="toolTip">
+       <string>根据你设置的宝石星级范围，分解你所选的宝石</string>
       </property>
       <property name="text">
        <string>分解宝石</string>
@@ -1053,6 +1071,9 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <width>121</width>
         <height>23</height>
        </rect>
+      </property>
+      <property name="toolTip">
+       <string>根据你设置的宝石星级范围，使用的强化水晶绑定情况，强化你所选的宝石</string>
       </property>
       <property name="text">
        <string>强化宝石</string>
@@ -2670,7 +2691,7 @@ border-radius: 20px;</string>
       <string>强化伙伴</string>
      </attribute>
     </widget>
-    <widget class="QWidget" name="tab_4">
+    <widget class="QWidget" name="personal_settings">
      <property name="toolTip">
       <string/>
      </property>
@@ -2680,408 +2701,399 @@ border-radius: 20px;</string>
      <attribute name="toolTip">
       <string>设置是很重要的哦，一定不能忘了</string>
      </attribute>
-     <widget class="QWidget" name="layoutWidget">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>180</y>
-        <width>261</width>
-        <height>31</height>
-       </rect>
-      </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <item>
-        <widget class="QLabel" name="label_42">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>多少次强化后重进合成屋？</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSpinBox" name="reload_count_input">
-         <property name="toolTip">
-          <string>推荐次数:50 合成屋待的越久就越卡</string>
-         </property>
-         <property name="suffix">
-          <string>次</string>
-         </property>
-         <property name="minimum">
-          <number>10</number>
-         </property>
-         <property name="maximum">
-          <number>100</number>
-         </property>
-         <property name="singleStep">
-          <number>1</number>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="layoutWidget">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>20</y>
-        <width>201</width>
-        <height>161</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_4">
-       <property name="spacing">
-        <number>0</number>
-       </property>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_43">
-         <item>
-          <widget class="QLabel" name="label_3">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>使用最低星级:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="min_level_input">
-           <property name="suffix">
-            <string>星</string>
-           </property>
-           <property name="maximum">
-            <number>15</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_44">
-         <item>
-          <widget class="QLabel" name="label_4">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>强化最高星级:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="max_level_input">
-           <property name="suffix">
-            <string>星</string>
-           </property>
-           <property name="minimum">
-            <number>1</number>
-           </property>
-           <property name="maximum">
-            <number>16</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_32">
-         <item>
-          <widget class="QLabel" name="label_12">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>制卡检测间隔:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="produce_check_interval_input">
-           <property name="toolTip">
-            <string>推荐设置:150毫秒，用来检测制卡是否完成</string>
-           </property>
-           <property name="suffix">
-            <string>毫秒</string>
-           </property>
-           <property name="minimum">
-            <number>50</number>
-           </property>
-           <property name="maximum">
-            <number>300</number>
-           </property>
-           <property name="singleStep">
-            <number>10</number>
-           </property>
-           <property name="value">
-            <number>100</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_33">
-         <item>
-          <widget class="QLabel" name="label_6">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>强卡等待间隔:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="enhance_interval_input">
-           <property name="toolTip">
-            <string>推荐设置:300毫秒</string>
-           </property>
-           <property name="suffix">
-            <string>毫秒</string>
-           </property>
-           <property name="maximum">
-            <number>1000</number>
-           </property>
-           <property name="singleStep">
-            <number>10</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_34">
-         <item>
-          <widget class="QLabel" name="label_41">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>强卡检测间隔:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="enhance_check_interval_input">
-           <property name="toolTip">
-            <string>推荐设置:200毫秒,该项设置减小会让强化更加丝滑，但也会增加cpu负担</string>
-           </property>
-           <property name="suffix">
-            <string>毫秒</string>
-           </property>
-           <property name="minimum">
-            <number>50</number>
-           </property>
-           <property name="maximum">
-            <number>1000</number>
-           </property>
-           <property name="singleStep">
-            <number>10</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QLabel" name="label_13">
+     <widget class="QGroupBox" name="normal_settings_group">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>221</width>
-        <height>21</height>
+        <width>260</width>
+        <height>200</height>
        </rect>
       </property>
       <property name="styleSheet">
-       <string notr="true">color: rgb(0, 0, 255);</string>
+       <string notr="true">QGroupBox{ color: blue}</string>
       </property>
-      <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;————普通设置区————&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <property name="title">
+       <string>普通设置区</string>
       </property>
-     </widget>
-     <widget class="QLabel" name="label_14">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>210</y>
-        <width>221</width>
-        <height>51</height>
-       </rect>
+      <property name="flat">
+       <bool>false</bool>
       </property>
-      <property name="styleSheet">
-       <string notr="true">color: rgb(0, 0, 255);</string>
+      <property name="checkable">
+       <bool>false</bool>
       </property>
-      <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;————高级设置区————&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;请确保详细阅读指南后再进行设置&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-      </property>
-     </widget>
-     <widget class="QWidget" name="layoutWidget">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>260</y>
-        <width>241</width>
-        <height>129</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_5">
+      <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_36">
-         <item>
-          <widget class="QLabel" name="label_15">
-           <property name="text">
-            <string>防御卡背包格数</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="bag_size_input">
-           <property name="toolTip">
-            <string>该值代表滚动条一次拖动的行数与次数，设置前请注意自己的背包大小，将其拖动行数限制在五行以内以获得最优体验</string>
-           </property>
-           <property name="suffix">
-            <string>格</string>
-           </property>
-           <property name="minimum">
-            <number>54</number>
-           </property>
-           <property name="maximum">
-            <number>429</number>
-           </property>
-           <property name="value">
-            <number>54</number>
-           </property>
-           <property name="displayIntegerBase">
-            <number>10</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="is_reload_game_input">
-         <property name="text">
-          <string>是否需要刷新游戏？</string>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <property name="spacing">
+          <number>6</number>
          </property>
-        </widget>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_37">
-         <item>
-          <widget class="QLabel" name="label_16">
-           <property name="text">
-            <string>刷新游戏时间:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="reload_time_input">
-           <property name="toolTip">
-            <string>推荐设置:60分钟</string>
-           </property>
-           <property name="suffix">
-            <string>分钟</string>
-           </property>
-           <property name="minimum">
-            <number>10</number>
-           </property>
-           <property name="maximum">
-            <number>120</number>
-           </property>
-           <property name="singleStep">
-            <number>1</number>
-           </property>
-           <property name="value">
-            <number>60</number>
-           </property>
-           <property name="displayIntegerBase">
-            <number>10</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="is_secondary_password_input">
-         <property name="toolTip">
-          <string>勾选后，会在强化前解除二级密码</string>
+         <property name="bottomMargin">
+          <number>0</number>
          </property>
-         <property name="text">
-          <string>是否需要代输入二级密码？</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_38">
          <item>
-          <widget class="QLabel" name="label_17">
-           <property name="text">
-            <string>二级密码:</string>
-           </property>
-          </widget>
+          <layout class="QHBoxLayout" name="horizontalLayout_43">
+           <item>
+            <widget class="QLabel" name="label_3">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>使用最低星级:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="min_level_input">
+             <property name="suffix">
+              <string>星</string>
+             </property>
+             <property name="maximum">
+              <number>15</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
-          <widget class="QLineEdit" name="secondary_password_input"/>
+          <layout class="QHBoxLayout" name="horizontalLayout_44">
+           <item>
+            <widget class="QLabel" name="label_4">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>强化最高星级:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="max_level_input">
+             <property name="suffix">
+              <string>星</string>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>16</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_32">
+           <item>
+            <widget class="QLabel" name="label_12">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>制卡检测间隔:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="produce_check_interval_input">
+             <property name="toolTip">
+              <string>推荐设置:150毫秒，用来检测制卡是否完成</string>
+             </property>
+             <property name="suffix">
+              <string>毫秒</string>
+             </property>
+             <property name="minimum">
+              <number>50</number>
+             </property>
+             <property name="maximum">
+              <number>300</number>
+             </property>
+             <property name="singleStep">
+              <number>10</number>
+             </property>
+             <property name="value">
+              <number>100</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_33">
+           <item>
+            <widget class="QLabel" name="label_6">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>强卡等待间隔:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="enhance_interval_input">
+             <property name="toolTip">
+              <string>推荐设置:300毫秒</string>
+             </property>
+             <property name="suffix">
+              <string>毫秒</string>
+             </property>
+             <property name="maximum">
+              <number>1000</number>
+             </property>
+             <property name="singleStep">
+              <number>10</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_34">
+           <item>
+            <widget class="QLabel" name="label_41">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>强卡检测间隔:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="enhance_check_interval_input">
+             <property name="toolTip">
+              <string>推荐设置:200毫秒,该项设置减小会让强化更加丝滑，但也会增加cpu负担</string>
+             </property>
+             <property name="suffix">
+              <string>毫秒</string>
+             </property>
+             <property name="minimum">
+              <number>50</number>
+             </property>
+             <property name="maximum">
+              <number>1000</number>
+             </property>
+             <property name="singleStep">
+              <number>10</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <item>
+            <widget class="QLabel" name="label_42">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>强化几次重进合成屋？</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="reload_count_input">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>推荐次数:50 合成屋待的越久就越卡</string>
+             </property>
+             <property name="suffix">
+              <string>次</string>
+             </property>
+             <property name="minimum">
+              <number>10</number>
+             </property>
+             <property name="maximum">
+              <number>100</number>
+             </property>
+             <property name="singleStep">
+              <number>1</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </item>
       </layout>
      </widget>
-     <widget class="QLabel" name="label_64">
+     <widget class="QGroupBox" name="advanced_settings_group">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>200</y>
+        <width>260</width>
+        <height>170</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QGroupBox{ color: blue}</string>
+      </property>
+      <property name="title">
+       <string>高级设置区</string>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_11">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_36">
+           <item>
+            <widget class="QLabel" name="label_15">
+             <property name="text">
+              <string>防御卡背包格数</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="bag_size_input">
+             <property name="toolTip">
+              <string>该值代表滚动条一次拖动的行数与次数，设置前请注意自己的背包大小，将其拖动行数限制在五行以内以获得最优体验</string>
+             </property>
+             <property name="suffix">
+              <string>格</string>
+             </property>
+             <property name="minimum">
+              <number>54</number>
+             </property>
+             <property name="maximum">
+              <number>429</number>
+             </property>
+             <property name="value">
+              <number>54</number>
+             </property>
+             <property name="displayIntegerBase">
+              <number>10</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="is_reload_game_input">
+           <property name="text">
+            <string>是否需要刷新游戏？</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_37">
+           <item>
+            <widget class="QLabel" name="label_16">
+             <property name="text">
+              <string>刷新游戏时间:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="reload_time_input">
+             <property name="toolTip">
+              <string>推荐设置:60分钟</string>
+             </property>
+             <property name="suffix">
+              <string>分钟</string>
+             </property>
+             <property name="minimum">
+              <number>10</number>
+             </property>
+             <property name="maximum">
+              <number>120</number>
+             </property>
+             <property name="singleStep">
+              <number>1</number>
+             </property>
+             <property name="value">
+              <number>60</number>
+             </property>
+             <property name="displayIntegerBase">
+              <number>10</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="is_secondary_password_input">
+           <property name="toolTip">
+            <string>勾选后，会在强化前解除二级密码</string>
+           </property>
+           <property name="text">
+            <string>是否需要代输入二级密码？</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_38">
+           <item>
+            <widget class="QLabel" name="label_17">
+             <property name="text">
+              <string>二级密码:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="secondary_password_input"/>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QGroupBox" name="dangerous_settings_group">
       <property name="geometry">
        <rect>
         <x>270</x>
         <y>0</y>
-        <width>221</width>
-        <height>61</height>
+        <width>220</width>
+        <height>60</height>
        </rect>
       </property>
       <property name="toolTip">
-       <string/>
+       <string>请确保你知道自己在做什么</string>
       </property>
       <property name="styleSheet">
-       <string notr="true">color: red;</string>
+       <string notr="true">QGroupBox{ color: red}</string>
       </property>
-      <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;————危险设置区————&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;请确保你知道自己在做什么&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <property name="title">
+       <string>危险设置区</string>
       </property>
-     </widget>
-     <widget class="QCheckBox" name="failed_refresh_check">
-      <property name="geometry">
-       <rect>
-        <x>300</x>
-        <y>60</y>
-        <width>181</width>
-        <height>19</height>
-       </rect>
-      </property>
-      <property name="toolTip">
-       <string>最多刷新五次，五次后停止</string>
-      </property>
-      <property name="text">
-       <string>出现问题弹窗后刷新游戏</string>
-      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_12">
+       <item>
+        <widget class="QCheckBox" name="failed_refresh_check">
+         <property name="toolTip">
+          <string>最多刷新五次，五次后停止</string>
+         </property>
+         <property name="text">
+          <string>出现问题弹窗后刷新游戏</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </widget>
    </widget>
@@ -3449,22 +3461,6 @@ border-radius: 20px;</string>
          <string>x</string>
         </property>
        </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Fixed</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>5</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
       </item>
      </layout>
     </widget>

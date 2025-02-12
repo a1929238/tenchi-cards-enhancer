@@ -14,6 +14,7 @@ from module.globals.ResourceInit import resource
 from module.globals.EventManager import event_manager
 from module.log.TenchiLogger import logger
 from module.ocr.NumberOcr import get_num
+from module.statistic.AsyncProduceStatistic import produce_recorder
 from module.utils import merge_card_counts
 
 import cv2
@@ -123,7 +124,7 @@ def get_recipe(card_name, level, bind, count, card_pack_dict):
             for _ in range(1):
                 click(910, 278)
         # 等待图像加载
-        QThread.msleep(300)
+        QThread.msleep(400)
     return 0, None, None
 
 
@@ -261,10 +262,13 @@ def dynamic_card_producer(settings, card_count_dict=None):
         name, level, bind = card.get_state()
         spice = next((item for item in usable_spice if item.get_level() == level), None)
         count = min(count, spice.count // 5)
-        actual_count, actual_card_name = produce_card(name, level, bind, count, card_pack_dict, produce_check_interval)
+        actual_count, actual_card_name = produce_card(name, level, spice.bind, count,
+                                                      card_pack_dict, produce_check_interval)
         if actual_count == 0:
             return
-        bind_str = "绑定" if card.bind else "不绑"
+        bind_str = "绑定" if spice.bind else "不绑"
+        # 记录制卡数据
+        produce_recorder.save_produce_statistic(level, spice.bind, actual_count)
         event_manager.log_signal.emit(
             f"<font color='purple'>[{QTime.currentTime().toString()}]"
             f"动态制卡{bind_str}{card.level}星{actual_card_name}{actual_count}次</font>"

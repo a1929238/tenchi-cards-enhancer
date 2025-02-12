@@ -156,19 +156,6 @@ def save_statistics(statistics, filename='statistics.json'):
         json.dump(statistics, f, ensure_ascii=False, indent=4)
 
 
-def load_statistics(filename='statistics.json'):
-    """
-    读取统计数据，若不存在，会使用默认统计数据
-    """
-    try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        filename = resource_path('GUI/default/statistics.json')
-        with open(filename, 'r', encoding='utf-8') as f:
-            return json.load(f)  # 返回默认字典，如果设置文件不存在
-
-
 def save_settings(settings, filename='setting.json'):
     """
     保存设置

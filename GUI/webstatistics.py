@@ -2,11 +2,45 @@ import json
 
 import numpy as np
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWidgets import QWidget, QTabWidget, QVBoxLayout
-import pandas as pd
+from PyQt6.QtWidgets import QWidget, QTabWidget, QVBoxLayout, QSizePolicy, QLayout
+from pandas import read_csv, Series, concat
 
 from module.globals import GLOBALS
+from module.log.TenchiLogger import logger
+from module.statistic.AsyncProduceStatistic import produce_recorder
 from module.utils import resource_path
+
+gold_cost_mapping = {
+    "香料": {
+        "0": 398,
+        "1": 398,
+        "2": 398,
+        "3": 398,
+        "4": 698,
+        "5": 998,
+        "6": 1298,
+        "7": 1598,
+        "8": 1998
+    },
+    "主卡等级": {
+        "0": 298,
+        "1": 298,
+        "2": 298,
+        "3": 298,
+        "4": 298,
+        "5": 398,
+        "6": 398,
+        "7": 698,
+        "8": 698,
+        "9": 1298,
+        "10": 3298,
+        "11": 6298,
+        "12": 12298,
+        "13": 24298,
+        "14": 48298,
+        "15": 96598
+    }
+}
 
 
 # 使用ECharts为统计数据绘制图表，用内置的谷歌浏览器显示
@@ -19,22 +53,23 @@ class WebStatistics:
         self.csv_file = {}
         self.data_frame = None
         self.main_window = main_window
-        self.statistics = self.main_window.statistics
         self.src = "https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"  # 没办法，暂时使用公共cdn
         self.theme = GLOBALS.THEME
         self.background_color = '#100C2A' if self.theme == "dark" else '#FFFFFF'
+        self.produce_stats = produce_recorder.produce_statistics
 
         # 尝试读取本地csv文件
         try:
-            self.load_csv_to_df(csv_path=resource_path("enhance_stats//card_stats.csv"))
+            self.load_csv_to_df(csv_path="enhance_stats/card_stats.csv")
         except FileNotFoundError:
-            print("没有找到统计文件")
+            logger.warning("没有找到统计文件")
         if self.data_frame is not None:
             self.init_tab()
+            self.count_gold_cost()
 
     def load_csv_to_df(self, csv_path):
         # 读取CSV文件
-        df = pd.read_csv(csv_path, header=0)
+        df = read_csv(csv_path, header=0)
 
         # 处理缺失值
         df.replace('', np.nan, inplace=True)
@@ -50,17 +85,38 @@ class WebStatistics:
 
         self.data_frame = df
 
+    def count_gold_cost(self):
+        """统计金币消耗"""
+        gold_cost = 0
+        # 制卡金币消耗
+        for level in range(0, 9):
+            level_key = str(level)
+            count = self.produce_stats["bind"][level_key] + self.produce_stats["unbind"][level_key]
+            gold_cost += gold_cost_mapping["香料"][level_key] * count
+
+        # 强化金币消耗
+        main_star_counts = self.data_frame['main_star'].value_counts()
+        for level, count in main_star_counts.items():
+            level_key = str(level)
+            gold_cost += gold_cost_mapping["主卡等级"][level_key] * count
+
+        produce_recorder.save_gold_cost(gold_cost)
+
     def init_tab(self):
         """
         初始化标签页
         """
 
         self.web_view = QWebEngineView()
+
+        # 设置 QWebEngineView 的 sizePolicy
+        self.web_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
         self.stats_tab_widget = QTabWidget(self.main_window.tab_3)
 
-        # 创建使用四叶草标签页
+        # 创建标签页
         self.stats_tab_widget.addTab(self.create_empty_tab("使用四叶草"), "使用四叶草")
-        self.stats_tab_widget.addTab(self.create_empty_tab("使用卡片"), "使用卡片")
+        self.stats_tab_widget.addTab(self.create_empty_tab("制卡总和"), "制卡总和")
         self.stats_tab_widget.addTab(self.create_empty_tab("强化结果"), "强化结果")
         self.stats_tab_widget.addTab(self.create_empty_tab("强卡成功率"), "强卡成功率")
         self.stats_tab_widget.addTab(self.create_empty_tab("偏移-1"), "偏移-1")
@@ -70,7 +126,7 @@ class WebStatistics:
         self.stats_tab_widget.currentChanged.connect(
             lambda index: self.load_tab_content(self.stats_tab_widget, index))
 
-        # 将四叶草综合页预加载内容
+        # 预加载使用四叶草统计
         self.load_tab_content(self.stats_tab_widget, 0)
 
     def create_empty_tab(self, type):
@@ -80,6 +136,11 @@ class WebStatistics:
         tab = QWidget()
         tab.setProperty("type", type)
         layout = QVBoxLayout(tab)
+        # 设置布局的 sizeConstraint
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetMinAndMaxSize)
+        # 设置边距和间距为 0 (为了完全无缝)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         tab.setLayout(layout)
         return tab
 
@@ -96,19 +157,19 @@ class WebStatistics:
                 layout.itemAt(i).widget().setParent(None)
             layout.addWidget(self.web_view)
 
-        type = tab.property("type")
+        tab_type = tab.property("type")
 
-        if type == "强化结果":
+        if tab_type == "强化结果":
             html = self.create_bar_for_upgrade()
-        elif type == "使用四叶草":
+        elif tab_type == "使用四叶草":
             html = self.create_html_for_clover()
-        elif type == "使用卡片":
+        elif tab_type == "制卡总和":
             html = self.create_html_for_made_card()
-        elif type == "强卡成功率":
+        elif tab_type == "强卡成功率":
             html = self.create_html_for_success_rate()
-        elif type == "偏移-1":
+        elif tab_type == "偏移-1":
             html = self.create_html_for_success_rate_and_p_by_add()
-        elif type == "偏移-2":
+        elif tab_type == "偏移-2":
             html = self.create_html_for_success_rate_and_p_by_multi()
 
         self.web_view.setHtml(html)
@@ -290,7 +351,7 @@ class WebStatistics:
 
         return html
 
-    """使用卡片"""
+    """制卡总和"""
 
     def create_html_for_made_card(self):
         """
@@ -304,7 +365,7 @@ class WebStatistics:
 
             option1 = {
                 "title": {
-                    "text": '卡片 - 绑定使用量',
+                    "text": '卡片 - 绑定制作量',
                     "left": 'center',
                     "top": '5%'
                 },
@@ -332,7 +393,7 @@ class WebStatistics:
                 },
                 "series": [
                     {
-                        "name": '使用量',
+                        "name": '制作量',
                         "type": 'bar',
                         "label": {
                             "show": True,
@@ -345,7 +406,7 @@ class WebStatistics:
 
             option2 = {
                 "title": {
-                    "text": '卡片 - 不绑使用量',
+                    "text": '卡片 - 不绑制作量',
                     "left": 'center',
                     "top": '5%'
                 },
@@ -373,7 +434,7 @@ class WebStatistics:
                 },
                 "series": [
                     {
-                        "name": '使用量',
+                        "name": '制作量',
                         "type": 'bar',
                         "label": {
                             "show": True,
@@ -406,7 +467,6 @@ class WebStatistics:
                 body {{
                     background: {self.background_color};
                 }}
-                }}
                 </style>
             </head>
             <body>
@@ -436,46 +496,13 @@ class WebStatistics:
             """
             return html
 
-        df = self.data_frame
+        card_order = list(range(9))
 
-        card_order = list(range(16))
-        bind_data = [0] * len(card_order)
-        unbind_data = [0] * len(card_order)
-
-        # 处理副卡的绑定和不绑情况
-        bind_sub_stars = pd.Series(dtype='int64')
-        unbind_sub_stars = pd.Series(dtype='int64')
-
-        for i in range(1, 4):
-            sub_star = df[f'sub_star{i}']
-            sub_bind = df[f'sub_bind{i}']
-
-            # 绑定副卡
-            mask_bind = (sub_bind == True) & (sub_star.notna())
-            bind_sub = sub_star[mask_bind].astype(int)
-            bind_sub_stars = pd.concat([bind_sub_stars, bind_sub])
-
-            # 不绑副卡
-            mask_unbind = (sub_bind == False) & (sub_star.notna())
-            unbind_sub = sub_star[mask_unbind].astype(int)
-            unbind_sub_stars = pd.concat([unbind_sub_stars, unbind_sub])
-
-        bind_sub_counts = bind_sub_stars.value_counts().sort_index()
-        unbind_sub_counts = unbind_sub_stars.value_counts().sort_index()
-
-        # 计算每个星级的制造量
-        for s in card_order:
-            # 绑定数据计算
-            bind_sub = bind_sub_counts.get(s, 0)
-            bind_data[s] = max(bind_sub, 0)  # 确保非负
-
-            # 不绑数据计算
-            unbind_sub = unbind_sub_counts.get(s, 0)
-            unbind_data[s] = max(unbind_sub, 0)  # 确保非负
-
-        # 转为 int 而不是 int64
-        bind_data = [int(x) for x in bind_data]
-        unbind_data = [int(x) for x in unbind_data]
+        bind_data = []
+        unbind_data = []
+        for level in card_order:
+            bind_data.append(self.produce_stats["bind"][str(level)])
+            unbind_data.append(self.produce_stats["unbind"][str(level)])
 
         # 创建柱状图option
         option1, option2 = create_echart(categories=card_order, bind_data=bind_data, unbind_data=unbind_data)

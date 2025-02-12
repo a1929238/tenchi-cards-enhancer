@@ -1,16 +1,6 @@
-import os
-
 from PyQt6.QtWidgets import QComboBox
 
-
-class CloverComboBox(QComboBox):
-    """
-    负责四叶草的选项框
-    """
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        clover_list = [
+clover_list = [
             "无",
             "1级",
             "2级",
@@ -23,5 +13,13 @@ class CloverComboBox(QComboBox):
             "SSS",
             "SSR",
         ]
+
+class CloverComboBox(QComboBox):
+    """
+    负责四叶草的选项框
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
         for clover in clover_list:
             self.addItem(clover)
