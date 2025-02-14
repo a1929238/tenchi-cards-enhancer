@@ -50,7 +50,7 @@ def get_card_list(img, cards, rows=7, columns=7, min_level=0, max_level=9) -> li
             # 星级检测
             level_img = block[LEVEL_ROI]
             level = None
-            for k in range(max(min_level, 1), max_level + 1):
+            for k in range(max(min_level, 1), 15):
                 if direct_img_match(level_img, resource.level_images[k]):
                     level = k
                     break
@@ -60,6 +60,8 @@ def get_card_list(img, cards, rows=7, columns=7, min_level=0, max_level=9) -> li
                 level = 0
             elif level is None:
                 continue  # 既未检测到星级又不允许0星时跳过
+            elif level > max_level:
+                continue  # 检测到大于最大星级的卡片时跳过
 
             # 创建卡片对象
             card_list.append(Card(

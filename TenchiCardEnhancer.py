@@ -197,6 +197,9 @@ class TenchiCardsEnhancer(QMainWindow):
         event_manager.show_dialog_signal.connect(self.show_dialog)
         event_manager.log_signal.connect(self.send_log_message)
 
+        # 连接上标签页切换的信号
+        self.tabWidget.currentChanged.connect(self.on_tab_changed)
+
         # 配置，初始化四叶草选择菜单
         self.init_clover()
         # 配置，初始化副卡选择菜单
@@ -338,6 +341,10 @@ class TenchiCardsEnhancer(QMainWindow):
             funny_tip_text = f"豆知识：{funny_tips[funny_tips_index]}"
             target.setToolTip(funny_tip_text)
 
+    def on_tab_changed(self, index):
+        """标签页切换信号"""
+        if self.tabWidget.widget(index) == self.tab_3:
+            self.web_statistics.refresh_data()
 
     def onStart(self, without_dialog=False):
         """开始按钮"""
@@ -512,15 +519,15 @@ class TenchiCardsEnhancer(QMainWindow):
             title_text_color = "black"  # 黑色文字
             button_color = "#666666"
             button_hover_color = "#444444"
-            minimize_hover_bg = "rgba(0, 0, 0, 0.1)"  # 浅色主题悬停背景
-            close_hover_bg = "rgba(255, 80, 80, 0.25)"  # 浅红悬停
+            minimize_hover_bg = "rgba(0, 0, 0, 0.25)"  # 浅色主题悬停背景
+            close_hover_bg = "rgba(255, 80, 80, 0.5)"  # 浅红悬停
         else:  # Dark theme
             titlebar_bg_color = "#283148"
             title_text_color = "#F0F8FF"  # 浅灰/白色文字
             button_color = "#AAAAAA"  # 浅灰色按钮
             button_hover_color = "#DDDDDD"  # 更浅的悬停颜色
-            minimize_hover_bg = "rgba(255, 255, 255, 0.1)"  # 深色主题悬停背景
-            close_hover_bg = "rgba(255, 100, 100, 0.25)"  # 深红悬停
+            minimize_hover_bg = "rgba(255, 255, 255, 0.25)"  # 深色主题悬停背景
+            close_hover_bg = "rgba(255, 100, 100, 0.5)"  # 深红悬停
 
         self.titleBar.setStyleSheet("""
                                 QWidget #titleBar {
@@ -563,7 +570,7 @@ class TenchiCardsEnhancer(QMainWindow):
                     color: {button_hover_color};
                 }}
                 QPushButton:pressed {{
-                    background: {minimize_hover_bg.replace('0.1', '0.25')};
+                    background: {minimize_hover_bg.replace('0.25', '0.15')};
                 }}
             """
 
@@ -585,7 +592,7 @@ class TenchiCardsEnhancer(QMainWindow):
                     border-top-right-radius: 12px;
                 }}
                 QPushButton:pressed {{
-                    background: {close_hover_bg.replace('0.25', '0.45')};
+                    background: {close_hover_bg.replace('0.5', '0.3')};
                     border-top-right-radius: 12px;
                 }}
             """
@@ -734,6 +741,11 @@ class TenchiCardsEnhancer(QMainWindow):
         if enhance_plan["四叶草"]["种类"] == "无":
             hide_row_widgets(self.edit_window.grid_layout, 4)
             hidden_rows += 1
+        else:
+            # 使用的话，就显示使用的是什么四叶草，空格是为了对齐
+            clover_name = " " + enhance_plan["四叶草"]["种类"] + "四叶草"
+            clover_name_label = getattr(self.edit_window, 'clover_name_label')
+            clover_name_label.setText(clover_name)
 
         # 动态调整窗口高度
         row_height = 35
@@ -803,6 +815,7 @@ class TenchiCardsEnhancer(QMainWindow):
 
     # 初始化副卡菜单
     def init_subcard(self):
+        sub_card_list = ["副卡1", "副卡2", "副卡3"]
         for i in range(3):
             for j in range(16):
                 subcard_box_name = f"subcard{i + 1}_{j}"
@@ -819,8 +832,8 @@ class TenchiCardsEnhancer(QMainWindow):
                 # 不要忘记加上无
                 subcard_box.addItem("无")
                 # 菜单选项添加完后，根据设置文件，设置菜单的当前选中项
-                selected_subcard = self.settings.get("强化方案", {}).get(f"{j}-{j + 1}", {}).get(f"副卡{i + 1}",
-                                                                                                 "无").get("星级", "无")
+                current_level_key = f"{j}-{j + 1}"
+                selected_subcard = self.settings["强化方案"][current_level_key][sub_card_list[i]].get("星级", "无")
                 # 在 QComboBox 中查找这个卡片名称对应的索引
                 index = subcard_box.findText(selected_subcard)
                 if index >= 0:
@@ -845,8 +858,6 @@ class TenchiCardsEnhancer(QMainWindow):
             clover_box.blockSignals(True)
             # 清除现有的选项
             clover_box.clear()
-            # 加上无
-            clover_box.addItem("无")
             # 给每个四叶草菜单加上所有四叶草
             for clover in clover_list:
                 clover_box.addItem(clover)
@@ -1557,6 +1568,10 @@ class TenchiCardsEnhancer(QMainWindow):
             # 解耦合，检查是否可以强化
             can_enhance, used_card_list = self.can_enhance(card_list, need_card_list)
             if can_enhance:  # 如果可以强化，就点击所有传过来的位置
+                # debug记录
+                logger.debug(f"{enhance_level}级卡片可以强化")
+                logger.debug(f"当前卡片列表{card_list}")
+                logger.debug(f"使用卡片{used_card_list}")
                 # 初始化检查用的槽位
                 check_slot = len(used_card_list)
                 # 先点击主卡槽，确保上一张卡不会留存

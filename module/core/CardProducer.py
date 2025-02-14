@@ -268,7 +268,7 @@ def dynamic_card_producer(settings, card_count_dict=None):
             return
         bind_str = "绑定" if spice.bind else "不绑"
         # 记录制卡数据
-        produce_recorder.save_produce_statistic(level, spice.bind, actual_count)
+        produce_recorder.save_produce_statistic(spice.bind, level, actual_count)
         event_manager.log_signal.emit(
             f"<font color='purple'>[{QTime.currentTime().toString()}]"
             f"动态制卡{bind_str}{card.level}星{actual_card_name}{actual_count}次</font>"

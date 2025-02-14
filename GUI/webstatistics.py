@@ -57,6 +57,10 @@ class WebStatistics:
         self.theme = GLOBALS.THEME
         self.background_color = '#100C2A' if self.theme == "dark" else '#FFFFFF'
         self.produce_stats = produce_recorder.produce_statistics
+        self.web_view = QWebEngineView()
+        # 设置 QWebEngineView 的 sizePolicy
+        self.web_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.html_cache = {}  # HTML 缓存
 
         # 尝试读取本地csv文件
         try:
@@ -107,11 +111,6 @@ class WebStatistics:
         初始化标签页
         """
 
-        self.web_view = QWebEngineView()
-
-        # 设置 QWebEngineView 的 sizePolicy
-        self.web_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-
         self.stats_tab_widget = QTabWidget(self.main_window.tab_3)
 
         # 创建标签页
@@ -123,11 +122,10 @@ class WebStatistics:
         self.stats_tab_widget.addTab(self.create_empty_tab("偏移-2"), "偏移-2")
 
         # 连接 tab change 信号
-        self.stats_tab_widget.currentChanged.connect(
-            lambda index: self.load_tab_content(self.stats_tab_widget, index))
+        self.stats_tab_widget.currentChanged.connect(self.load_tab_content)
 
         # 预加载使用四叶草统计
-        self.load_tab_content(self.stats_tab_widget, 0)
+        self.load_tab_content(0)
 
     def create_empty_tab(self, type):
         """
@@ -144,35 +142,52 @@ class WebStatistics:
         tab.setLayout(layout)
         return tab
 
-    def load_tab_content(self, stats_tab_widget, index):
+    def load_tab_content(self, index):
         """
         加载标签页内容
         """
-        tab = stats_tab_widget.widget(index)
+        tab = self.stats_tab_widget.widget(index)
         layout = tab.layout()
 
-        if layout.count() == 0 or layout.itemAt(0).widget() is not self.web_view:
-            # 清除旧的 QWebEngineView
-            for i in reversed(range(layout.count())):
-                layout.itemAt(i).widget().setParent(None)
-            layout.addWidget(self.web_view)
+        # 确保 web_view 没有父级，或者从之前的父级移除
+        if self.web_view.parent() is not None:
+            self.web_view.setParent(None)
+
+        # 将 web_view 添加到当前标签页的布局
+        layout.addWidget(self.web_view)
 
         tab_type = tab.property("type")
 
-        if tab_type == "强化结果":
-            html = self.create_bar_for_upgrade()
-        elif tab_type == "使用四叶草":
-            html = self.create_html_for_clover()
-        elif tab_type == "制卡总和":
-            html = self.create_html_for_made_card()
-        elif tab_type == "强卡成功率":
-            html = self.create_html_for_success_rate()
-        elif tab_type == "偏移-1":
-            html = self.create_html_for_success_rate_and_p_by_add()
-        elif tab_type == "偏移-2":
-            html = self.create_html_for_success_rate_and_p_by_multi()
+        if tab_type in self.html_cache:
+            html = self.html_cache[tab_type]
+        else:
+            if tab_type == "强化结果":
+                html = self.create_bar_for_upgrade()
+            elif tab_type == "使用四叶草":
+                html = self.create_html_for_clover()
+            elif tab_type == "制卡总和":
+                html = self.create_html_for_made_card()
+            elif tab_type == "强卡成功率":
+                html = self.create_html_for_success_rate()
+            elif tab_type == "偏移-1":
+                html = self.create_html_for_success_rate_and_p_by_add()
+            elif tab_type == "偏移-2":
+                html = self.create_html_for_success_rate_and_p_by_multi()
+            self.html_cache[tab_type] = html
 
         self.web_view.setHtml(html)
+
+    def refresh_data(self):
+        """"刷新方法"""
+        # 尝试读取本地csv文件
+        try:
+            self.load_csv_to_df(csv_path="enhance_stats/card_stats.csv")
+        except FileNotFoundError:
+            logger.warning("没有找到统计文件")
+        if self.data_frame is not None:
+            self.count_gold_cost()
+            self.html_cache = {}  # 清空缓存
+            self.load_tab_content(self.stats_tab_widget.currentIndex())  # 重新加载当前页面
 
     """使用四叶草"""
 

@@ -6,6 +6,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import List, Any
 
+from module.log.TenchiLogger import logger
 from module.utils import resource_path
 
 
@@ -126,23 +127,22 @@ class AsyncStatsRecorder:
         if not self.backup_buffer:
             return
 
-        for records in self.backup_buffer:
-            daily_file = f"{self.base}{self.ext}"
-            try:
-                # 自动创建目录
-                os.makedirs(os.path.dirname(daily_file), exist_ok=True)
+        file = f"{self.base}{self.ext}"
+        try:
+            # 自动创建目录
+            os.makedirs(os.path.dirname(file), exist_ok=True)
 
-                # 判断是否需要表头
-                need_header = not os.path.exists(daily_file)
+            # 判断是否需要表头
+            need_header = not os.path.exists(file)
 
-                # 使用支持全角字符的编码
-                with open(daily_file, "a", newline="", encoding="utf-8-sig") as f:
-                    writer = csv.writer(f)
-                    if need_header:
-                        writer.writerow(self.header)
-                    writer.writerows(records)
-            except Exception as e:
-                print(f"文件写入失败 [{daily_file}]: {e}")
+            # 使用支持全角字符的编码
+            with open(file, "a", newline="", encoding="utf-8-sig") as f:
+                writer = csv.writer(f)
+                if need_header:
+                    writer.writerow(self.header)
+                writer.writerows(self.backup_buffer)
+        except Exception as e:
+            logger.error(f"文件写入失败 [{file}]: {e}")
 
         self.backup_buffer.clear()
 

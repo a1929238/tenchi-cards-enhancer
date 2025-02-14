@@ -142,6 +142,11 @@ class EditWindow(QWidget):
                 recipe_box.setObjectName(f"card_box{i}")
                 setattr(self, f'card_box{i}', recipe_box)
                 self.grid_layout.addWidget(recipe_box, i, 1)
+            if i == 4:
+                clover_name_label = QLabel("四叶草", self)
+                clover_name_label.setObjectName(f"clover_name_label")
+                setattr(self, f'clover_name_label', clover_name_label)
+                self.grid_layout.addWidget(clover_name_label, i, 1)
             bind_checkbox = BindingCheckbox(self)
             bind_checkbox.setObjectName(f"bind_btn{i}")
             setattr(self, f'bind_btn{i}', bind_checkbox)
