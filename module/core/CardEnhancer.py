@@ -6,6 +6,7 @@ from module.globals.EventManager import event_manager
 from module.globals.ResourceInit import resource
 
 _CARD_SLOT_POSITION = {
+    1: (267, 324, 40, 50),  # 主卡槽
     2: (267, 253, 40, 50),  # 卡槽2
     3: (211, 324, 40, 50),  # 卡槽3
     4: (323, 324, 40, 50),  # 卡槽4

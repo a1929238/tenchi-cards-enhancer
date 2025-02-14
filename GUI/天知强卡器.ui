@@ -2812,7 +2812,7 @@ border-radius: 20px;</string>
               <string>毫秒</string>
              </property>
              <property name="minimum">
-              <number>50</number>
+              <number>10</number>
              </property>
              <property name="maximum">
               <number>300</number>
@@ -2884,7 +2884,7 @@ border-radius: 20px;</string>
               <string>毫秒</string>
              </property>
              <property name="minimum">
-              <number>50</number>
+              <number>10</number>
              </property>
              <property name="maximum">
               <number>1000</number>

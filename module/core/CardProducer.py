@@ -217,7 +217,7 @@ def produce_card(card_name, level, bind, count, card_pack_dict, produce_check_in
     return produce_count, card_name
 
 
-def dynamic_card_producer(settings, card_count_dict=None):
+def dynamic_card_producer(settings, card_names, card_count_dict=None):
     """
     根据卡片需求动态制卡。将现存的所有卡片看作主卡，计算副卡需求。再用所有主卡需求填充制卡列表
     """
@@ -237,7 +237,7 @@ def dynamic_card_producer(settings, card_count_dict=None):
         # 如果存在卡片等级字典，则根据卡片等级字典计算卡片需求
         card_demand = get_card_demand(enhance_plan, card_count_dict, usable_spice)
     # 用主卡需求进行填充
-    card_demand = fill_demand_with_main_card(enhance_plan, card_demand, usable_spice)
+    card_demand = fill_demand_with_main_card(enhance_plan, card_demand, usable_spice, card_names)
     # 把已经存在的卡片从卡片需求中删除
     if card_count_dict:
         for card, count in card_count_dict.items():
@@ -324,7 +324,7 @@ def get_card_demand(enhance_plan, card_count_dict, usable_spice) -> list[Card]:
     return card_demand
 
 
-def fill_demand_with_main_card(enhance_plan, card_demand: list[Card], usable_spice):
+def fill_demand_with_main_card(enhance_plan, card_demand: list[Card], usable_spice, card_names):
     """用主卡填满卡片需求，每个主卡7张"""
     spice_list = list(range(9))
     spice_list.sort(reverse=True)
@@ -334,8 +334,8 @@ def fill_demand_with_main_card(enhance_plan, card_demand: list[Card], usable_spi
         if spice.count < 35:
             count = spice.count // 5
         else:
-            # 两种香料时用7填充
-            if len(usable_spice) > 1:
+            # 两种香料或两种卡片时用7填充
+            if len(usable_spice) > 1 or len(card_names) > 1:
                 count = 7
             else:
                 count = 14

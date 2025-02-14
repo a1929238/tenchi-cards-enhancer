@@ -165,7 +165,6 @@ def has_area_changed(x, y, width, height, interval=200, times=10) -> bool:
 
         # 比较当前截图与前一张截图
         if not direct_img_match(current_img, img):
-            QThread.msleep(50)
             return True
 
     # 所有轮次比较后无变化

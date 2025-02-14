@@ -1414,7 +1414,7 @@ class TenchiCardsEnhancer(QMainWindow):
         # 每次强化，卡片的顺序都会改变，只能强化一次截一次图，直到强卡器返回False，才停止循环
         while self.is_running:
             # 每次强化之后合成屋栏位都会动，所以在截图前要先等待200毫秒
-            QThread.msleep(200)
+            # QThread.msleep(200)
             # 初始化偏移值,切割传入图像
             self.offset = 0
             # 截图并切割图片，方法更新，用模板匹配图片中的第一行，然后把色块以上的图片全部切掉，再识别。这样无论滑块在哪里，都能确保找到七行卡片
@@ -1635,6 +1635,12 @@ class TenchiCardsEnhancer(QMainWindow):
                 enhance_log(used_card_list, clover_name, clover_bind, success)
                 # 点掉强化区域的卡片后，才能再次进行强化
                 click(287, 343)
+                # 检测主卡区域有没有被点下去
+                if not dynamic_wait_card_slot_state(1, False, interval=self.enhance_check_interval):
+                    self.is_running = False
+                    # 强化失败，弹窗
+                    event_manager.show_dialog_signal.emit("哎呦", "强化检测超过80轮，看看发生什么了吧")
+                    return
                 # 强化次数+1
                 self.enhance_times += 1
                 self.enhance_count += 1
@@ -2153,7 +2159,7 @@ class EnhancerThread(QThread):
             if self.enhancer.enhance_times >= self.enhancer.reload_count:
                 self.reload_house()
             # 进行动态制卡
-            dynamic_card_producer(self.enhancer.settings, self.enhancer.card_count_dict)
+            dynamic_card_producer(self.enhancer.settings, self.enhancer.card_names, self.enhancer.card_count_dict)
             # 清空卡片列表
             self.enhancer.card_list = []
             QThread.msleep(400)

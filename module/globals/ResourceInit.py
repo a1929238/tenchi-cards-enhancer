@@ -106,6 +106,7 @@ def load_card_images():
 def load_enhance_slot_image_dict():
     """读取强化卡槽的图片"""
     paths = [
+        resource_path("items/position/main_card_slot.png"),
         resource_path("items/position/sub_card_1_slot.png"),
         resource_path("items/position/sub_card_2_slot.png"),
         resource_path("items/position/sub_card_3_slot.png"),
@@ -113,7 +114,7 @@ def load_enhance_slot_image_dict():
     ]
     enhance_slot_image_dict = {}
     for index, path in enumerate(paths):
-        enhance_slot_image_dict[index+2] = imread_to_hash(path)
+        enhance_slot_image_dict[index+1] = imread_to_hash(path)
     return enhance_slot_image_dict
 
 
