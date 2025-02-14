@@ -1452,8 +1452,7 @@ class TenchiCardsEnhancer(QMainWindow):
                 if current_position >= 370:
                     break
             else:
-                # 单卡拖曳方式，固定在等级最高卡片位置
-                click(908, 120 + self.single_max_card_position)
+                # 单卡拖曳方式，固定在等级最高卡片位置，不需要拖曳
                 break
 
     # 寻找等级最高卡片位置

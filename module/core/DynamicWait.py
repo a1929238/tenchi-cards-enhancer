@@ -90,6 +90,8 @@ def dynamic_wait_recipe_changed(area, interval=100) -> bool:
     """
     x, y, width, height = area
     for i in range(8):
+        if not GLOBALS.IS_RUNNING:
+            return False
         if has_area_changed(x, y, width, height, interval):
             return True
         if (i + 1) % 4 == 0:

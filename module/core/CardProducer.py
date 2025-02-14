@@ -17,7 +17,8 @@ from module.ocr.NumberOcr import get_num
 from module.statistic.AsyncProduceStatistic import produce_recorder
 from module.utils import merge_card_counts
 
-import cv2
+spice_list = ["不放香料", "天然香料", "上等香料", "秘制香料", "极品香料", "皇室香料", "魔幻香料", "精灵香料",
+              "天使香料"]
 
 
 def get_spice_usable(spice_stock: list[Item], produce_plan):
@@ -37,8 +38,8 @@ def filter_spice(usable_spice, settings):
     根据强化方案剔除不符合绑定情况与最低使用星级的香料，纯绑定和不绑的逻辑都很简单
     """
     min_level, max_level = int(settings["个人设置"]["最小星级"]), int(settings["个人设置"]["最大星级"])
-    bind_list = []
-    level_bind_list = set()
+    bind_set = set()
+    level_bind_set = set()
     # 过滤掉星级范围外的香料
     usable_spice = [spice for spice in usable_spice if min_level <= spice.get_level() < max_level]
     # 获取绑定等级集合
@@ -51,23 +52,25 @@ def filter_spice(usable_spice, settings):
                 continue
             if info.get("星级", "无") == "无":
                 continue
-            # 无视零星卡的绑定情况
             card_level = int(info.get("星级", 0))
-            if card_level == 0:
-                continue
             bind = info["绑定"]
-            bind_list.append(bind)
-            level_bind_list.add((card_level, bind))
+            bind_set.add(bind)
+            if bind == 2:
+                # 同时添加绑定和不绑
+                level_bind_set.add((card_level, 1))
+                level_bind_set.add((card_level, 0))
+            else:
+                level_bind_set.add((card_level, bind))
     # 如果绑定情况全部相等，则按照绑定情况过滤
-    if len(set(bind_list)) == 1:
-        if bind_list[0] == 2:
+    if len(bind_set) == 1:
+        if next(iter(bind_set)) == 2:
             # 全部为绑定+不绑，直接返回
             return usable_spice
         # 返回对应绑定情况的香料
-        return [spice for spice in usable_spice if spice.bind == bind_list[0]]
+        return [spice for spice in usable_spice if spice.bind == next(iter(bind_set))]
     else:
         # 如果绑定情况不全等，则根据集合内的元组进行过滤
-        return [spice for spice in usable_spice if (spice.get_level(), spice.bind) in level_bind_list]
+        return [spice for spice in usable_spice if (spice.get_level(), spice.bind) in level_bind_set]
 
 
 def get_recipe(card_name, level, bind, count, card_pack_dict):
@@ -106,8 +109,6 @@ def get_recipe(card_name, level, bind, count, card_pack_dict):
         # 全是用不可制作的卡包为啥还要点制卡并强卡
         else:
             return 0, None, None
-    # 等待图像加载
-    QThread.msleep(400)
     recipe_img = resource.recipe_images[card_name]
     for index in range(8):
         # 尝试校验目标配方可用性与数量
@@ -182,8 +183,6 @@ def produce_card(card_name, level, bind, count, card_pack_dict, produce_check_in
         count: 实际生产的数量
         card_name: 实际生产出的卡片名
     """
-    spice_list = ["不放香料", "天然香料", "上等香料", "秘制香料", "极品香料", "皇室香料", "魔幻香料", "精灵香料",
-                  "天使香料"]
     # 尝试获取剩余数量大于需要生产量的配方，如果获取配方的剩余数量小于需要生产量，且配方为卡包，则递归调用该方法来生产剩下的卡片
     count, card_name, recipe_area = get_recipe(card_name, level, bind, count, card_pack_dict)
     if count == 0:
@@ -209,6 +208,8 @@ def produce_card(card_name, level, bind, count, card_pack_dict, produce_check_in
         click(285, 425)
         # 通过动态等待目标配方变化，检测是否制作成功
         if not dynamic_wait_recipe_changed(recipe_area, interval=produce_check_interval):
+            if not GLOBALS.IS_RUNNING:
+                return 0, None
             event_manager.show_dialog_signal.emit("卡片制作卡住啦！", "发生什么事了，快去看看吧")
             return 0, None
         produce_count += 1
@@ -252,10 +253,13 @@ def dynamic_card_producer(settings, card_count_dict=None):
 
     # 将元组列表送到解析器里，然后送给制卡器
     produce_list = parse_produce_list(enhance_plan, produce_list, usable_spice)
+    logger.debug(f"解析后元组列表：{produce_list}")
     # 如果解析器返回的produce_list为空，则表明没有香料了，返回False
     if not produce_list or 0 in [count for _, count in produce_list]:
         event_manager.show_dialog_signal.emit("没有香料了！", "你的香料不足，无法进行制卡！")
         return False
+    # 用等级作为倒序排序生产列表
+    produce_list = sorted(produce_list, key=lambda x: x[0].level, reverse=True)
     logger.debug(f"动态制卡需求：{produce_list}")
     # 进行制卡
     for card, count in produce_list:
@@ -281,7 +285,6 @@ def get_card_demand(enhance_plan, card_count_dict, usable_spice) -> list[Card]:
     """
     card_demand = []
     sub_cards = ["副卡1", "副卡2", "副卡3"]
-    sub_cards_name = []
     max_count = 14
     # 找到最高星级
     max_spice_level = max(usable_spice, key=lambda x: x.get_level()).get_level()
@@ -294,8 +297,6 @@ def get_card_demand(enhance_plan, card_count_dict, usable_spice) -> list[Card]:
             # 如果副卡存在星级，则将其添加到数组内
             sub_card = Card()
             sub_card.load_from_dict(plan[sub_cards[i]])
-            if sub_card.name != card.name:
-                sub_cards_name.append(sub_card.name)
             # 副卡的需求高于最高可用香料，则跳过
             if sub_card.level > max_spice_level:
                 continue
@@ -306,8 +307,8 @@ def get_card_demand(enhance_plan, card_count_dict, usable_spice) -> list[Card]:
                 max_count = 21
             for _ in range(min(count, max_count)):
                 card_demand.append(sub_card)
-        # 为0星且不等于主卡的副卡额外添加对主卡的需求
-        if card.level == 0 and card in sub_cards_name:
+        # 为0星的副卡额外添加对主卡的需求
+        if card.level == 0:
             for i in range(3):
                 plan = enhance_plan[f"{card.level + i}-{card.level + (1 + i)}"]
                 for j in range(3):
@@ -408,7 +409,6 @@ def calculate_total_base_cards(target_level, usable_spice_level, enhance_plan):
     # 零星不可被分解
     if target_level == 0:
         return total_list
-
     # 获取对应的强化方案（格式：当前星级-目标星级）
     plan_key = f"{target_level - 1}-{target_level}"
     current_plan = enhance_plan[plan_key]
