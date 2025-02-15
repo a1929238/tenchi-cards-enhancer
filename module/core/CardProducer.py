@@ -204,10 +204,12 @@ def produce_card(card_name, level, bind, count, card_pack_dict, produce_check_in
     for _ in range(count):
         if not GLOBALS.IS_RUNNING:
             return 0, None
+        # 截图
+        current_recipe_img_hash = hash(get_image(*recipe_area).tobytes())
         # 点击制作按钮
         click(285, 425)
         # 通过动态等待目标配方变化，检测是否制作成功
-        if not dynamic_wait_recipe_changed(recipe_area, interval=produce_check_interval):
+        if not dynamic_wait_recipe_changed(current_recipe_img_hash, recipe_area, interval=produce_check_interval):
             if not GLOBALS.IS_RUNNING:
                 return 0, None
             event_manager.show_dialog_signal.emit("卡片制作卡住啦！", "发生什么事了，快去看看吧")

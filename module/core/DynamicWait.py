@@ -67,7 +67,7 @@ def dynamic_wait_areas_to_change(*areas, interval=200, times=10) -> bool:
     return False
 
 
-def dynamic_wait_card_slot_state(card_index, state, interval=100, times=80) -> bool:
+def dynamic_wait_card_slot_state(card_index, state, interval=100, times=100) -> bool:
     """
     动态等待目标卡槽是否为目标状态
     Args:
@@ -83,19 +83,20 @@ def dynamic_wait_card_slot_state(card_index, state, interval=100, times=80) -> b
     return False
 
 
-def dynamic_wait_recipe_changed(area, interval=100) -> bool:
+def dynamic_wait_recipe_changed(current_recipe_img_hash, recipe_area, interval=100) -> bool:
     """
     动态等待配方发生变化（数量或配方被用完）
     卡片制作时，动态检测金币变化非常不靠谱，金币会先于卡片制作15帧发生变化
     """
-    x, y, width, height = area
-    for i in range(8):
+    for i in range(100):
         if not GLOBALS.IS_RUNNING:
             return False
-        if has_area_changed(x, y, width, height, interval):
+        current_recipe_img = get_image(*recipe_area)
+        if not direct_img_match(current_recipe_img, current_recipe_img_hash):
             return True
-        if (i + 1) % 4 == 0:
+        if (i + 1) % 30 == 0:
             # 点击制作按钮
             click(285, 425)
+        QThread.msleep(interval)
     else:
         return False

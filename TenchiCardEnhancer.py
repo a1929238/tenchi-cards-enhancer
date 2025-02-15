@@ -29,12 +29,13 @@ from module.bg_img_match import match_p_in_w, loop_match_ps_in_w, loop_match_p_i
 from module.core.CardEnhancer import enhance_log
 from module.core.CardProducer import dynamic_card_producer
 from module.core.CardTab import exist_empty_block, get_card_names, get_card_list, make_card_count_dict
+from module.core.DepositoryTab import reset_repo_slider, scroll_repo_slider
 from module.core.DynamicWait import dynamic_wait_card_slot_state
 from module.core.GetImg import get_image
 from module.core.ImgMatch import direct_img_match
 from module.core.ItemTab import get_target_item
 from module.core.LevelCheck import check_card_enhance_result
-from module.core.MouseEvent import click, drag
+from module.core.MouseEvent import click
 from module.core.PositionCheck import check_position, change_position
 from module.gem.GemEnhancer import GemEnhancerThread
 from module.globals.DataClass import Card
@@ -1343,50 +1344,6 @@ class TenchiCardsEnhancer(QMainWindow):
         my_dict[key] = int(my_dict.get(key, 0)) + int(value)
         return my_dict
 
-    # 点击配方
-    # 预计更新方法，模板匹配第一处卡片上框架的位置，然后裁剪图片，再进行识别，失败，因为最上方框架与下方的所有卡片都不同。
-    # 尝试直接使用模板匹配，非常好使。
-    def get_recipe(self, target_img):
-        # 截图四次，每次拖曳三格(第一次为点击滑块最上方)
-        for i in range(5):
-            # 等待150毫秒
-            QThread.msleep(150)
-            # 截图
-            img = get_image(559, 90, 343, 196)
-            # 直接模板匹配图像
-            result = cv2.matchTemplate(img, target_img, cv2.TM_CCOEFF_NORMED)
-            min_value, max_value, min_loc, max_loc = cv2.minMaxLoc(result)
-            if max_value >= 0.99:
-                # 匹配成功，点击配方位置
-                x, y = max_loc
-                # 计算模板图像的中心偏上位置
-                center_x = x + target_img.shape[1] // 2
-                center_y = y + 5
-
-                # 然后点击中心偏上位置
-                click(580 + center_x, 110 + center_y)
-                return
-            # 匹配失败，鼠标滑动15个像素，再次截图，如果是第一次尝试，就只点击滑块最上方
-            if i == 0:
-                click(910, 110)
-            else:
-                drag(910, 95 + i * 15, 0, 15)
-            QThread.msleep(200)
-        # 匹配失败，弹出弹窗
-        event_manager.show_dialog_signal.emit("危", "配方识别失败,请检查自己的配方")
-        return
-
-    def check_spice_slot(self, slot_img, target_img):
-        """
-        用模板匹配判断香料是否被正确放置
-        """
-        result = cv2.matchTemplate(slot_img, target_img, cv2.TM_CCOEFF_NORMED)
-        min_value, max_value, min_loc, max_loc = cv2.minMaxLoc(result)
-        if max_value >= 0.98:
-            return True
-        else:
-            return False
-
     def get_scroller_parameter(self):
         """
         根据背包大小，计算出滚动条的各种参数
@@ -1413,8 +1370,6 @@ class TenchiCardsEnhancer(QMainWindow):
             self.find_max_card_position()
         # 每次强化，卡片的顺序都会改变，只能强化一次截一次图，直到强卡器返回False，才停止循环
         while self.is_running:
-            # 每次强化之后合成屋栏位都会动，所以在截图前要先等待200毫秒
-            # QThread.msleep(200)
             # 初始化偏移值,切割传入图像
             self.offset = 0
             # 截图并切割图片，方法更新，用模板匹配图片中的第一行，然后把色块以上的图片全部切掉，再识别。这样无论滑块在哪里，都能确保找到七行卡片
@@ -1428,7 +1383,9 @@ class TenchiCardsEnhancer(QMainWindow):
                     card_list = self.check_first_row_card(card_list)
                 self.card_list = card_list
                 # 强化当前页面卡片，传输进去的是拷贝后的卡片列表，可在强化函数中修改
-                self.enhance_card_once(card_list=card_list.copy(), enhance_plan=self.settings["强化方案"])
+                copy_of_card_list = card_list.copy()
+                copy_of_card_list = [card for card in copy_of_card_list if card.level < self.max_level]
+                self.enhance_card_once(card_list=copy_of_card_list, enhance_plan=self.settings["强化方案"])
                 # 检查停止标识
                 if not self.is_running:
                     break
@@ -1443,11 +1400,11 @@ class TenchiCardsEnhancer(QMainWindow):
                 # 拖曳长度取决于拖曳次数，每次拖曳长度为420/滚动次数，当前位置为0时，点击一次滑块最顶端
                 if current_position == 0:
                     current_position += 5
-                    click(908, 120)
+                    reset_repo_slider()
                 else:
-                    drag(908, 120 + current_position, 0, self.single_line_length * 7)
+                    distance = self.single_line_length * 7
+                    scroll_repo_slider(current_position, distance)
                     current_position += self.single_line_length * 7
-                QThread.msleep(100)
                 # 当前位置超过370，退出循环
                 if current_position >= 370:
                     break
@@ -1463,26 +1420,24 @@ class TenchiCardsEnhancer(QMainWindow):
         full_card_set = set()
         # 分用户设置次数获取卡片字典，获得目前最高卡片等级
         scroll_length = self.single_line_length * 7
-        # 点击一下滑块的最上方
-        click(908, 120)
+        # 重置滚动条位置
+        reset_repo_slider()
         for i in range((420 // scroll_length) + 1):
-            QThread.msleep(200)
             img = self.get_cut_cards_img()
             card_list = get_card_list(img, self.card_names)
             full_card_set.update(card_list)
-            drag(908, 120 + i * scroll_length, 0, scroll_length)
+            scroll_repo_slider(i * scroll_length, scroll_length)
         if not full_card_set:
             return
         for card in full_card_set:
             if card.level <= target_level:
                 current_max_level = max(current_max_level, card.level)
-        # 点击一下滑块的最上方
-        click(908, 120)
+        # 粗查找完成，重置滚动条位置
+        reset_repo_slider()
         # 寻找到目标等级后，从开始慢慢拖曳滑块，直到等级最高的卡片出现在第一行
         for i in range(self.single_scroll_time):
             if not self.is_running:
                 return
-            QThread.msleep(200)
             img = self.get_cut_cards_img(rows=1)
             card_list = get_card_list(img, self.card_names, rows=1, min_level=self.min_level,
                                       max_level=self.max_level)
@@ -1491,7 +1446,7 @@ class TenchiCardsEnhancer(QMainWindow):
                 if card.level == current_max_level:
                     self.single_max_card_position = i * self.single_line_length
                     return
-            drag(908, 120 + i * self.single_line_length, 0, self.single_line_length)
+            scroll_repo_slider(current_position=i * self.single_line_length, distance=self.single_line_length)
 
     def check_first_row_card(self, card_list):
         """检测第一行最后的卡片是否为最高等级，是的话就往下拉一行"""
@@ -1502,9 +1457,8 @@ class TenchiCardsEnhancer(QMainWindow):
             return card_list
         # 往下拉一行
         while True:
-            drag(908, 120 + self.single_max_card_position, 0, self.single_line_length)
+            scroll_repo_slider(current_position=self.single_max_card_position, distance=self.single_line_length)
             self.single_max_card_position += self.single_line_length
-            QThread.msleep(200)
             img = self.get_cut_cards_img(need_offset=True)
             card_list = get_card_list(img, self.card_names, rows=7, columns=7, min_level=self.min_level,
                                       max_level=self.max_level)
@@ -1538,13 +1492,15 @@ class TenchiCardsEnhancer(QMainWindow):
     # 强化卡片，由高到低，强化当前页所有符合条件的卡片
     def enhance_card_once(self, card_list, enhance_plan):
         """
-        强化方案中，卡片信息统一为字典，字典内包含以下内容：
-        星级：星级
-        卡片名称：卡片名称
-        绑定：是否绑定
+        通过当前卡片列表，计算并强化一次卡片
+        Args:
+            card_list: 当前页卡片列表去除最高星卡片后的副本
+            enhance_plan: 强化方案
         """
-        # 按照最高强化卡片，从高到低，遍历设置里的强化方案，获取所需副卡，如果卡片总量大于等于方案所需卡片，就遍历card字典的位置，点击卡片，强化一次
-        for enhance_level in range(self.max_level, self.min_level, -1):
+        # 获取卡片列表中的最高卡片等级
+        current_max_level = max(card.level for card in card_list)
+        # 按照最高强化卡片星级，从高到低，遍历设置里的强化方案，获取所需副卡，如果卡片总量大于等于方案所需卡片，就遍历card字典的位置，点击卡片，强化一次
+        for enhance_level in range(current_max_level+1, self.min_level, -1):
             # 获取当前星级强化方案
             current_enhance_plan = enhance_plan[f"{enhance_level - 1}-{enhance_level}"]
             # 初始化需求卡片列表
@@ -1625,7 +1581,7 @@ class TenchiCardsEnhancer(QMainWindow):
                 if not dynamic_wait_card_slot_state(2, False, interval=self.enhance_check_interval):
                     self.is_running = False
                     # 强化失败，弹窗
-                    event_manager.show_dialog_signal.emit("哎呦", "强化检测超过80轮，看看发生什么了吧")
+                    event_manager.show_dialog_signal.emit("哎呦", "强化检测超过100轮，看看发生什么了吧")
                     return
                 # 检查运行标识
                 if not self.is_running:
@@ -1639,7 +1595,7 @@ class TenchiCardsEnhancer(QMainWindow):
                 if not dynamic_wait_card_slot_state(1, False, interval=self.enhance_check_interval):
                     self.is_running = False
                     # 强化失败，弹窗
-                    event_manager.show_dialog_signal.emit("哎呦", "强化检测超过80轮，看看发生什么了吧")
+                    event_manager.show_dialog_signal.emit("哎呦", "强化检测超过100轮，看看发生什么了吧")
                     return
                 # 强化次数+1
                 self.enhance_times += 1
@@ -2162,12 +2118,10 @@ class EnhancerThread(QThread):
             dynamic_card_producer(self.enhancer.settings, self.enhancer.card_names, self.enhancer.card_count_dict)
             # 清空卡片列表
             self.enhancer.card_list = []
-            QThread.msleep(400)
             if not self.enhancer.is_running:
                 break
             # 制作后，点击卡片强化标签
             change_position("卡片强化", "卡片制作")
-            QThread.msleep(200)
             # 强化主函数
             self.enhancer.main_enhancer()
             # 获取卡片数量字典
@@ -2175,10 +2129,8 @@ class EnhancerThread(QThread):
             # 检查停止标识
             if not self.enhancer.is_running:
                 break
-            QThread.msleep(100)
             # 数组卡片全部强化完成后，点击卡片制作标签，再次循环
             change_position("卡片制作", "卡片强化")
-            QThread.msleep(200)
         # 如果开启了弹窗后刷新功能，则刷新一次
         if (self.enhancer.failed_refresh and self.enhancer.failed_refresh_count != 0
                 and self.enhancer.failed_refresh_count <= 5):
@@ -2209,7 +2161,6 @@ class EnhancerThread(QThread):
             self.enhancer.card_count_dict = make_card_count_dict(self.enhancer.card_list)
             # 切换到卡片制作页面，进入主循环
             change_position("卡片制作")
-            QThread.msleep(500)
             return True
         else:
             # 未知位置，弹窗提示
@@ -2220,12 +2171,10 @@ class EnhancerThread(QThread):
             return False
 
     def reload_house(self):
-        # 点击右上角的红叉
-        click(914, 38)
-        QThread.msleep(600)
-        # 重新点击合成屋
-        click(685, 558)
-        QThread.msleep(600)
+        # 离开合成屋
+        change_position("主菜单")
+        # 进入合成屋
+        change_position("卡片制作", "主菜单")
         # 归零强化次数
         self.enhancer.enhance_times = 0
 

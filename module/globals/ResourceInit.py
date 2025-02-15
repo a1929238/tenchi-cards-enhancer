@@ -155,6 +155,8 @@ class ResourceInit:
         self.produce_help_icon = imread_to_hash(resource_path("items/position/制作说明.png"))
         self.enhance_help_icon = imread_to_hash(resource_path("items/position/强化说明.png"))
         self.decompose_help_icon = imread_to_hash(resource_path("items/position/分解说明.png"))
+        self.scroll_top_area = imread_to_hash(resource_path("items/position/scroll_top_area.png"))
+        self.scroll_bottom_area = imread_to_hash(resource_path("items/position/scroll_bottom_area.png"))
         self.gem_enhance_not_selected = imread_to_hash(resource_path("items/position/宝石强化_未选中.png"))
         self.can_card_produce = imread_to_hash(resource_path("items/position/卡片制作_未选中.png"))
         self.empty_card = imread(resource_path("items/position/empty_card.png"))
