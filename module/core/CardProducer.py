@@ -18,7 +18,7 @@ from module.statistic.AsyncProduceStatistic import produce_recorder
 from module.utils import merge_card_counts
 
 spice_list = ["不放香料", "天然香料", "上等香料", "秘制香料", "极品香料", "皇室香料", "魔幻香料", "精灵香料",
-              "天使香料"]
+              "天使香料", "圣灵香料"]
 
 
 def get_spice_usable(spice_stock: list[Item], produce_plan):
@@ -238,8 +238,12 @@ def dynamic_card_producer(settings, card_names, card_count_dict=None):
     if card_count_dict:
         # 如果存在卡片等级字典，则根据卡片等级字典计算卡片需求
         card_demand = get_card_demand(enhance_plan, card_count_dict, usable_spice)
-    # 用主卡需求进行填充
-    card_demand = fill_demand_with_main_card(enhance_plan, card_demand, usable_spice, card_names)
+    # 如果卡片需求在此时高于14张，则对卡片数量进行缩放，按比例保留14张
+    if len(card_demand) > 14:
+        card_demand = scale_demand(card_demand)
+    # 如果卡片需求小于14张，则用主卡需求进行填充
+    else:
+        card_demand = fill_demand_with_main_card(enhance_plan, card_demand, usable_spice, card_names)
     # 把已经存在的卡片从卡片需求中删除
     if card_count_dict:
         for card, count in card_count_dict.items():
@@ -326,11 +330,50 @@ def get_card_demand(enhance_plan, card_count_dict, usable_spice) -> list[Card]:
     return card_demand
 
 
+def scale_demand(card_demand: list[Card]) -> list[Card]:
+    """按超出的比例缩放卡片需求，使其总和等于14"""
+    # 统计各卡片出现次数
+    counter = Counter(card_demand)
+    total = len(card_demand)
+    # 计算缩放比例和余数分配
+    scale_factor = 14 / total
+    scaled_counts = {}
+    decimals = []
+
+    for card, count in counter.items():
+        scaled = count * scale_factor
+        base = int(scaled)
+        remainder = scaled - base
+        scaled_counts[card] = base
+        decimals.append((card, remainder))
+
+    # 计算需要补充的数量
+    current_total = sum(scaled_counts.values())
+    remaining = 14 - current_total
+
+    # 按余数从大到小排序，余数相同则按卡片等级排序
+    decimals.sort(key=lambda x: (-x[1], x[0].level))
+
+    # 分配剩余数量
+    for i in range(remaining):
+        if i < len(decimals):
+            card, _ = decimals[i]
+            scaled_counts[card] += 1
+
+    # 按原顺序重建需求列表
+    remaining_counts = scaled_counts.copy()
+    new_card_demand = []
+    for card in card_demand:
+        if remaining_counts.get(card, 0) > 0:
+            new_card_demand.append(card)
+            remaining_counts[card] -= 1
+        if len(new_card_demand) == 14:
+            break
+    return new_card_demand
+
+
 def fill_demand_with_main_card(enhance_plan, card_demand: list[Card], usable_spice, card_names):
     """用主卡填满卡片需求，每个主卡7张"""
-    spice_list = list(range(9))
-    spice_list.sort(reverse=True)
-
     for spice in usable_spice:
         # 如果香料的余量不足，则仅用这些香料
         if spice.count < 35:

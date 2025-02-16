@@ -143,10 +143,8 @@ def get_num(img):
                     i += width
                     break
             else:
-                # 还是失败，油尽灯枯，保存错误图像
-                logger.debug("识别失败，保存错误图像")
-                cv2.imwrite(f"log/error_image{i}.png", num_part)
-                cv2.imwrite(f"log/error_image{i}_full.png", img)
+                # 还是失败，往后推进1像素
+                logger.debug("识别失败，往后推进1像素")
 
                 # 保证至少推进1像素
                 i += 1

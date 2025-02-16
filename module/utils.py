@@ -7,6 +7,11 @@ import cv2
 import sys
 import os
 
+import win32gui
+
+from module.globals import GLOBALS
+from module.log.TenchiLogger import logger
+
 
 # 读取图片
 def imread(filename, with_alpha=False):
@@ -162,3 +167,46 @@ def save_settings(settings, filename='setting.json'):
     """
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(settings, f, ensure_ascii=False, indent=4)
+
+def handle_check(handle):
+    """
+    根据窗口类名，窗口大小，校验该窗口是否为flash游戏窗口
+    """
+    # 窗口名
+    window_name = win32gui.GetWindowText(handle)
+    # 窗口类名
+    window_class_name = win32gui.GetClassName(handle)
+    # 窗口大小
+    window_rect = win32gui.GetWindowRect(handle)
+    left, top, right, bottom = window_rect
+    width = right - left
+    height = bottom - top
+
+    scale = GLOBALS.DPI / 96
+    # 计算期望的窗口尺寸
+    expected_width = int(950 * scale)
+    expected_height = int(596 * scale)
+
+    logger.info(handle, window_name, window_class_name, width, height)
+
+    # 允许1个像素内的误差
+    if abs(width - expected_width) <= 1 and abs(height - expected_height) <= 1:
+        return True
+
+
+def find_sibling_window_by_class(hwnd, sibling_class_name):
+    parent = win32gui.GetParent(hwnd)
+    if not parent:
+        return None
+
+    hwnd_sibling = None
+
+    def enum_sibling_windows(hwnd, param):
+        nonlocal hwnd_sibling
+        if win32gui.GetClassName(hwnd) == sibling_class_name:
+            hwnd_sibling = hwnd
+            return False  # 停止枚举
+        return True  # 继续枚举
+
+    win32gui.EnumChildWindows(parent, enum_sibling_windows, None)
+    return hwnd_sibling

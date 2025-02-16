@@ -26,8 +26,8 @@ from module.EnhanceSimulator import EnhanceSimulator
 from module.UI.GemUI import GemUI
 from module.UI.UIWidgets import clover_list
 from module.bg_img_match import match_p_in_w, loop_match_ps_in_w, loop_match_p_in_w
-from module.core.CardEnhancer import enhance_log
-from module.core.CardProducer import dynamic_card_producer
+from module.core.CardEnhancer import enhance_log, click_warning_dialog
+from module.core.CardProducer import dynamic_card_producer, spice_list
 from module.core.CardTab import exist_empty_block, get_card_names, get_card_list, make_card_count_dict
 from module.core.DepositoryTab import reset_repo_slider, scroll_repo_slider
 from module.core.DynamicWait import dynamic_wait_card_slot_state
@@ -100,7 +100,7 @@ class TenchiCardsEnhancer(QMainWindow):
         GLOBALS.DPI = get_system_dpi()
 
         # 变量初始化
-        self.version = "0.4.0"
+        self.version = "0.4.1"
         self.handle = None
         self.handle_browser = None
         self.handle_360 = None
@@ -883,15 +883,12 @@ class TenchiCardsEnhancer(QMainWindow):
         """根据设置，初始化控件的选择情况，并绑定信号"""
         # 初始化香料菜单
         production_plan = self.settings["生产方案"]
-        # 将字典的键（香料名）提取到一个列表中
-        spices = list(production_plan.keys())
-        for i in range(len(spices)):
-            spice_name = spices[i]
+        for index, spice_name in enumerate(spice_list):
             # 获取对应的香料控件
-            spice_use_name = f"spice_use{i}"
+            spice_use_name = f"spice_use{index}"
             spice_use_check = getattr(self, spice_use_name)
             # 设置是否使用该香料
-            spice_use_check.setChecked(production_plan[spice_name])
+            spice_use_check.setChecked(production_plan.get(spice_name, False))
             # 每次更改是否使用时，都要保存字典
             spice_use_check.stateChanged.connect(self.on_spice_use_changed)
 
@@ -1218,31 +1215,6 @@ class TenchiCardsEnhancer(QMainWindow):
         # 保存设置
         save_settings(self.settings)
 
-    def handle_check(self, handle):
-        """
-        根据窗口类名，窗口大小，校验该窗口是否为flash游戏窗口
-        """
-        # 窗口名
-        window_name = win32gui.GetWindowText(handle)
-        # 窗口类名
-        window_class_name = win32gui.GetClassName(handle)
-        # 窗口大小
-        window_rect = win32gui.GetWindowRect(handle)
-        left, top, right, bottom = window_rect
-        width = right - left
-        height = bottom - top
-
-        scale = GLOBALS.DPI / 96
-        # 计算期望的窗口尺寸
-        expected_width = int(950 * scale)
-        expected_height = int(596 * scale)
-
-        logger.info(handle, window_name, window_class_name, width, height)
-
-        # 允许1个像素内的误差
-        if abs(width - expected_width) <= 1 and abs(height - expected_height) <= 1:
-            return True
-
     # 更新显示窗口句柄和窗口名的标签
     def update_handle_display(self, handle):
         """
@@ -1255,7 +1227,7 @@ class TenchiCardsEnhancer(QMainWindow):
                             |- Type: NativeWindowClass # Flash游戏层级 需要玩家指定
         """
         # 句柄校验
-        if not self.handle_check(handle):
+        if not handle_check(handle):
             event_manager.show_dialog_signal.emit("这不是游戏窗口！",
                                                   "哼，给我拖到游戏里去啊！\n （悄悄告诉你呦，目前我只支持360游戏大厅）")
             return
@@ -1284,7 +1256,7 @@ class TenchiCardsEnhancer(QMainWindow):
                 self.handle_360 = handle
                 self.window_name_360 = win32gui.GetWindowText(self.handle_360)
                 # 获取供刷新用的网页句柄
-                self.handle_web = self.find_sibling_window_by_class(win32gui.GetParent(self.handle),
+                self.handle_web = find_sibling_window_by_class(win32gui.GetParent(self.handle),
                                                                     "Chrome_RenderWidgetHostHWND")
                 logger.info(self.handle_web)
 
@@ -1301,23 +1273,6 @@ class TenchiCardsEnhancer(QMainWindow):
                     |- Type: WrapperNativeWindowClass
                         |- Type: NativeWindowClass # Flash游戏层级
     """
-
-    def find_sibling_window_by_class(self, hwnd, sibling_class_name):
-        parent = win32gui.GetParent(hwnd)
-        if not parent:
-            return None
-
-        hwnd_sibling = None
-
-        def enum_sibling_windows(hwnd, param):
-            nonlocal hwnd_sibling
-            if win32gui.GetClassName(hwnd) == sibling_class_name:
-                hwnd_sibling = hwnd
-                return False  # 停止枚举
-            return True  # 继续枚举
-
-        win32gui.EnumChildWindows(parent, enum_sibling_windows, None)
-        return hwnd_sibling
 
     def get_handle_cus(self, mode="flash"):
         """
@@ -1337,12 +1292,6 @@ class TenchiCardsEnhancer(QMainWindow):
         return handle
 
     # 字典编辑方法，传入字典，键，值，返回修改后的字典
-    def update_dict(self, my_dict, key, value):
-        # 哦哦哦，把key转化为str
-        key = str(key)
-        # 修改或初始化字典对应键和值
-        my_dict[key] = int(my_dict.get(key, 0)) + int(value)
-        return my_dict
 
     def get_scroller_parameter(self):
         """
@@ -1572,10 +1521,11 @@ class TenchiCardsEnhancer(QMainWindow):
                 click(285, 436)
                 # 主卡为不绑时，使用绑定材料强卡会导致弹窗，此为弹窗检测和点击
                 if not used_card_list[0].bind:
-                    for index in range(1, len(used_card_list)):
-                        if used_card_list[index].bind or clover_bind:
+                    for used_card in used_card_list[1:]:
+                        if used_card.bind or clover_bind:
+                            logger.info(f"帮忙点击确认绑定弹窗")
                             # 检测绑定弹窗，并点掉
-                            self.click_warning_dialog()
+                            click_warning_dialog()
                             break
                 # 等待强化结束后卡槽空出
                 if not dynamic_wait_card_slot_state(2, False, interval=self.enhance_check_interval):
@@ -1652,30 +1602,6 @@ class TenchiCardsEnhancer(QMainWindow):
         # 顺利全部找到，返回可强化标识符与找到的卡片列表
         return True, used_card_list
 
-    # 点掉绑定弹窗
-    def click_warning_dialog(self):
-        # 弹窗出现有延迟，需要循环检测
-        for i in range(10):
-            img = get_image(440, 260, 40, 40)
-            # 还没出现就等一等
-            if not direct_img_match(img, resource.bind_dialog):
-                # 点击强化按钮
-                click(285, 436)
-                QThread.msleep(100)
-            else:
-                break
-        # 反复检测弹窗有没有被点掉，跟检测卡槽是一样的
-        for i in range(30):
-            img = get_image(440, 260, 40, 40)
-            if direct_img_match(img, resource.bind_dialog):
-                click(425, 353)  # 弹窗还在就继续点确定
-                QThread.msleep(100)
-            else:
-                return
-        else:
-            event_manager.emit("怎么这样", "你这绑定弹窗怎么点不掉呀")
-            return
-
     def start_gem_decomposition(self):
         self.gem_enhance_btn.setEnabled(False)
         self.gem_decompose_btn.setEnabled(False)
@@ -1711,7 +1637,7 @@ class TenchiCardsEnhancer(QMainWindow):
         for j in range(self.max_level, self.min_level, -1):
             # 初始化无计数
             none_count = 0
-            name_None_count = 0
+            none_name_count = 0
             # 遍历可用的强卡方案
             for k in range(1, 4):
                 subcard = self.settings["强化方案"][f"{j - 1}-{j}"][f'副卡{k}']
@@ -1727,8 +1653,8 @@ class TenchiCardsEnhancer(QMainWindow):
                 # 确认这些副卡是不是都存在卡片名称
                 subcard_name = subcard.get('卡片名称', '无')
                 if subcard_name == "无":
-                    name_None_count += 1
-                if name_None_count == 3:
+                    none_name_count += 1
+                if none_name_count == 3:
                     event_manager.show_dialog_signal.emit("嗯嗯？",
                                                           "你还没有设置要强化的卡片呢！请到强卡方案——强化类型按钮里去进行设置，或使用乌瑟勋爵一键设置")
                     self.onStop()
@@ -2106,7 +2032,8 @@ class EnhancerThread(QThread):
             return
         while self.enhancer.is_running:
             # 如果强化到达一定时间，且打开刷新游戏设置，就刷新游戏重进一下游戏, 防止卡顿
-            if self.enhancer.is_reload_game and time.time() - self.enhancer.time_last_reload_game >= self.enhancer.reload_time * 60:
+            if (self.enhancer.is_reload_game and
+                    time.time() - self.enhancer.time_last_reload_game >= self.enhancer.reload_time * 60):
                 self.reload_game()
             # 检查停止标识
             if not self.enhancer.is_running:
@@ -2132,8 +2059,7 @@ class EnhancerThread(QThread):
             # 数组卡片全部强化完成后，点击卡片制作标签，再次循环
             change_position("卡片制作", "卡片强化")
         # 如果开启了弹窗后刷新功能，则刷新一次
-        if (self.enhancer.failed_refresh and self.enhancer.failed_refresh_count != 0
-                and self.enhancer.failed_refresh_count <= 5):
+        if self.enhancer.failed_refresh and self.enhancer.failed_refresh_count <= 5:
             logger.info("危险设置！ 弹窗后刷新游戏")
             self.enhancer.is_running = True
             self.reload_game()
@@ -2265,8 +2191,8 @@ def main():
         app.installTranslator(translator)
 
     # 实例化强卡器
-    TCE = TenchiCardsEnhancer()
-    TCE.show()
+    tce = TenchiCardsEnhancer()
+    tce.show()
     sys.exit(app.exec())
 
 

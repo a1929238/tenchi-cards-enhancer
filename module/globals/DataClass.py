@@ -1,5 +1,8 @@
 from dataclasses import dataclass
 
+spice_list = ["不放香料", "天然香料", "上等香料", "秘制香料", "极品香料", "皇室香料", "魔幻香料", "精灵香料",
+              "天使香料", "圣灵香料"]
+
 
 @dataclass
 class Item:
@@ -14,8 +17,6 @@ class Item:
         print(f"{self.name} {self.bind} {self.count}")
 
     def get_level(self):
-        spice_list = ["不放香料", "天然香料", "上等香料", "秘制香料", "极品香料", "皇室香料", "魔幻香料", "精灵香料",
-                      "天使香料"]
         return spice_list.index(self.name)
 
 

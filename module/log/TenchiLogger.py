@@ -7,7 +7,6 @@ import os
 import sys
 import psutil
 
-from module.utils import resource_path
 
 
 class TenchiFilter(logging.Filter):
@@ -59,12 +58,8 @@ class TenchiLogger(logging.Logger):
         self.setLevel(logging.DEBUG)
 
         # 设置保存路径
-        if getattr(sys, 'frozen', False):
-            log_path = "log\\log.log"
-            error_path = "log\\error.log"
-        else:
-            log_path = resource_path("log") + "\\log.log"
-            error_path = resource_path("log") + "\\error.log"
+        log_path = "log\\log.log"
+        error_path = "log\\error.log"
 
         # 创建过滤器，过滤关键词
         keywords = ["property", "widget", "push", "layout"]
