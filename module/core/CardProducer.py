@@ -237,7 +237,7 @@ def dynamic_card_producer(settings, card_names, card_count_dict=None):
     # 计算卡片需求
     if card_count_dict:
         # 如果存在卡片等级字典，则根据卡片等级字典计算卡片需求
-        card_demand = get_card_demand(enhance_plan, card_count_dict, usable_spice)
+        card_demand = get_card_demand(enhance_plan, card_count_dict, usable_spice, card_pack_dict)
     # 如果卡片需求在此时高于14张，则对卡片数量进行缩放，按比例保留14张
     if len(card_demand) > 14:
         card_demand = scale_demand(card_demand)
@@ -285,7 +285,7 @@ def dynamic_card_producer(settings, card_names, card_count_dict=None):
         )
 
 
-def get_card_demand(enhance_plan, card_count_dict, usable_spice) -> list[Card]:
+def get_card_demand(enhance_plan, card_count_dict, usable_spice, card_pack_dict) -> list[Card]:
     """
     根据目前的卡片存量，计算副卡与部分主卡的总需求
     """
@@ -298,7 +298,12 @@ def get_card_demand(enhance_plan, card_count_dict, usable_spice) -> list[Card]:
         # 为主卡需求副卡，0星副卡需求主卡。0星卡的需求可以是21张
         plan = enhance_plan[f"{card.level}-{card.level + 1}"]
         for i in range(3):
-            if plan[sub_cards[i]]["星级"] == "无" or plan["主卡"]["卡片名称"] != card.name:
+            main_card_name = plan["主卡"]["卡片名称"]
+            if main_card_name in card_pack_dict:
+                card_name_list = card_pack_dict[plan["主卡"]["卡片名称"]]
+            else:
+                card_name_list = [main_card_name]
+            if plan[sub_cards[i]]["星级"] == "无" or card.name not in card_name_list:
                 continue
             # 如果副卡存在星级，则将其添加到数组内
             sub_card = Card()
@@ -318,7 +323,12 @@ def get_card_demand(enhance_plan, card_count_dict, usable_spice) -> list[Card]:
             for i in range(3):
                 plan = enhance_plan[f"{card.level + i}-{card.level + (1 + i)}"]
                 for j in range(3):
-                    if plan[sub_cards[j]]["星级"] == "无" or plan[sub_cards[j]]["卡片名称"] != card.name:
+                    sub_card_name = plan[sub_cards[j]]["卡片名称"]
+                    if sub_card_name in card_pack_dict:
+                        card_name_list = card_pack_dict[plan["主卡"]["卡片名称"]]
+                    else:
+                        card_name_list = [sub_card_name]
+                    if plan[sub_cards[j]]["星级"] == "无" or card.name not in card_name_list:
                         continue
                     main_card = Card()
                     # 获取该副卡的主卡信息

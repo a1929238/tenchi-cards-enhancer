@@ -8,7 +8,6 @@ import sys
 import psutil
 
 
-
 class TenchiFilter(logging.Filter):
     """
     多关键词过滤器

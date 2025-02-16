@@ -25,10 +25,10 @@ def scroll_repo_slider(current_position, distance, check_interval=20):
         仓库滚动条滑动函数
         含对滚动条的任何长度滑动参数，以及动态检测滑动参数的完成性
     """
-    # 如果已经在最下方，则直接返回True
+    # 如果已经在最下方，则直接返回False，表示不需要再次滑动
     bottom_area_img = get_image(905, 520, 10, 10)
     if not direct_img_match(bottom_area_img, resource.scroll_bottom_area):
-        return True
+        return False
     repo_img_hash = hash(get_image(*repo_area).tobytes())
     drag(908, 120 + current_position, 0, distance)
     for _ in range(20):
@@ -41,10 +41,10 @@ def scroll_repo_slider(current_position, distance, check_interval=20):
 
 def reset_repo_slider(check_interval=20):
     """点击滚动条最上方重置滚动条"""
-    # 如果已经在最上方，则直接返回True
+    # 如果已经在最上方，则直接返回False
     top_area_img = get_image(905, 110, 10, 10)
     if not direct_img_match(top_area_img, resource.scroll_top_area):
-        return True
+        return False
     repo_img_hash = hash(get_image(*repo_area).tobytes())
     click(908, 120)
     for _ in range(20):

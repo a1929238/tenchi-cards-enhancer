@@ -105,4 +105,4 @@ def exist_empty_block(img):
     """
     模版匹配，判断图像中是否存在空格
     """
-    return template_img_match(img, resource.empty_card, with_click=False)
+    return template_img_match(img, resource.empty_card, threshold=0.99, with_click=False)

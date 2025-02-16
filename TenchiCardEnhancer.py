@@ -106,7 +106,7 @@ class TenchiCardsEnhancer(QMainWindow):
         self.handle_360 = None
         self.window_name_360 = None
         self.is_running = False
-        self.card_list = None
+        self.card_list = []
         self.card_count_dict = {}
         self.offset = 0
         self.cards_enough = False
@@ -1330,7 +1330,10 @@ class TenchiCardsEnhancer(QMainWindow):
                 # 如果是单卡强卡且最高等级小于10，则检测一遍最上面一排，第七张卡(0-6)是否等于等级上限，如果等于，就往下拉一行
                 if card_num == 1 and self.max_level < 10:
                     card_list = self.check_first_row_card(card_list)
-                self.card_list = card_list
+                if card_num == 1:
+                    self.card_list = card_list
+                else:
+                    self.card_list += card_list
                 # 强化当前页面卡片，传输进去的是拷贝后的卡片列表，可在强化函数中修改
                 copy_of_card_list = card_list.copy()
                 copy_of_card_list = [card for card in copy_of_card_list if card.level < self.max_level]
@@ -1352,11 +1355,10 @@ class TenchiCardsEnhancer(QMainWindow):
                     reset_repo_slider()
                 else:
                     distance = self.single_line_length * 7
-                    scroll_repo_slider(current_position, distance)
+                    if not scroll_repo_slider(current_position, distance):
+                        # 如果滚动条已经在最底部，退出循环
+                        break
                     current_position += self.single_line_length * 7
-                # 当前位置超过370，退出循环
-                if current_position >= 370:
-                    break
             else:
                 # 单卡拖曳方式，固定在等级最高卡片位置，不需要拖曳
                 break
@@ -2153,6 +2155,8 @@ class EnhanceOnlyThread(QThread):
         )
         # 截图后强化
         self.enhancer.main_enhancer()
+        # 清空卡片列表
+        self.enhancer.card_list = []
         # 强化完成后弹窗
         event_manager.show_dialog_signal.emit("哇哦", "强化完成！没有可强化的卡片了")
         return
