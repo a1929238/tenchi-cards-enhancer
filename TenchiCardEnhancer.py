@@ -1306,6 +1306,9 @@ class TenchiCardsEnhancer(QMainWindow):
 
     # 强化卡片主函数
     def main_enhancer(self):
+        """
+        主要强化方法，负责从拖曳到进行卡片列表获取、单次卡片强化操作的全部行为
+        """
         if not self.is_running:
             return
         # 初始化当前位置
@@ -1727,6 +1730,9 @@ class TenchiCardsEnhancer(QMainWindow):
         self.is_running = False
         GLOBALS.IS_RUNNING = False
 
+        # 将弹窗内容记录到日志中
+        logger.info(f"[芙芙弹窗] {title}：{message}")
+
         # 如果存在命名管道连接，就发送完成信息
         if self.pipe_thread.connected:
             self.pipe_thread.send_complete()
@@ -1741,8 +1747,6 @@ class TenchiCardsEnhancer(QMainWindow):
             message = "呼……好累……老是弹窗……刷新不动了……"
             self.failed_refresh_count += 1
 
-        # 将弹窗内容记录到日志中
-        logger.info(f"[芙芙弹窗] {title}：{message}")
         msg = QMessageBox()
         # 设置愤怒的芙芙作为图标
         angry_furina = QPixmap(resource_path("items/icon/angry_furina.png"))
@@ -1776,9 +1780,13 @@ class TenchiCardsEnhancer(QMainWindow):
             self.output_log.verticalScrollBar().maximum()
         )
 
-    # 输入二级密码
     def check_second_password(self) -> None:
+        """
+        如果开启了二级密码功能和存在二级密码，则在主菜单时输入二级密码
+        """
         # 先检查二级密码设置
+        if not self.settings["个人设置"]["是否输入二级密码"]:
+            return
         if self.settings["个人设置"]["二级密码"] == "":
             # 弹窗提示
             event_manager.show_dialog_signal.emit("啊哇哇哇哇", "你没有填二级密码开什么二级密码输入功能呀")
@@ -2009,7 +2017,7 @@ class TenchiCardsEnhancer(QMainWindow):
 
 class EnhancerThread(QThread):
 
-    def __init__(self, tenchi_cards_enhancer):
+    def __init__(self, tenchi_cards_enhancer: TenchiCardsEnhancer):
         super().__init__()
         self.enhancer = tenchi_cards_enhancer
 
@@ -2018,8 +2026,7 @@ class EnhancerThread(QThread):
         # 初始化最高等级卡片位置
         self.enhancer.single_max_card_position = 0
         # 如果打开了输入二级密码，且处于能看到合成屋的位置，则代替输入二级密码
-        if self.enhancer.settings["个人设置"]["是否输入二级密码"]:
-            self.enhancer.check_second_password()
+        self.enhancer.check_second_password()
         if not self.enhancer.is_running:
             return
         # 初始化卡片名称集合
@@ -2112,8 +2119,7 @@ class EnhancerThread(QThread):
             logger.info("时间差不多喽, 360游戏大厅刷新")
             self.enhancer.reload_game()
             # 刷新后检查二级密码
-            if self.enhancer.settings["个人设置"]["是否输入二级密码"]:
-                self.enhancer.check_second_password()
+            self.enhancer.check_second_password()
             # 重新点击合成屋
             click(685, 558)
             QThread.msleep(3000)
@@ -2136,7 +2142,7 @@ class EnhancerThread(QThread):
 # 仅强卡线程
 class EnhanceOnlyThread(QThread):
 
-    def __init__(self, tenchi_cards_enhancer):
+    def __init__(self, tenchi_cards_enhancer: TenchiCardsEnhancer):
         super().__init__()
         self.enhancer = tenchi_cards_enhancer
 

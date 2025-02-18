@@ -416,7 +416,8 @@ def parse_produce_list(enhance_plan, produce_list, usable_spice):
     # 集合化可用香料等级列表
     usable_spice_level = set(spice.get_level() for spice in usable_spice)
     for card, count in produce_list:
-        if card.level not in usable_spice_level and count > 5:
+        # 如果该卡片等级不在可用香料等级列表中，且数量大于5或生产列表只有一张卡片且数量小于5，则需要为它单独制卡
+        if card.level not in usable_spice_level and (count > 5 or (len(produce_list) == 1 and count < 5)):
             # 分解该卡片来源
             need_cards = calculate_total_base_cards(card.level, usable_spice_level, enhance_plan)
             if not need_cards:

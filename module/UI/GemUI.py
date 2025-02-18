@@ -1,4 +1,6 @@
+from __future__ import annotations
 import os
+from typing import TYPE_CHECKING
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
@@ -11,9 +13,12 @@ from GUI.bindingcheckbox import BindingCheckbox
 from module.UI.UIWidgets import CloverComboBox
 from module.utils import save_settings, resource_path
 
+if TYPE_CHECKING:
+    from TenchiCardEnhancer import TenchiCardsEnhancer
+
 
 class GemUI:
-    def __init__(self, enhancer):
+    def __init__(self, enhancer: TenchiCardsEnhancer):
         super().__init__()
 
         self.enhancer = enhancer

@@ -1,21 +1,67 @@
-import random
+from __future__ import annotations
 
-import cv2
-import numpy as np
+from typing import TYPE_CHECKING
+
 from PyQt6.QtCore import QThread, QTime
 
 from module.core.DepositoryTab import click_gem
-from module.core.DynamicWait import dynamic_check_gold, dynamic_wait_gem_enhance_btn_to_gry
+from module.core.DynamicWait import dynamic_wait_gem_enhance_btn_to_gry
 from module.core.GetImg import get_image
 from module.core.ImgMatch import direct_img_match, has_area_changed
 from module.core.ItemTab import get_target_item
 from module.core.LevelCheck import check_gem_enhance_result
 from module.core.MouseEvent import click
-from module.core.PositionCheck import check_position, change_position
-from module.globals.ResourceInit import resource
+from module.core.PositionCheck import change_position
 from module.globals.EventManager import event_manager
+from module.globals.ResourceInit import resource
 from module.ocr.NumberOcr import get_num
 from module.utils import template_match_with_mask, load_level_crystal_map
+
+if TYPE_CHECKING:
+    from TenchiCardEnhancer import TenchiCardsEnhancer
+
+
+def get_crystal_info():
+    """
+    获取当前所有强化水晶、高级强化水晶的数量与绑定状态
+    """
+    crystal_info = {
+        "绑定高级强化水晶": 0,
+        "不绑高级强化水晶": 0,
+        "绑定强化水晶": 0,
+        "不绑强化水晶": 0
+    }
+    # 截图道具栏，只需要截图前四格
+    tab_img = get_image(33, 526, 196, 49)
+    # 分割成4个49x49的图像
+    for i in range(4):
+        img = tab_img[0:49, i * 49: (i + 1) * 49]
+        # 提取物品种类区域
+        kind = img[4: 28, 4: 42]
+        # 只取其中的44x44区域
+        img = img[1:45, 1:45]
+        # 匹配出是强化水晶还是高级强化水晶
+        for crystal_name, crystal_img in resource.crystal_images.items():
+            if direct_img_match(kind, crystal_img):
+                name = crystal_name
+                bind_icon = img[37:44, 2:8]
+                num_img = img[33:41, 9:44]
+                # 判断绑定
+                bind = direct_img_match(bind_icon, resource.spice_bind_img)
+                # 获取数量
+                num = get_num(num_img)
+                if num is None:
+                    num = 1
+                full_name = ('绑定' if bind else '不绑') + name
+                crystal_info[full_name] = num
+                break
+        else:
+            # 如果没有匹配到水晶，说明水晶已经被匹配完成了
+            break
+    if crystal_info:
+        return crystal_info
+    else:
+        return None
 
 
 class GemEnhancer:
@@ -24,9 +70,8 @@ class GemEnhancer:
     流程为 获取图像->获得具体宝石详情->分配强化方案->根据强化方案与数字ocr判断强化水晶是否满足强化需求->开始强化
     """
 
-    def __init__(self, tenchi_cards_enhancer=None):
-        if tenchi_cards_enhancer:
-            self.enhancer = tenchi_cards_enhancer
+    def __init__(self, tenchi_cards_enhancer: TenchiCardsEnhancer):
+        self.enhancer = tenchi_cards_enhancer
         # 初始化全局变量
         self.start_x = 0
         self.start_y = 0
@@ -34,48 +79,6 @@ class GemEnhancer:
         self.level_crystal_map = load_level_crystal_map()
         self.plan = self.enhancer.settings["宝石方案"]
         self.name_cache = None
-
-    def get_crystal_info(self):
-        """
-        获取当前所有强化水晶、高级强化水晶的数量与绑定状态
-        """
-        crystal_info = {
-            "绑定高级强化水晶": 0,
-            "不绑高级强化水晶": 0,
-            "绑定强化水晶": 0,
-            "不绑强化水晶": 0
-        }
-        # 截图道具栏，只需要截图前四格
-        tab_img = get_image(33, 526, 196, 49)
-        # 分割成4个49x49的图像
-        for i in range(4):
-            img = tab_img[0:49, i * 49: (i + 1) * 49]
-            # 提取物品种类区域
-            kind = img[4: 28, 4: 42]
-            # 只取其中的44x44区域
-            img = img[1:45, 1:45]
-            # 匹配出是强化水晶还是高级强化水晶
-            for crystal_name, crystal_img in resource.crystal_images.items():
-                if direct_img_match(kind, crystal_img):
-                    name = crystal_name
-                    bind_icon = img[37:44, 2:8]
-                    num_img = img[33:41, 9:44]
-                    # 判断绑定
-                    bind = direct_img_match(bind_icon, resource.spice_bind_img)
-                    # 获取数量
-                    num = get_num(num_img)
-                    if num is None:
-                        num = 1
-                    full_name = ('绑定' if bind else '不绑') + name
-                    crystal_info[full_name] = num
-                    break
-            else:
-                # 如果没有匹配到水晶，说明水晶已经被匹配完成了
-                break
-        if crystal_info:
-            return crystal_info
-        else:
-            return None
 
     def get_gem_info(self, img):
         """
@@ -207,7 +210,7 @@ class GemEnhancer:
         while current_level < self.plan["等级范围"][1]:
             bind = self.plan["水晶绑定"]
             # 查看目前的强化水晶量
-            crystal_info = self.get_crystal_info()
+            crystal_info = get_crystal_info()
             # 如果强化水晶不够，就弹窗提示并停止宝石强化
             if not self.is_crystal_enough(crystal_info, current_level, bind):
                 event_manager.show_dialog_signal.emit("啊哇哇", "水晶用完了！就算我再怎么高性能，也没法强化啦")
@@ -216,7 +219,7 @@ class GemEnhancer:
                 return False
             # 开始强化
             if self.enhance_gem_once(current_level, bind):
-                self.enhancer.log_signal.emit(f"{gem_name}成功强化到{current_level + 1}级")
+                event_manager.log_signal.emit(f"{gem_name}成功强化到{current_level + 1}级")
                 current_level += 1
             elif current_level > 5:
                 current_level -= 1

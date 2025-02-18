@@ -1,5 +1,8 @@
+from __future__ import annotations
 import threading
 import time
+from typing import TYPE_CHECKING
+
 import pywintypes
 import win32pipe
 import win32file
@@ -8,9 +11,12 @@ import queue
 from module.globals.EventManager import event_manager
 from module.log.TenchiLogger import logger
 
+if TYPE_CHECKING:
+    from TenchiCardEnhancer import TenchiCardsEnhancer
+
 
 class PipeCommunicationThread(threading.Thread):
-    def __init__(self, pipe_name, enhancer):
+    def __init__(self, pipe_name, enhancer: TenchiCardsEnhancer):
         super().__init__()
         self.pipe_name = r'\\.\pipe\\' + pipe_name
         self.enhancer = enhancer
