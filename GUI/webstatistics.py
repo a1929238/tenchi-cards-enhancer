@@ -1,9 +1,9 @@
 import json
-
+import os
 import numpy as np
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWidgets import QWidget, QTabWidget, QVBoxLayout, QSizePolicy, QLayout
-from pandas import read_csv, Series, concat
+from pandas import read_csv, Series, concat, errors
 
 from module.globals import GLOBALS
 from module.log.TenchiLogger import logger
@@ -41,7 +41,13 @@ gold_cost_mapping = {
         "15": 96598
     }
 }
-
+REQUIRED_COLUMNS = [
+    'timestamp', 'main_star', 'main_name', 'main_bind',
+    'sub_star1', 'sub_name1', 'sub_bind1', 'sub_star2',
+    'sub_name2', 'sub_bind2', 'sub_star3', 'sub_name3',
+    'sub_bind3', 'clover_name', 'clover_bind',
+    'original_success_rate', 'extra_success_rate', 'result'
+]
 
 # 使用ECharts为统计数据绘制图表，用内置的谷歌浏览器显示
 class WebStatistics:
@@ -62,32 +68,46 @@ class WebStatistics:
         self.web_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.html_cache = {}  # HTML 缓存
 
-        # 尝试读取本地csv文件
-        try:
-            self.load_csv_to_df(csv_path="enhance_stats/card_stats.csv")
-        except FileNotFoundError:
-            logger.warning("没有找到统计文件")
+        self.refresh_data()
         if self.data_frame is not None:
             self.init_tab()
-            self.count_gold_cost()
 
     def load_csv_to_df(self, csv_path):
-        # 读取CSV文件
-        df = read_csv(csv_path, header=0)
+        # 检查文件是否存在
+        if not os.path.exists(csv_path):
+            print(f"文件不存在: {csv_path}")
+            self.data_frame = None
+            return
 
-        # 处理缺失值
-        df.replace('', np.nan, inplace=True)
+        try:
+            # 读取CSV文件
+            df = read_csv(csv_path, header=0)
 
-        # 将布尔值字段转换为布尔类型
-        bool_columns = ['main_bind', 'sub_bind1', 'sub_bind2', 'sub_bind3', 'clover_bind']
-        for col in bool_columns:
-            if col in df.columns:
-                df[col] = df[col].astype(str).str.lower().map({'1': True, '0': False, 'true': True, 'false': False})
+            # 检查列完整性
+            if not set(REQUIRED_COLUMNS).issubset(df.columns):
+                missing = set(REQUIRED_COLUMNS) - set(df.columns)
+                print(f"缺少必要列: {', '.join(missing)}")
+                return
 
-        # 将result字段转换为布尔类型
-        df['result'] = df['result'].astype(str).str.lower().map({'true': True, 'false': False})
+            # 处理缺失值
+            df.replace('', np.nan, inplace=True)
 
-        self.data_frame = df
+            # 将布尔值字段转换为布尔类型
+            bool_columns = ['main_bind', 'sub_bind1', 'sub_bind2', 'sub_bind3', 'clover_bind']
+            for col in bool_columns:
+                if col in df.columns:
+                    df[col] = df[col].astype(str).str.lower().map({'1': True, '0': False, 'true': True, 'false': False})
+
+            # 将result字段转换为布尔类型
+            if "result" in df.columns:
+                df['result'] = df['result'].astype(str).str.lower().map({'true': True, 'false': False})
+
+            self.data_frame = df
+
+        except errors.EmptyDataError:
+            print("文件内容为空")
+            self.data_frame = None
+            return
 
     def count_gold_cost(self):
         """统计金币消耗"""
@@ -179,13 +199,13 @@ class WebStatistics:
 
     def refresh_data(self):
         """"刷新方法"""
-        # 尝试读取本地csv文件
-        try:
-            self.load_csv_to_df(csv_path="enhance_stats/card_stats.csv")
-        except FileNotFoundError:
-            logger.warning("没有找到统计文件")
+        self.load_csv_to_df(csv_path="enhance_stats/card_stats.csv")
         if self.data_frame is not None:
             self.count_gold_cost()
+
+    def reload(self):
+        self.refresh_data()
+        if self.data_frame is not None:
             self.html_cache = {}  # 清空缓存
             self.load_tab_content(self.stats_tab_widget.currentIndex())  # 重新加载当前页面
 

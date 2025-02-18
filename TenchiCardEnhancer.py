@@ -345,7 +345,7 @@ class TenchiCardsEnhancer(QMainWindow):
     def on_tab_changed(self, index):
         """标签页切换信号"""
         if self.tabWidget.widget(index) == self.tab_3:
-            self.web_statistics.refresh_data()
+            self.web_statistics.reload()
 
     def onStart(self, without_dialog=False):
         """开始按钮"""
