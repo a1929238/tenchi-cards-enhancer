@@ -1305,15 +1305,17 @@ class TenchiCardsEnhancer(QMainWindow):
         self.single_scroll_time = int(((draggable_length / bag_lines) / self.single_line_length) * bag_lines) + 1
 
     # 强化卡片主函数
-    def main_enhancer(self):
+    def main_enhancer(self, enhance_plan=None):
         """
         主要强化方法，负责从拖曳到进行卡片列表获取、单次卡片强化操作的全部行为
         """
         if not self.is_running:
             return
+        if enhance_plan is None:
+            enhance_plan = self.settings["强化方案"]
         # 初始化当前位置
         current_position = 0
-        # 最终最终方案，根据用户背包大小计算卡片行数，然后算出滚动条总长，以此完全确定拖动距离
+        # 最终滚动方案，根据用户背包大小计算卡片行数，然后算出滚动条总长，以此完全确定拖动距离
         self.get_scroller_parameter()
         # 确认当前强化方案中卡片数量
         card_num = len(self.card_names)
@@ -1324,6 +1326,7 @@ class TenchiCardsEnhancer(QMainWindow):
         while self.is_running:
             # 初始化偏移值,切割传入图像
             self.offset = 0
+            start_time = time.time()
             # 截图并切割图片，方法更新，用模板匹配图片中的第一行，然后把色块以上的图片全部切掉，再识别。这样无论滑块在哪里，都能确保找到七行卡片
             img = self.get_cut_cards_img(need_offset=True)
             # 尝试获取强化卡片字典
@@ -1340,7 +1343,9 @@ class TenchiCardsEnhancer(QMainWindow):
                 # 强化当前页面卡片，传输进去的是拷贝后的卡片列表，可在强化函数中修改
                 copy_of_card_list = card_list.copy()
                 copy_of_card_list = [card for card in copy_of_card_list if card.level < self.max_level]
-                self.enhance_card_once(card_list=copy_of_card_list, enhance_plan=self.settings["强化方案"])
+                self.enhance_card_once(card_list=copy_of_card_list,
+                                       enhance_plan=enhance_plan,
+                                       start_time=start_time)
                 # 检查停止标识
                 if not self.is_running:
                     break
@@ -1444,12 +1449,13 @@ class TenchiCardsEnhancer(QMainWindow):
         return img
 
     # 强化卡片，由高到低，强化当前页所有符合条件的卡片
-    def enhance_card_once(self, card_list, enhance_plan):
+    def enhance_card_once(self, card_list, enhance_plan, start_time=None):
         """
         通过当前卡片列表，计算并强化一次卡片
         Args:
             card_list: 当前页卡片列表去除最高星卡片后的副本
             enhance_plan: 强化方案
+            start_time: 强化开始时间，用于计算本次强化耗时
         """
         # 获取卡片列表中的最高卡片等级
         current_max_level = max(card.level for card in card_list)
@@ -1481,6 +1487,7 @@ class TenchiCardsEnhancer(QMainWindow):
                 logger.debug(f"{enhance_level}级卡片可以强化")
                 logger.debug(f"当前卡片列表{card_list}")
                 logger.debug(f"使用卡片{used_card_list}")
+                logger.debug(f"本次强化检测操作用时{time.time() - start_time}s")
                 # 初始化检查用的槽位
                 check_slot = len(used_card_list)
                 # 先点击主卡槽，确保上一张卡不会留存
@@ -2071,6 +2078,7 @@ class EnhancerThread(QThread):
         if self.enhancer.failed_refresh and self.enhancer.failed_refresh_count <= 5:
             logger.info("危险设置！ 弹窗后刷新游戏")
             self.enhancer.is_running = True
+            GLOBALS.IS_RUNNING = True
             self.reload_game()
             self.run()  # 递归调用
 

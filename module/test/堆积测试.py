@@ -1,9 +1,11 @@
 import json
 import random
+import time
 from collections import Counter
 from dataclasses import dataclass
 
 from module.globals.DataClass import Card
+from module.utils import merge_card_counts
 
 
 def success_check(success_rate: float) -> bool:
@@ -22,7 +24,7 @@ class TestCardProducer:
     def __init__(self):
         self.card_count_dict = None
         self.spice_stock = {
-            0: 9999,
+            0: 20000,
             1: 0,
             2: 0,
             3: 0,
@@ -113,7 +115,7 @@ class TestCardProducer:
         main_card_level = main_card.level
         # 基于主卡，获得所有副卡概率
         for sub_card in sub_cards:
-            quality = sub_card.quality
+            quality = 2
             sub_card_level = sub_card.level
             if int(sub_card_level) - int(main_card_level) > 2:
                 base_rates.append(1)
@@ -143,7 +145,7 @@ class TestCardProducer:
     def simulate_card_production(self, card_name, level, bind, count):
         for i in range(count):
             self.card_list.append(
-                Card(card_name, level, bind, quality=2)
+                Card(card_name, level, bind)
             )
 
     def main_enhancer(self):
@@ -154,9 +156,6 @@ class TestCardProducer:
                 self.card_list = [card for card in self.card_list if card.level != self.max_level]
                 self.make_card_level_dict()
                 break
-        print(f'目前卡片数量: {len(self.card_list)}')
-        print(f'一共造出了{self.max_level_count}张{self.max_level}星卡片')
-        print(f'当前卡片为{self.card_count_dict}')
 
     def card_enhancer(self):
         """
@@ -171,7 +170,6 @@ class TestCardProducer:
         for enhance_level in range(self.max_level, self.min_level, -1):
             # 如果该等级位于临时屏蔽列表中，则跳过
             if self.temp_block_list and enhance_level - 1 in self.temp_block_list:
-                print(f"{enhance_level}星卡片已屏蔽，跳过")
                 continue
             else:
                 # 获取当前星级强化方案
@@ -272,7 +270,6 @@ class TestCardProducer:
             card_state = card.get_state()
             count = min(count, self.spice_stock[card.level])
             self.simulate_card_production(*card_state, count)
-            print(f"动态制卡{card.level}星{card.name}{count}次")
             # 删掉对应的香料
             self.spice_stock[card.level] -= count
 
@@ -437,8 +434,9 @@ class TestCardProducer:
 if __name__ == '__main__':
     test_card_producer = TestCardProducer()
     test_card_producer.is_running = True
+    start_time = time.time()
     print(f'开始强卡，目前的香料为:{test_card_producer.spice_stock}')
-    for _ in range(500):
+    for _ in range(1000):
         if not test_card_producer.is_running:
             break
         # 制卡
@@ -449,3 +447,4 @@ if __name__ == '__main__':
         if not test_card_producer.spice_stock:
             break
     print(f'结束强卡，目前的香料为:{test_card_producer.spice_stock}')
+    print(f'共耗时{time.time() - start_time}秒')

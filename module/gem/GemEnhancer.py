@@ -142,10 +142,10 @@ class GemEnhancer:
         宝石页面排列规则：一开始固定为超级武器、副武器，宝石被夹在中间，而最后才是主武器。所以在初始化识别出宝石开始与结束位置后，就可以只分割开始位置的图像了
         """
         gem_info_list = []
-        end_flag = False
+        end_flag = 0
         # 分割宝石分解页面的格子，以49x49分割
         for i in range(self.start_y, 8):
-            if end_flag:
+            if end_flag > 2:
                 break
             # 确定当前行的起始列
             current_start_x = self.start_x if i == self.start_y else 0
@@ -157,9 +157,8 @@ class GemEnhancer:
                 gem_info = self.get_gem_info(block)
                 if gem_info:
                     if gem_info['name'] == '空格':
-                        # 遇到空格，结束
-                        end_flag = True
-                        break
+                        end_flag += 1  # 遇到两个空格就结束
+                        continue
                     if self.start_x == 0 and self.start_y == 0:
                         # 记录开始位置
                         self.start_x = j

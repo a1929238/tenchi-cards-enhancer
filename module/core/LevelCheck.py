@@ -13,7 +13,7 @@ def check_gem_enhance_result(current_level):
     # 计算出目标等级
     target_level = current_level + 1
     # 识别.因为宝石在强化后会有一圈特效，故快速比对无法使用，只能使用模板匹配
-    result = cv2.matchTemplate(img, resource.level_images[target_level], cv2.TM_CCORR_NORMED)
+    result = cv2.matchTemplate(img, resource.level_images_without_hash[target_level], cv2.TM_CCORR_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
     if max_val >= 0.95:
         return True

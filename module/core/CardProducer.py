@@ -275,7 +275,7 @@ def dynamic_card_producer(settings, card_names, card_count_dict=None):
         actual_count, actual_card_name = produce_card(name, level, spice.bind, count,
                                                       card_pack_dict, produce_check_interval)
         if actual_count == 0:
-            return
+            continue
         bind_str = "绑定" if spice.bind else "不绑"
         # 记录制卡数据
         produce_recorder.save_produce_statistic(spice.bind, level, actual_count)

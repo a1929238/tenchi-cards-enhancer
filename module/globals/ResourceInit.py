@@ -137,12 +137,13 @@ class ResourceInit:
 
         # 卡片星级以字典形式存储
         self.level_images = {k: imread_to_hash(resource_path(f"items/level/{k}.png")) for k in range(1, 15)}
+        self.level_images_without_hash = {k: imread(resource_path(f"items/level/{k}.png")) for k in range(1, 15)}
         # 卡片资源
         self.card_images = load_card_images()
         # 以字典形式存储强化水晶
         self.crystal_images = {
-            '强化水晶': imread(resource_path("items/crystal/强化水晶.png"), with_alpha=True),
-            '高级强化水晶': imread(resource_path("items/crystal/高级强化水晶.png"), with_alpha=True)
+            '强化水晶': imread_to_hash(resource_path("items/crystal/强化水晶.png")),
+            '高级强化水晶': imread_to_hash(resource_path("items/crystal/高级强化水晶.png"))
         }
         # 四叶草也以字典形式存储
         self.clover_images = load_clover_images()
@@ -164,7 +165,7 @@ class ResourceInit:
         self.bind_dialog = imread_to_hash(resource_path("items/position/bind_dialog.png"))
         self.page_up = imread(resource_path("items/position/PageUp.png"))
         self.page_down = imread(resource_path("items/position/PageDown.png"))
-        self.gray_gem_enhance_btn = imread_to_hash(resource_path("items/position/灰色宝石强化按钮.png"))
+        self.gray_gem_enhance_btn = imread(resource_path("items/position/灰色宝石强化按钮.png"))
 
         # ocr数字
         self.num_images, self.num_images_without_hash = load_num_images()
