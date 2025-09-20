@@ -69,7 +69,7 @@ def get_item_name(item_img, tar_img_dict) -> str:
         return "未知"
 
 
-def item_tab_page_up():
+def action_item_tab_page_up():
     """一直翻页到向上翻页按钮变灰"""
     # 如果向上翻页按钮本来就是灰的，则直接返回
     if screenshot_and_direct_img_match(532, 539, resource.page_up):
@@ -85,7 +85,7 @@ def item_tab_page_up():
     return False
 
 
-def item_tab_page_down():
+def action_item_tab_page_down():
     """一直翻页直到翻页按钮变灰。该翻页方法仅适用于道具总量小于20的情况"""
     # 如果向下翻页按钮本来就是灰的，则直接返回
     if screenshot_and_direct_img_match(532, 560, resource.page_down):
@@ -108,7 +108,7 @@ def click_item(index):
     click(55 + 49 * index, 550)
 
 
-def get_item_list(mode, page_down=True) -> list[Item]:
+def action_get_item_list(mode, page_down=True) -> list[Item]:
     """根据类型获取完整的道具列表
     Args:
         mode(str):道具类型，有香料，四叶草，强化水晶
@@ -118,7 +118,7 @@ def get_item_list(mode, page_down=True) -> list[Item]:
     """
     item_list = []
     # 确保处于道具页最上方
-    item_tab_page_up()
+    action_item_tab_page_up()
     match mode:
         case "香料":
             tar_img_dict = resource.spice_images
@@ -150,7 +150,7 @@ def get_item_list(mode, page_down=True) -> list[Item]:
             if item not in item_list:
                 item_list.append(item)
         if page_down:
-            item_tab_page_down()
+            action_item_tab_page_down()
     return item_list
 
 
@@ -168,7 +168,7 @@ def get_target_item(tar_img, bind, page_down=True, num=10) -> (bool, bool):
         bind: 目标道具的绑定情况，统计用
     """
     # 确保处于道具页最上方
-    item_tab_page_up()
+    action_item_tab_page_up()
     if page_down:
         page_down_times = 2
     else:
@@ -187,5 +187,5 @@ def get_target_item(tar_img, bind, page_down=True, num=10) -> (bool, bool):
                     return True, item_bind
         # 第一轮识图结束，如果需要，进行翻页
         if page_down:
-            item_tab_page_down()
+            action_item_tab_page_down()
     return False, False

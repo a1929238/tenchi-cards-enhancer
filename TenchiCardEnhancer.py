@@ -60,6 +60,7 @@ class TenchiCardsEnhancer(QMainWindow):
         sys.excepthook = logger.tenchi_exception_handler
 
         logger.info("少女祈祷中...")
+
         # 加载UI文件
         ui_path = resource_path('GUI/天知强卡器.ui')
         uic.loadUi(ui_path, self)
@@ -94,7 +95,7 @@ class TenchiCardsEnhancer(QMainWindow):
         self.init_css()
 
         # 初始化标题栏
-        self.init_title_bar()
+        self._init_title_bar()
 
         # 初始化窗口dpi
         GLOBALS.DPI = get_system_dpi()
@@ -482,7 +483,7 @@ class TenchiCardsEnhancer(QMainWindow):
         # 调用保存设置函数
         save_settings(self.settings)
 
-    def init_title_bar(self):
+    def _init_title_bar(self):
         # 设置标题栏图标
         self.title_icon.setScaledContents(True)
         self.title_icon.setPixmap(QPixmap(resource_path("items/icon/furina.ico")))
@@ -1256,8 +1257,8 @@ class TenchiCardsEnhancer(QMainWindow):
                 self.handle_360 = handle
                 self.window_name_360 = win32gui.GetWindowText(self.handle_360)
                 # 获取供刷新用的网页句柄
-                self.handle_web = find_sibling_window_by_class(win32gui.GetParent(self.handle),
-                                                                    "Chrome_RenderWidgetHostHWND")
+                self.handle_web = find_sibling_window_by_class(
+                    win32gui.GetParent(self.handle), "Chrome_RenderWidgetHostHWND")
                 logger.info(self.handle_web)
 
             else:
@@ -1460,7 +1461,7 @@ class TenchiCardsEnhancer(QMainWindow):
         # 获取卡片列表中的最高卡片等级
         current_max_level = max(card.level for card in card_list)
         # 按照最高强化卡片星级，从高到低，遍历设置里的强化方案，获取所需副卡，如果卡片总量大于等于方案所需卡片，就遍历card字典的位置，点击卡片，强化一次
-        for enhance_level in range(current_max_level+1, self.min_level, -1):
+        for enhance_level in range(current_max_level + 1, self.min_level, -1):
             # 获取当前星级强化方案
             current_enhance_plan = enhance_plan[f"{enhance_level - 1}-{enhance_level}"]
             # 初始化需求卡片列表
@@ -1802,6 +1803,7 @@ class TenchiCardsEnhancer(QMainWindow):
         if check_position() != "主菜单":
             self.send_log_message("找不到跳转按钮，不输入二级密码")
             return
+
         # 跳转到暗晶商店，尝试兑换星座卡随机礼包
         click(870, 556)
         QThread.msleep(500)
@@ -1813,6 +1815,7 @@ class TenchiCardsEnhancer(QMainWindow):
         QThread.msleep(500)
         click(407, 449)
         QThread.msleep(500)
+
         # 检查停止标识
         if not self.is_running:
             return

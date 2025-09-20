@@ -6,7 +6,7 @@ from module.core.DynamicWait import dynamic_check_gold, dynamic_wait_recipe_chan
 from module.core.GetImg import get_image
 from module.core.ImgMatch import template_img_match, screenshot_and_direct_img_match, find_and_crop_template, \
     direct_img_match
-from module.core.ItemTab import get_target_item, get_item_list
+from module.core.ItemTab import get_target_item, action_get_item_list
 from module.core.MouseEvent import click
 from module.globals.DataClass import Card, Item
 import module.globals.GLOBALS as GLOBALS
@@ -226,7 +226,7 @@ def dynamic_card_producer(settings, card_names, card_count_dict=None):
     enhance_plan = settings["强化方案"]
     card_pack_dict = settings["卡包配置"]
     # 获取香料数量
-    spice_stock = get_item_list("香料")
+    spice_stock = action_get_item_list("香料")
     # 获取可用香料
     usable_spice = get_spice_usable(spice_stock, settings["生产方案"])
     # 获得制卡间隔和制卡检测间隔
