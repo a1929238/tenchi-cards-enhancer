@@ -2,7 +2,7 @@ import cv2
 import win32gui
 
 import module.globals.GLOBALS as GLOBALS
-from module.core.ItemTab import get_item_list
+from module.core.ItemTab import action_get_item_list
 from module.core.PositionCheck import check_position
 
 
@@ -32,6 +32,6 @@ def test():
 
 
 def test_get_item_list():
-    item_list = get_item_list("香料")
+    item_list = action_get_item_list("香料")
     for item in item_list:
         item.print()

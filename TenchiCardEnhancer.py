@@ -134,7 +134,8 @@ class TenchiCardsEnhancer(QMainWindow):
         filename = resource_path('GUI/default/default_constants.json')
         with open(filename, 'r', encoding='utf-8') as f:
             default_constants = json.load(f)
-        self.best_enhance_plan = default_constants['强化最优路径']
+        self.best_enhance_plan_free = default_constants['强化最优路径']
+        self.best_enhance_plan_bound = default_constants['强化最优路径-绑定']
 
         self.settings = load_settings()  # 读取设置作为全局变量
         self.pack_names = list(self.settings["卡包配置"].keys())  # 提取所有卡包名
@@ -463,12 +464,18 @@ class TenchiCardsEnhancer(QMainWindow):
         save_settings(self.settings)
 
     def surintendante_chevalmarin(self):
-        # 替换所有副卡的星级为最优路径
-        for enhance_type, enhance_info in self.best_enhance_plan.items():
         """
         海薇玛夫人！ 替换所有副卡的星级为最优路径
         """
 
+        # 获取绑定/不绑按钮的选择状态 0 仅不绑 1 仅绑定 2 均选择
+        bind_state = self.bind_check_box.get_state()
+        if bind_state == 0:
+            best_enhance_plan = self.best_enhance_plan_free
+        else:
+            best_enhance_plan = self.best_enhance_plan_bound
+
+        for enhance_type, enhance_info in best_enhance_plan.items():
             if enhance_type in self.settings["强化方案"]:
                 for material, count in enhance_info.items():
                     if material in self.settings["强化方案"][enhance_type]:
@@ -859,6 +866,7 @@ class TenchiCardsEnhancer(QMainWindow):
         sub_card_list = ["副卡1", "副卡2", "副卡3"]
         for i in range(3):
             for j in range(16):
+                sub_card_type_name = sub_card_list[i]
                 subcard_box_name = f"subcard{i + 1}_{j}"
                 subcard_box = getattr(self, subcard_box_name)
                 # 阻止信号发射
@@ -874,9 +882,9 @@ class TenchiCardsEnhancer(QMainWindow):
                 subcard_box.addItem("无")
                 # 菜单选项添加完后，根据设置文件，设置菜单的当前选中项
                 current_level_key = f"{j}-{j + 1}"
-                selected_subcard = self.settings["强化方案"][current_level_key][sub_card_list[i]].get("星级", "无")
+                selected_subcard = self.settings["强化方案"][current_level_key][sub_card_type_name].get("星级", "无")
                 # 在 QComboBox 中查找这个卡片名称对应的索引
-                index = subcard_box.findText(selected_subcard)
+                index = subcard_box.findText(str(selected_subcard))
                 if index >= 0:
                     # 如果找到了，设置 QComboBox 当前选中的索引
                     subcard_box.setCurrentIndex(index)
