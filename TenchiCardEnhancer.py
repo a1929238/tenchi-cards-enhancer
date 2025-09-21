@@ -63,6 +63,7 @@ class TenchiCardsEnhancer(QMainWindow):
         # 加载UI文件
         ui_path = resource_path('GUI/天知强卡器.ui')
         uic.loadUi(ui_path, self)
+
         # 移除系统边框和标题栏
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowMinMaxButtonsHint)
         # 初始化拖动变量
@@ -164,7 +165,6 @@ class TenchiCardsEnhancer(QMainWindow):
         }
         # 设置日志的超链接扩展
         self.init_output_log()
-        self.init_log_message()
 
         # 召唤动态芙芙！
         self.furina_movie = QMovie(resource_path("items/icon/furina_shake.gif"))
@@ -381,12 +381,40 @@ class TenchiCardsEnhancer(QMainWindow):
         else:
             result = True
         if result:
-            self.EnhancerThread.start_loop()
+            self.EnhancerThread.start_enhance()
         else:
             self.onStop()
 
-    # 停止按钮
+    def enhanceronly(self, without_dialog=False):
+
+        # 确保不会重复点击开始
+        self.enhanceronlybtn.setEnabled(False)
+        self.startbtn.setEnabled(False)
+        self.stopbtn.setEnabled(True)
+
+        # 打开运行标识
+        self.is_running = True
+        GLOBALS.IS_RUNNING = True
+
+        # 正式开始前先防呆
+        self.dull_detection("仅强卡")
+
+        # 如果没通过防呆检测，就直接返回
+        if not self.is_running:
+            return
+
+        # 进行防呆弹窗
+        if not without_dialog:
+            result = self.dull_dialog()
+        else:
+            result = True
+        if result:
+            self.EnhanceOnlyThread.start_enhance()
+        else:
+            self.onStop()
+
     def onStop(self):
+        """停止按钮"""
         # 点击停止后可以重新点击开始
         self.is_running = False
         GLOBALS.IS_RUNNING = False
@@ -398,24 +426,7 @@ class TenchiCardsEnhancer(QMainWindow):
         # 重置弹窗计数
         self.failed_refresh_count = 0
 
-    # 仅强卡按钮
-    def enhanceronly(self):
-        # 初始化按钮
-        self.stopbtn.setEnabled(True)
-        self.startbtn.setEnabled(False)
-        self.enhanceronlybtn.setEnabled(False)
-        # 打开运行标识
-        self.is_running = True
-        # 正式开始前先防呆
-        self.dull_detection("仅强卡")
-        # 如果没通过防呆检测，就直接返回
-        if not self.is_running:
-            return
-        self.EnhanceOnlyThread.start_enhance()
-
-    # 芙芙助手，功能强大
     def init_furina_helper(self):
-        # 乌瑟勋爵，一键统一所有强化方案用卡
 
         # 初始化配方选择框
         self.init_recipe_box(self.GentilhommeUsher_box, include_pack=True)
@@ -429,8 +440,8 @@ class TenchiCardsEnhancer(QMainWindow):
         # 蟹贝蕾妲小姐，一键设置所有强化方案用料为绑定/不绑/绑定+不绑
         self.MademoiselleCrabaletta_btn.clicked.connect(self.mademoiselle_crabaletta)
 
-    # 乌瑟勋爵！
     def gentilhomme_usher(self):
+        """乌瑟勋爵，一键统一所有强化方案用卡"""
 
         # 获取选择框当前文本
         text = self.GentilhommeUsher_box.currentText()
@@ -451,10 +462,13 @@ class TenchiCardsEnhancer(QMainWindow):
         # 保存强化方案！
         save_settings(self.settings)
 
-    # 海薇玛夫人！
     def surintendante_chevalmarin(self):
         # 替换所有副卡的星级为最优路径
         for enhance_type, enhance_info in self.best_enhance_plan.items():
+        """
+        海薇玛夫人！ 替换所有副卡的星级为最优路径
+        """
+
             if enhance_type in self.settings["强化方案"]:
                 for material, count in enhance_info.items():
                     if material in self.settings["强化方案"][enhance_type]:
@@ -688,15 +702,15 @@ class TenchiCardsEnhancer(QMainWindow):
         event_manager.log_signal.emit(text=f"直视深渊入侵了该版本！临时版本号为 v0.0.1", time=False)
         event_manager.log_signal.emit(text=f"近期不要 低间隔-高速 运行天知强卡器！小心封号！", time=False)
         event_manager.log_signal.emit(text=f"", time=False)
-        event_manager.log_signal.emit(text="初次使用前，请根据该教程进行初步的<a href=#个人设置>个人设置</a>：", time=False)
+        event_manager.log_signal.emit(text="初次使用前，请根据该教程进行初步的<a href=#个人设置>个人设置</a>：",
+                                      time=False)
         event_manager.log_signal.emit(text="目前仅支持360游戏大厅, 支持任何系统缩放, 我是高性能的呦~", time=False)
         event_manager.log_signal.emit(
-            text="天知强卡器网页教程(请坚持访问) <a href=https://stareabyss.top/TCEDocs>点击跳转</a>",time=False)
+            text="天知强卡器网页教程(请坚持访问) <a href=https://stareabyss.top/TCEDocs>点击跳转</a>", time=False)
         event_manager.log_signal.emit(
-            text="最新版本 [github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>点击跳转</a>",time=False)
+            text="最新版本 [github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>点击跳转</a>", time=False)
         event_manager.log_signal.emit(text="[QQ群 交流·反馈·催更] 1群：786921130 2群：142272678", time=False)
         event_manager.log_signal.emit(text="如果觉得好用的话，把软件推荐给更多的人嘛，反正不要钱~", time=False)
-
 
     def open_edit_window(self, label_object_name):
         if self.edit_window is not None:
@@ -2080,9 +2094,10 @@ class TenchiCardsEnhancer(QMainWindow):
 
 class EnhancerThread(QThread):
 
-    def __init__(self, tenchi_cards_enhancer: TenchiCardsEnhancer):
+    def __init__(self, tenchi_cards_enhancer: TenchiCardsEnhancer, stop_func):
         super().__init__()
         self.enhancer = tenchi_cards_enhancer
+        self.stop_func = stop_func
 
     # 强卡器循环,分为3种模式，分别是：0.固定制卡 1.混合制卡 2.动态制卡
     def run(self):
@@ -2154,7 +2169,6 @@ class EnhancerThread(QThread):
         else:
             event_manager.log_signal.emit(text="线程结束运行 - 制卡&强卡", color_level=1)
 
-
     # 初始化位置,使用截图与识图函数判断当前位置，一共有三次判断：1.判断窗口上是否有合成屋图标，如果有就点击 2.根据右上角的“XX说明”判断目前所处位置，分别执行不同操作
     def init_position(self) -> bool:
         position = check_position()  # 获取位置标识
@@ -2213,19 +2227,20 @@ class EnhancerThread(QThread):
         # 重新获取当前时间戳 s
         self.enhancer.time_last_reload_game = time.time()
 
-    def start_loop(self):
-        if self.enhancer.handle is not None:
-            self.start()
-        else:
+    def start_enhance(self):
+        if self.enhancer.handle is None:
             event_manager.show_dialog_signal.emit("喂！", "你还没获取句柄呢！")
+        else:
+            self.start()
 
 
 # 仅强卡线程
 class EnhanceOnlyThread(QThread):
 
-    def __init__(self, tenchi_cards_enhancer: TenchiCardsEnhancer):
+    def __init__(self, tenchi_cards_enhancer: TenchiCardsEnhancer, stop_func):
         super().__init__()
         self.enhancer = tenchi_cards_enhancer
+        self.stop_func = stop_func
 
     def run(self):
 
@@ -2252,15 +2267,16 @@ class EnhanceOnlyThread(QThread):
 
         # 强化完成后弹窗
         event_manager.show_dialog_signal.emit("哇哦", "强化完成！没有可强化的卡片了")
+        self.stop_func()
         event_manager.log_signal.emit(text="线程结束运行 - 仅强卡", color_level=1)
         return
 
     def start_enhance(self):
         # 存在句柄时，启动线程
-        if self.enhancer.handle is not None:
-            self.start()
-        else:
+        if self.enhancer.handle is None:
             event_manager.show_dialog_signal.emit("喂！", "你还没获取句柄呢！")
+        else:
+            self.start()
 
 
 TEST_MODE = False

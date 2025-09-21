@@ -119,9 +119,11 @@ def load_settings(filename='setting.json'):
         with open(filename, 'r', encoding='utf-8') as f:
             # 与默认字典比对，如果缺少了默认字典的键，则把默认字典的键添加进去
             settings = json.load(f)
+
         filename = resource_path('GUI/default/setting.json')
         with open(filename, 'r', encoding='utf-8') as f:
             default = json.load(f)
+
         for key, value in default.items():
             if key not in settings:
                 settings[key] = value
@@ -130,6 +132,7 @@ def load_settings(filename='setting.json'):
                     if k not in settings["个人设置"]:
                         settings["个人设置"][k] = v
         return settings  # 返回设置字典
+
     except FileNotFoundError:
         filename = resource_path('GUI/default/setting.json')
         with open(filename, 'r', encoding='utf-8') as f:
