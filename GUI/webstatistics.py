@@ -1,6 +1,7 @@
 import json
 import os
 import numpy as np
+from PyQt6.QtCore import Qt
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWidgets import QWidget, QTabWidget, QVBoxLayout, QSizePolicy, QLayout
 from pandas import read_csv, Series, concat, errors
@@ -49,6 +50,7 @@ REQUIRED_COLUMNS = [
     'original_success_rate', 'extra_success_rate', 'result'
 ]
 
+
 # 使用ECharts为统计数据绘制图表，用内置的谷歌浏览器显示
 class WebStatistics:
     """
@@ -69,13 +71,12 @@ class WebStatistics:
         self.html_cache = {}  # HTML 缓存
 
         self.refresh_data()
-        if self.data_frame is not None:
-            self.init_tab()
+        self.init_tab()
 
     def load_csv_to_df(self, csv_path):
         # 检查文件是否存在
         if not os.path.exists(csv_path):
-            print(f"文件不存在: {csv_path}")
+            print(f"天知强卡器日志文件不存在: {csv_path}, 暂不加载统计数据")
             self.data_frame = None
             return
 
@@ -131,6 +132,11 @@ class WebStatistics:
         初始化标签页
         """
 
+        # 创建一个垂直布局来包含标签页和提示文本
+        main_layout = QVBoxLayout(self.main_window.tab_3)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
         self.stats_tab_widget = QTabWidget(self.main_window.tab_3)
 
         # 创建标签页
@@ -144,8 +150,60 @@ class WebStatistics:
         # 连接 tab change 信号
         self.stats_tab_widget.currentChanged.connect(self.load_tab_content)
 
-        # 预加载使用四叶草统计
-        self.load_tab_content(0)
+        # 添加标签页控件到主布局
+        main_layout.addWidget(self.stats_tab_widget)
+
+        # 添加提示文本
+        from PyQt6.QtWidgets import QLabel
+        refresh_label = QLabel("切换顶部一级标签再切回来, 即可刷新数据！")
+        refresh_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        refresh_label.setStyleSheet("color: gray; padding: 5px;")
+        main_layout.addWidget(refresh_label)
+
+        # 如果没有数据，预加载提示内容
+        if self.data_frame is None:
+            self.load_no_data_message()
+
+    def load_no_data_message(self):
+        """
+        当没有数据时，为所有标签页加载提示信息
+        """
+        no_data_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>提示</title>
+            <script src="{self.src}"></script>
+            <style>
+            body {{
+                background: {self.background_color};
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }}
+            .message {{
+                font-size: 18px;
+                color: #FF6600;
+                text-align: center;
+            }}
+            }}
+            </style>
+        </head>
+        <body>
+            <div class="message">
+                <p>你还没有强卡呢 ！快去强化！</p>
+            </div>
+        </body>
+        </html>
+        """
+
+        # 为所有标签类型缓存这个提示信息
+        tab_types = ["使用四叶草", "制卡总和", "强化结果", "强卡成功率", "偏移-1", "偏移-2"]
+        for tab_type in tab_types:
+            self.html_cache[tab_type] = no_data_html
 
     def create_empty_tab(self, type):
         """
@@ -203,7 +261,7 @@ class WebStatistics:
         if self.data_frame is not None:
             self.count_gold_cost()
 
-    def reload(self):
+    def ui_reload(self):
         self.refresh_data()
         if self.data_frame is not None:
             self.html_cache = {}  # 清空缓存
@@ -330,7 +388,7 @@ class WebStatistics:
             </head>
             <body>
                 <!-- Container for ECharts -->
-                <div id="main" style="width: 475px;height:375px;"></div>
+                <div id="main" style="width: 450px;height:375px;"></div>
                 <div class="button-container" style="margin-left: 170px;">
                     <button onclick="showChart1()">显示绑定</button>
                     <button onclick="showChart2()">显示不绑</button>
@@ -505,7 +563,7 @@ class WebStatistics:
                 </style>
             </head>
             <body>
-                <div id="main" style="width: 475px;height:375px;"></div>
+                <div id="main" style="width: 450px;height:375px;"></div>
                 <div class="button-container" style="margin-left: 170px;">
                     <button onclick="showChart1()">显示绑定</button>
                     <button onclick="showChart2()">显示不绑</button>
@@ -684,7 +742,7 @@ class WebStatistics:
                 </style>
             </head>
             <body>
-                <div id="main" style="width: 475px;height:375px;"></div>
+                <div id="main" style="width: 450px;height:375px;"></div>
                 <div class="button-container" style="margin-left: 170px;">
                     <button onclick="showChart1()">显示绑定</button>
                     <button onclick="showChart2()">显示不绑</button>
@@ -862,7 +920,7 @@ class WebStatistics:
                 </style>
             </head>
             <body>
-                <div id="main" style="width: 475px;height:375px;"></div>
+                <div id="main" style="width: 450px;height:375px;"></div>
                 <div class="button-container" style="margin-left: 170px;">
                     <button onclick="showChart1()">显示绑定</button>
                     <button onclick="showChart2()">显示不绑</button>
@@ -1078,7 +1136,7 @@ class WebStatistics:
                 </style>
             </head>
             <body>
-                <div id="main" style="width: 475px;height:375px;"></div>
+                <div id="main" style="width: 450px;height:375px;"></div>
                 <div class="button-container" style="margin-left: 170px;">
                     <button onclick="showChart1()">显示绑定</button>
                     <button onclick="showChart2()">显示不绑</button>
@@ -1294,7 +1352,7 @@ class WebStatistics:
                 </style>
             </head>
             <body>
-                <div id="main" style="width: 475px;height:375px;"></div>
+                <div id="main" style="width: 450px;height:375px;"></div>
                 <div class="button-container" style="margin-left: 170px;">
                     <button onclick="showChart1()">显示绑定</button>
                     <button onclick="showChart2()">显示不绑</button>
