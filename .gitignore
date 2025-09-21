@@ -1,10 +1,9 @@
 __pycache__/
 test/test_image/
-.gitignore
 test/index.html
-/.idea/
+.idea/
 build/
-.vscode/
 dist/
+.vscode/
 enhance_stats/
 log/
