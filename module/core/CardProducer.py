@@ -1,11 +1,10 @@
 from collections import Counter
 
-from PyQt6.QtCore import QThread, QTime
+from PyQt6.QtCore import QThread
 
-from module.core.DynamicWait import dynamic_check_gold, dynamic_wait_recipe_changed
+from module.core.DynamicWait import dynamic_wait_recipe_changed
 from module.core.GetImg import get_image
-from module.core.ImgMatch import template_img_match, screenshot_and_direct_img_match, find_and_crop_template, \
-    direct_img_match
+from module.core.ImgMatch import template_img_match, find_and_crop_template, direct_img_match
 from module.core.ItemTab import get_target_item, action_get_item_list
 from module.core.MouseEvent import click
 from module.globals.DataClass import Card, Item
@@ -197,7 +196,9 @@ def produce_card(card_name, level, bind, count, card_pack_dict, produce_check_in
         find, _ = get_target_item(resource.spice_images[spice_list[level]], bind)
         # 如果找不到香料，弹窗
         if not find:
-            event_manager.show_dialog_signal.emit("没有找到对应的香料！", "恭喜你触发了一个几乎不可能触发的弹窗！")
+            event_manager.show_dialog_signal.emit(
+                "没有找到对应的香料！",
+                "恭喜你触发了一个几乎不可能触发的弹窗！大概率是因为游戏在强化界面运行过久，超出设定的最大等待阈值！")
             return 0, None
     # 开始制作
     produce_count = 0
@@ -268,20 +269,28 @@ def dynamic_card_producer(settings, card_names, card_count_dict=None):
     produce_list = sorted(produce_list, key=lambda x: x[0].level, reverse=True)
     logger.debug(f"动态制卡需求：{produce_list}")
     # 进行制卡
+    event_manager.log_signal.emit(
+        text=f"开始一轮动态制卡",
+        time=True,
+        color_level=2,
+    )
     for card, count in produce_list:
         name, level, bind = card.get_state()
         spice = next((item for item in usable_spice if item.get_level() == level), None)
         count = min(count, spice.count // 5)
-        actual_count, actual_card_name = produce_card(name, level, spice.bind, count,
-                                                      card_pack_dict, produce_check_interval)
+        actual_count, actual_card_name = produce_card(
+            card_name=name, level=level, bind=spice.bind, count=count,
+            card_pack_dict=card_pack_dict, produce_check_interval=produce_check_interval)
         if actual_count == 0:
             continue
         bind_str = "绑定" if spice.bind else "不绑"
         # 记录制卡数据
         produce_recorder.save_produce_statistic(spice.bind, level, actual_count)
+
         event_manager.log_signal.emit(
-            f"<font color='purple'>[{QTime.currentTime().toString()}]"
-            f"动态制卡{bind_str}{card.level}星{actual_card_name}{actual_count}次</font>"
+            text=f"动态制卡{bind_str}{card.level}星{actual_card_name}{actual_count}次",
+            time=False,
+            color_level=2,
         )
 
 

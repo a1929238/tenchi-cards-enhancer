@@ -502,8 +502,9 @@ class CushionThread(QThread):
                 bind_str = "绑定" if bind else "不绑"
                 produce_recorder.save_produce_statistic(bind, level, actual_count)
                 event_manager.log_signal.emit(
-                    f"<font color='blue'>[{QTime.currentTime().toString()}]"
-                    f"为垫卡制卡{bind_str}{level}星{actual_card_name}{actual_count}次</font>"
+                    text=f"为垫卡制卡{bind_str}{level}星{actual_card_name}{actual_count}次",
+                    time=True,
+                    color_level=3,
                 )
             if not self.enhancer.is_running:
                 break

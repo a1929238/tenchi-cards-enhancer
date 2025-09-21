@@ -218,7 +218,10 @@ class GemEnhancer:
                 return False
             # 开始强化
             if self.enhance_gem_once(current_level, bind):
-                event_manager.log_signal.emit(f"{gem_name}成功强化到{current_level + 1}级")
+                event_manager.log_signal.emit(
+                    text=f"{gem_name}成功强化到{current_level + 1}级",
+                    time=True,
+                )
                 current_level += 1
             elif current_level > 5:
                 current_level -= 1
@@ -322,8 +325,11 @@ class GemEnhancer:
             # 输出分解日志
             gem_name = gem["name"]
             gem_bind = "绑定" if gem["bind"] else "不绑"
-            text = f"<font color='purple'>[{QTime.currentTime().toString()}]{gem_bind}{gem_name}分解成功!</font>"
-            event_manager.log_signal.emit(text)
+            event_manager.log_signal.emit(
+                text=f"{gem_bind}{gem_name}分解成功!",
+                time=True,
+                color_level=2,
+            )
             return True  # 成功分解，返回True
         else:
             # 分解失败，弹窗

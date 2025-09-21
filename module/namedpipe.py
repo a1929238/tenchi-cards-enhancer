@@ -31,7 +31,10 @@ class PipeCommunicationThread(threading.Thread):
             logger.debug("无法连接到管道，线程退出。")
             return
         self.connected = True
-        event_manager.log_signal.emit(f"应FAA召唤而来，你就是我的主人吗？")
+        event_manager.log_signal.emit(
+            text=f"应FAA召唤而来，你就是我的 Master 吗？",
+            color_level=1,
+        )
 
         while self.is_running:
             try:

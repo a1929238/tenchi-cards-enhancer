@@ -4,6 +4,7 @@
 import queue
 import random
 import time
+import datetime
 from ctypes import c_void_p
 
 import win32con
@@ -32,7 +33,6 @@ from module.core.CardTab import exist_empty_block, get_card_names, get_card_list
 from module.core.DepositoryTab import reset_repo_slider, scroll_repo_slider
 from module.core.DynamicWait import dynamic_wait_card_slot_state
 from module.core.GetImg import get_image
-from module.core.ImgMatch import direct_img_match
 from module.core.ItemTab import get_target_item
 from module.core.LevelCheck import check_card_enhance_result
 from module.core.MouseEvent import click
@@ -41,7 +41,6 @@ from module.gem.GemEnhancer import GemEnhancerThread
 from module.globals.DataClass import Card
 from module.globals.EventManager import event_manager
 from module.globals.ResourceInit import resource
-from module.log.TenchiLogger import logger
 from module.namedpipe import PipeCommunicationThread
 from module.ocr.SuccessRateOcr import get_success_rate
 from module.statistic.AsyncProduceStatistic import produce_recorder
@@ -191,21 +190,22 @@ class TenchiCardsEnhancer(QMainWindow):
         self.gem_enhance_btn.clicked.connect(self.start_gem_enhance)
 
         # 连上工作线程
-        self.EnhancerThread = EnhancerThread(self)
-        self.EnhanceOnlyThread = EnhanceOnlyThread(self)
+        self.EnhancerThread = EnhancerThread(tenchi_cards_enhancer=self, stop_func=self.onStop)
+        self.EnhanceOnlyThread = EnhanceOnlyThread(tenchi_cards_enhancer=self, stop_func=self.onStop)
         self.gemEnhancerThread = GemEnhancerThread(self)
 
         # 连接上工作线程的信号
         event_manager.show_dialog_signal.connect(self.show_dialog)
-        event_manager.log_signal.connect(self.send_log_message)
+        event_manager.log_signal.set_theme(theme=GLOBALS.THEME)  # 获取了主题样式后再更新输出文本颜色
+        event_manager.log_signal_true.connect(self.send_message_to_ui)
 
         # 连接上标签页切换的信号
         self.tabWidget.currentChanged.connect(self.on_tab_changed)
 
         # 配置，初始化四叶草选择菜单
-        self.init_clover()
+        self.init_ui_clover()
         # 配置，初始化副卡选择菜单
-        self.init_subcard()
+        self.init_ui_subcard()
         # 初始化香料菜单
         self.init_spice()
         # 初始化个人设置页
@@ -265,6 +265,8 @@ class TenchiCardsEnhancer(QMainWindow):
 
         # 初始化豆知识
         self.init_funny_tips()
+        # 初始化开屏输出
+        self.send_open_message()
 
         # 测试模式
         if TEST_MODE:
@@ -273,8 +275,10 @@ class TenchiCardsEnhancer(QMainWindow):
 
     def init_css(self):
         """根据主题设置控件的css"""
+
         # 窗口背景图
         background_image_path = resource_path('items/icon/furina_background.jpg')
+
         # Tooltip样式表
         self.setStyleSheet(f"""
                         /* 工具提示样式 */
@@ -346,25 +350,31 @@ class TenchiCardsEnhancer(QMainWindow):
     def on_tab_changed(self, index):
         """标签页切换信号"""
         if self.tabWidget.widget(index) == self.tab_3:
-            self.web_statistics.reload()
+            self.web_statistics.ui_reload()
 
     def onStart(self, without_dialog=False):
         """开始按钮"""
+
         # 确保不会重复点击开始
         self.enhanceronlybtn.setEnabled(False)
         self.startbtn.setEnabled(False)
         self.stopbtn.setEnabled(True)
+
         # 打开运行标识
         self.is_running = True
         GLOBALS.IS_RUNNING = True
+
         # 初始化卡片列表和卡片数量字典
         self.card_list = []
         self.card_count_dict = {}
+
         # 正式开始前先防呆
         self.dull_detection()
+
         # 如果没通过防呆检测，就直接返回
         if not self.is_running:
             return
+
         # 进行防呆弹窗
         if not without_dialog:
             result = self.dull_dialog()
@@ -406,22 +416,29 @@ class TenchiCardsEnhancer(QMainWindow):
     # 芙芙助手，功能强大
     def init_furina_helper(self):
         # 乌瑟勋爵，一键统一所有强化方案用卡
+
         # 初始化配方选择框
         self.init_recipe_box(self.GentilhommeUsher_box, include_pack=True)
+
         # 将按钮连接上一键统一功能
         self.GentilhommeUsher_btn.clicked.connect(self.gentilhomme_usher)
+
         # 海薇玛夫人，一键将副卡星级设置为最优路径
         self.SurintendanteChevalmarin_btn.clicked.connect(self.surintendante_chevalmarin)
+
         # 蟹贝蕾妲小姐，一键设置所有强化方案用料为绑定/不绑/绑定+不绑
         self.MademoiselleCrabaletta_btn.clicked.connect(self.mademoiselle_crabaletta)
 
     # 乌瑟勋爵！
     def gentilhomme_usher(self):
+
         # 获取选择框当前文本
         text = self.GentilhommeUsher_box.currentText()
+
         # 分离出卡片名
         card_name = text.split("-")[0]
         enhance_plan = self.settings["强化方案"]
+
         # 迭代强化方案的所~有主副卡，将其名称设置为卡片名
         for i in range(16):
             for j in range(4):
@@ -430,6 +447,7 @@ class TenchiCardsEnhancer(QMainWindow):
                 elif j in [1, 2, 3]:
                     enhance_plan[f'{i}-{i + 1}'][f'副卡{j}']['卡片名称'] = card_name
         self.settings["强化方案"] = enhance_plan
+
         # 保存强化方案！
         save_settings(self.settings)
 
@@ -442,16 +460,19 @@ class TenchiCardsEnhancer(QMainWindow):
                     if material in self.settings["强化方案"][enhance_type]:
                         # 更新第二个字典中的对应用料
                         self.settings["强化方案"][enhance_type][material].update(count)
-        # 初始化副卡与四叶草菜单
-        self.init_subcard()
-        self.init_clover()
+
+        # 初始化副卡与四叶草的UI
+        self.init_ui_subcard()
+        self.init_ui_clover()
+
         # 保存强化方案
         save_settings(self.settings)
 
     # 蟹贝蕾妲小姐！
     def mademoiselle_crabaletta(self):
-        # 获取绑定/不绑按钮的选择状态
+
         bind_state = self.bind_check_box.get_state()
+
         enhance_plan = self.settings["强化方案"]
         # 迭代所有主副卡，将其绑定设置为选择的状态
         for i in range(16):
@@ -661,17 +682,21 @@ class TenchiCardsEnhancer(QMainWindow):
             # 移动光标到最新消息
             self.output_log.moveCursor(QTextCursor.MoveOperation.End)
 
-    def init_log_message(self):
+    def send_open_message(self):
         """初始化日志信息"""
-        self.send_log_message(f"当当！天知强卡器启动成功！目前版本号为{self.version}")
-        self.send_log_message("初次使用前，请根据该教程进行初步的<a href=#个人设置>个人设置</a>：")
-        self.send_log_message("<a href=https://stareabyss.top/TCEDocs>天知强卡器教程</a>")
-        self.send_log_message("目前仅支持360游戏大厅,但支持任何系统缩放，所以说我是高性能的呦")
-        self.send_log_message(
-            "最新版本 [github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>https://github.com/a1929238"
-            "/tenchi-cards-enhancer</a>")
-        self.send_log_message("[QQ群 交流·反馈·催更] 1群：786921130 2群：142272678")
-        self.send_log_message("如果觉得好用的话，把软件推荐给更多的人嘛，反正不要钱~")
+        event_manager.log_signal.emit(text=f"当当！天知强卡器启动成功！主版本号为{self.version}", time=False)
+        event_manager.log_signal.emit(text=f"直视深渊入侵了该版本！临时版本号为 v0.0.1", time=False)
+        event_manager.log_signal.emit(text=f"近期不要 低间隔-高速 运行天知强卡器！小心封号！", time=False)
+        event_manager.log_signal.emit(text=f"", time=False)
+        event_manager.log_signal.emit(text="初次使用前，请根据该教程进行初步的<a href=#个人设置>个人设置</a>：", time=False)
+        event_manager.log_signal.emit(text="目前仅支持360游戏大厅, 支持任何系统缩放, 我是高性能的呦~", time=False)
+        event_manager.log_signal.emit(
+            text="天知强卡器网页教程(请坚持访问) <a href=https://stareabyss.top/TCEDocs>点击跳转</a>",time=False)
+        event_manager.log_signal.emit(
+            text="最新版本 [github] <a href=https://github.com/a1929238/tenchi-cards-enhancer>点击跳转</a>",time=False)
+        event_manager.log_signal.emit(text="[QQ群 交流·反馈·催更] 1群：786921130 2群：142272678", time=False)
+        event_manager.log_signal.emit(text="如果觉得好用的话，把软件推荐给更多的人嘛，反正不要钱~", time=False)
+
 
     def open_edit_window(self, label_object_name):
         if self.edit_window is not None:
@@ -816,7 +841,7 @@ class TenchiCardsEnhancer(QMainWindow):
             return 4, recipe_name  # 对于没有评级的卡片，放在最后
 
     # 初始化副卡菜单
-    def init_subcard(self):
+    def init_ui_subcard(self):
         sub_card_list = ["副卡1", "副卡2", "副卡3"]
         for i in range(3):
             for j in range(16):
@@ -852,7 +877,7 @@ class TenchiCardsEnhancer(QMainWindow):
                 subcard_box.currentIndexChanged.connect(self.on_subcard_selected)
 
     # 初始化四叶草菜单
-    def init_clover(self):
+    def init_ui_clover(self):
         for i in range(16):
             clover_box_name = f"clover{i}"
             clover_box = getattr(self, clover_box_name)
@@ -1310,10 +1335,18 @@ class TenchiCardsEnhancer(QMainWindow):
         """
         主要强化方法，负责从拖曳到进行卡片列表获取、单次卡片强化操作的全部行为
         """
+
+        event_manager.log_signal.emit(
+            text=f"开始一轮卡片强化",
+            time=True,
+            color_level=2,
+        )
+
         if not self.is_running:
             return
         if enhance_plan is None:
             enhance_plan = self.settings["强化方案"]
+
         # 初始化当前位置
         current_position = 0
         # 最终滚动方案，根据用户背包大小计算卡片行数，然后算出滚动条总长，以此完全确定拖动距离
@@ -1323,6 +1356,7 @@ class TenchiCardsEnhancer(QMainWindow):
         # 单卡强卡特殊方案，寻找比强化最高星级低一级的卡片位置
         if card_num == 1 and self.single_max_card_position == 0:
             self.find_max_card_position()
+
         # 每次强化，卡片的顺序都会改变，只能强化一次截一次图，直到强卡器返回False，才停止循环
         while self.is_running:
             # 初始化偏移值,切割传入图像
@@ -1344,9 +1378,10 @@ class TenchiCardsEnhancer(QMainWindow):
                 # 强化当前页面卡片，传输进去的是拷贝后的卡片列表，可在强化函数中修改
                 copy_of_card_list = card_list.copy()
                 copy_of_card_list = [card for card in copy_of_card_list if card.level < self.max_level]
-                self.enhance_card_once(card_list=copy_of_card_list,
-                                       enhance_plan=enhance_plan,
-                                       start_time=start_time)
+                self.enhance_card_once(
+                    card_list=copy_of_card_list,
+                    enhance_plan=enhance_plan,
+                    start_time=start_time)
                 # 检查停止标识
                 if not self.is_running:
                     break
@@ -1630,12 +1665,18 @@ class TenchiCardsEnhancer(QMainWindow):
     def faa_task(self, message):
         """执行faa的任务"""
         if message.split(",")[0] == 'enhance_card':
-            event_manager.log_signal.emit("开始执行FAA指令——制卡并强卡")
+            event_manager.log_signal.emit(
+                text="开始执行FAA指令——制卡并强卡",
+                color_level=1
+            )
             handle = int(message.split(",")[1])
             self.update_handle_display(handle)
             self.onStart(without_dialog=True)
         elif message.split(",")[0] == 'decompose_gem':
-            event_manager.log_signal.emit("开始执行FAA指令——分解宝石")
+            event_manager.log_signal.emit(
+                text="开始执行FAA指令——分解宝石",
+                color_level=1
+            )
             handle = int(message.split(",")[1])
             self.update_handle_display(handle)
             # 开始宝石分解
@@ -1776,10 +1817,17 @@ class TenchiCardsEnhancer(QMainWindow):
         msg.exec()
 
     # 输出日志
-    def send_log_message(self, message):
+    def send_message_to_ui(self, message, color, time):
         """
         将信息输出到强卡日志，顺便也输出到Log里
         """
+
+        # 时间文本
+        message_time = "[{}] ".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")) if time else ""
+
+        # 颜色文本
+        message = f'<span style="color:#{color};">{message_time}{message}</span>'
+
         self.output_log.append(f"{message}")
         logger.info(message)
 
@@ -1801,7 +1849,11 @@ class TenchiCardsEnhancer(QMainWindow):
             return
         # 确保当前位置处于主菜单
         if check_position() != "主菜单":
-            self.send_log_message("找不到跳转按钮，不输入二级密码")
+            event_manager.log_signal.emit(
+                text="不在主菜单, 找不到跳转按钮，不需要输入二级密码",
+                time=True,
+                color_level=1
+            )
             return
 
         # 跳转到暗晶商店，尝试兑换星座卡随机礼包
@@ -1819,6 +1871,7 @@ class TenchiCardsEnhancer(QMainWindow):
         # 检查停止标识
         if not self.is_running:
             return
+
         # 循环输入二级密码
         for char in self.settings["个人设置"]["二级密码"]:
             win32gui.PostMessage(self.handle, win32con.WM_CHAR, ord(char), 0)
@@ -2033,12 +2086,18 @@ class EnhancerThread(QThread):
 
     # 强卡器循环,分为3种模式，分别是：0.固定制卡 1.混合制卡 2.动态制卡
     def run(self):
+
+        event_manager.log_signal.emit(text="线程开始运行 - 制卡&强卡", color_level=1)
+
         # 初始化最高等级卡片位置
         self.enhancer.single_max_card_position = 0
+
         # 如果打开了输入二级密码，且处于能看到合成屋的位置，则代替输入二级密码
         self.enhancer.check_second_password()
         if not self.enhancer.is_running:
+            event_manager.log_signal.emit(text="线程结束运行 - 制卡&强卡", color_level=1)
             return
+
         # 初始化卡片名称集合
         self.enhancer.card_names = get_card_names(
             self.enhancer.settings["强化方案"],
@@ -2046,22 +2105,29 @@ class EnhancerThread(QThread):
             self.enhancer.min_level,
             self.enhancer.max_level
         )
+
         # 初始化位置，保证位置在合成屋或强化页面
         if not self.init_position():
+            event_manager.log_signal.emit(text="线程结束运行 - 制卡&强卡", color_level=1)
             return
+
         while self.enhancer.is_running:
             # 如果强化到达一定时间，且打开刷新游戏设置，就刷新游戏重进一下游戏, 防止卡顿
             if (self.enhancer.is_reload_game and
                     time.time() - self.enhancer.time_last_reload_game >= self.enhancer.reload_time * 60):
                 self.reload_game()
+
             # 检查停止标识
             if not self.enhancer.is_running:
                 break
+
             # 如果强化到了一定次数，就退出重进一下合成屋，防止卡顿
             if self.enhancer.enhance_times >= self.enhancer.reload_count:
                 self.reload_house()
+
             # 进行动态制卡
             dynamic_card_producer(self.enhancer.settings, self.enhancer.card_names, self.enhancer.card_count_dict)
+
             # 清空卡片列表
             self.enhancer.card_list = []
             if not self.enhancer.is_running:
@@ -2077,13 +2143,17 @@ class EnhancerThread(QThread):
                 break
             # 数组卡片全部强化完成后，点击卡片制作标签，再次循环
             change_position("卡片制作", "卡片强化")
+
         # 如果开启了弹窗后刷新功能，则刷新一次
         if self.enhancer.failed_refresh and self.enhancer.failed_refresh_count <= 5:
-            logger.info("危险设置！ 弹窗后刷新游戏")
+            event_manager.log_signal.emit("危险设置已启用！ 报错弹窗后刷新游戏继续执行!")
             self.enhancer.is_running = True
             GLOBALS.IS_RUNNING = True
             self.reload_game()
             self.run()  # 递归调用
+        else:
+            event_manager.log_signal.emit(text="线程结束运行 - 制卡&强卡", color_level=1)
+
 
     # 初始化位置,使用截图与识图函数判断当前位置，一共有三次判断：1.判断窗口上是否有合成屋图标，如果有就点击 2.根据右上角的“XX说明”判断目前所处位置，分别执行不同操作
     def init_position(self) -> bool:
@@ -2110,8 +2180,8 @@ class EnhancerThread(QThread):
             return True
         else:
             # 未知位置，弹窗提示
-            event_manager.show_dialog_signal.emit("哇哦",
-                                                  "未知位置，你在哪里？异次元空间吗？\n仅支持360游戏大厅，请确保将芙芙拖到游戏窗口内")
+            event_manager.show_dialog_signal.emit(
+                "哇哦", "未知位置，你在哪里？异次元空间吗？\n仅支持360游戏大厅，请确保将芙芙拖到游戏窗口内")
             # 停止运行
             self.enhancer.is_running = False
             return False
@@ -2158,10 +2228,15 @@ class EnhanceOnlyThread(QThread):
         self.enhancer = tenchi_cards_enhancer
 
     def run(self):
+
+        event_manager.log_signal.emit(text="线程开始运行 - 仅强卡", color_level=1)
+
         # 判断当前位置，如果不在强化页面，就直接弹窗
         position = check_position()
         if position != "卡片强化":
             event_manager.show_dialog_signal.emit("等等", "先把页面调到卡片强化后再点我啊！")
+            self.stop_func()
+            event_manager.log_signal.emit(text="线程结束运行 - 仅强卡", color_level=1)
             return
         # 初始化卡片名称集合
         self.enhancer.card_names = get_card_names(
@@ -2174,8 +2249,10 @@ class EnhanceOnlyThread(QThread):
         self.enhancer.main_enhancer()
         # 清空卡片列表
         self.enhancer.card_list = []
+
         # 强化完成后弹窗
         event_manager.show_dialog_signal.emit("哇哦", "强化完成！没有可强化的卡片了")
+        event_manager.log_signal.emit(text="线程结束运行 - 仅强卡", color_level=1)
         return
 
     def start_enhance(self):

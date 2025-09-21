@@ -19,37 +19,41 @@ def enhance_log(used_card_list, clover, clover_bind, success):
     """按格式输出强化日志"""
     # 先分离出各种信息
     main_card = used_card_list[0]
-    text = f"{main_card.level}星{main_card.name}强化"
+    text = f"{main_card.level}星{main_card.name}"
     if success:
-        text += "成功！"
+        text = f"↑{text}↑"
     else:
-        text += "失败！"
-    text += "使用卡片："
+        text = f"↓{text}↓"
+    text += " 用卡："
     for sub_card in used_card_list[1:]:
-        text += f"[{sub_card.level}星{sub_card.name}]"
+        text += f"[{sub_card.level}]"
     # 添加上四叶草种类
     clover_bind_dict = {0: "不绑", 1: "绑定"}
     if clover != "无":
-        text += f"，使用[{clover_bind_dict[clover_bind]}{clover}四叶草]"
-    # 在开头添加上时间戳，只要有小时跟秒数就行了
-    text = f"[{QTime.currentTime().toString()}]{text}"
+        text += f"，用草: {clover_bind_dict[clover_bind]}{clover}"
+
     # 给不同星级的强化成功日志加上不同颜色
-    if success:
-        if main_card.level <= 2:
-            text = f"<font color='gray'>{text}</font>"
-        elif main_card.level <= 5:
-            text = f"<font color='green'>{text}</font>"
-        elif main_card.level <= 7:
-            text = f"<font color='blue'>{text}</font>"
-        elif main_card.level <= 9:
-            text = f"<font color='purple'>{text}</font>"
-        elif main_card.level <= 11:
-            text = f"<font color='orange'>{text}</font>"
-        else:
-            text = f"<font color='deep pink'>{text}</font>"
+    if not success:
+        color_level = 1
     else:
-        text = f"<font color='red'>{text}</font>"
-    event_manager.log_signal.emit(text)
+        if main_card.level <= 2:
+            color_level = 9
+        elif main_card.level <= 5:
+            color_level = 3
+        elif main_card.level <= 7:
+            color_level = 4
+        elif main_card.level <= 9:
+            color_level = 5
+        elif main_card.level <= 11:
+            color_level = 6
+        else:
+            color_level = 7
+
+    event_manager.log_signal.emit(
+        text=text,
+        color_level=color_level,
+        time=False
+    )
 
 
 def is_card_placed(card_index):
