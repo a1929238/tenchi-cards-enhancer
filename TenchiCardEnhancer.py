@@ -492,18 +492,20 @@ class TenchiCardsEnhancer(QMainWindow):
     # 蟹贝蕾妲小姐！
     def mademoiselle_crabaletta(self):
 
+        # 获取绑定/不绑按钮的选择状态 0 仅不绑 1 仅绑定 2 均选择
         bind_state = self.bind_check_box.get_state()
 
         enhance_plan = self.settings["强化方案"]
         # 迭代所有主副卡，将其绑定设置为选择的状态
+        sub_keys = ["主卡", "副卡1", "副卡2", "副卡3", "四叶草"]
         for i in range(16):
-            for j in range(5):
-                if j == 0:
-                    enhance_plan[f'{i}-{i + 1}']['主卡']['绑定'] = bind_state
-                elif j in [1, 2, 3]:
-                    enhance_plan[f'{i}-{i + 1}'][f'副卡{j}']['绑定'] = bind_state
-                elif j == 4:
-                    enhance_plan[f'{i}-{i + 1}']['四叶草']['绑定'] = bind_state
+            for sub_key in sub_keys:
+                if sub_key in enhance_plan[f'{i}-{i + 1}']:
+                    # 0星卡强制为仅不绑！
+                    if enhance_plan[f'{i}-{i + 1}'][sub_key].get("星级", None) == "0":
+                        enhance_plan[f'{i}-{i + 1}'][sub_key]['绑定'] = 0
+                    else:
+                        enhance_plan[f'{i}-{i + 1}'][sub_key]['绑定'] = bind_state
         self.settings["强化方案"] = enhance_plan
         # 保存强化方案！
         save_settings(self.settings)
